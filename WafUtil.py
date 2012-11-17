@@ -413,7 +413,7 @@ class Arch:
     def PrepareDefaultEnv(ctx):
 
         ctx.env.CXXFLAGS = ['-I/usr/local/include/']
-        ctx.env.LINKFLAGS = []
+        ctx.env.LINKFLAGS = ['-L/usr/local/lib/']
         if ctx.env.MACOSX:
             ctx.env.CXXFLAGS.append('-DMACOSX')
         ctx.env.CXXFLAGS.append('-I/usr/include/libxml2/')
