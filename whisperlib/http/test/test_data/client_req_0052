@@ -1,0 +1,6 @@
+GET /404.html HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: times.usefulinc.com
+Connection: Keep-Alive
+

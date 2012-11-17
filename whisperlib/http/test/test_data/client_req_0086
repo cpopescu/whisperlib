@@ -1,0 +1,6 @@
+GET /hard-disk-uri/western-digital/320gb-sata-ii-7200rpm-8mb/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.pcgarage.ro
+Connection: Keep-Alive
+

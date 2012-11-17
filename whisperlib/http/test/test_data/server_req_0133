@@ -1,0 +1,8 @@
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 09:01:09 GMT
+Server: Apache/2.2.3 (Debian) mod_ssl/2.2.3 OpenSSL/0.9.8c
+Set-Cookie: CGISESSID=53aeb977edb5cce096b8b8e49559b7a2; path=/; expires=Thu, 03-Apr-2008 09:01:10 GMT; HttpOnly
+Vary: Accept-Encoding
+Connection: close
+Content-Type: text/html; charset=UTF-8
+

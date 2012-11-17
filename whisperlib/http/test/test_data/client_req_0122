@@ -1,0 +1,6 @@
+GET /~m.steel/runs.html%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.math.canterbury.ac.nz
+Connection: Keep-Alive
+

@@ -1,0 +1,8 @@
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 08:57:10 GMT
+Server: Apache/2.0.52 (Red Hat)
+X-Powered-By: PHP/5.2.5
+Set-Cookie: cms_logged_in=0; expires=Fri, 27-Mar-2009 08:57:11 GMT; path=/
+Connection: close
+Content-Type: text/html; charset=ISO-8859-1
+

@@ -1,0 +1,7 @@
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 08:53:22 GMT
+Server: Apache Coyote/1.0
+Content-Type: text/html;charset=ISO-8859-1
+Set-Cookie: JSESSIONID=C9C037D091E9EF7173DEBC2D0293C5AD; Path=/df
+Connection: close
+

@@ -1,0 +1,6 @@
+GET /docs/ssh/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: kimmo.suominen.com
+Connection: Keep-Alive
+

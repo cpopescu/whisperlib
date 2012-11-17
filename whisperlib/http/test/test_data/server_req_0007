@@ -1,0 +1,11 @@
+HTTP/1.1 302 Found
+Date: Thu, 27 Mar 2008 08:54:50 GMT
+Server: Apache/2.2.3 (Red Hat)
+X-Powered-By: PHP/5.1.6
+X-AMO-ServedBy: mrapp09
+Location: http://addons.mozilla.org/en-US/firefox/browse/type:1/cat:22/sort:popular
+Content-Length: 0
+Keep-Alive: timeout=300, max=661
+Connection: Keep-Alive
+Content-Type: text/html; charset=UTF-8
+

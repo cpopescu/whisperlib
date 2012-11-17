@@ -1,0 +1,6 @@
+GET /templates/summary.aspx?id=39529%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.doc.govt.nz
+Connection: Keep-Alive
+

@@ -1,0 +1,36 @@
+# -*- Mode:python; indent-tabs-mode:nil; coding:utf-8 -*-
+
+def build(ctx):
+    lib = ['m', 'stdc++', 'z']
+    if ctx.env.THREAD_LIB_TO_USE:
+        lib.append(ctx.env.THREAD_LIB_TO_USE)
+    else:
+        lib.append('pthread')
+    if ctx.env.HAVE_GLOG and ctx.env.USE_GLOG_LOGGING:
+        lib.append('glog')
+
+    if ctx.env.HAVE_GFLAGS and ctx.env.USE_GFLAGS:
+        lib.append('gflags')
+    if ctx.env.ANDROID:
+        lib.append('gnustl_static')
+
+    ctx.add_lib(ctx,
+        toplib = 'whisperlib',
+        name = 'whisperlib.root',
+        target = 'whisperlib',
+        use = ['whisperlib_includes'],
+        lib = lib)
+
+    ctx.add_whisper_tests = add_whisper_tests
+
+    ctx.add_subdirs(['base',
+                     'http',
+                     'io',
+                     'net',
+                     'rpc',
+                     'sync',
+                     'url',
+                     ])
+
+def add_whisper_tests(ctx, files, prefix='test/', extra_use = [], extra_lib = []):
+    ctx.simple_binary(ctx, files, prefix=prefix, extra_use=extra_use, extra_lib=extra_lib)

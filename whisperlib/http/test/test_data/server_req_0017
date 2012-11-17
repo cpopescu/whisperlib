@@ -1,0 +1,9 @@
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 08:54:53 GMT
+Server: Apache/2.0.55 (Ubuntu) PHP/5.1.2 mod_ssl/2.0.55 OpenSSL/0.9.8a
+X-Powered-By: PHP/5.1.2
+Content-Type: text/html; charset=utf-8
+Set-Cookie: SESS1171245e7f799b66f709cf467c0c4c9d=ffc6089ac828194565eb2cbee50b7371; expires=Sat, 19 Apr 2008 12:28:13 GMT; path=/; domain=.www-drupal.ubuntu.com
+Via: 1.0 www.ubuntu.com
+Connection: close
+

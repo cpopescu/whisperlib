@@ -1,0 +1,6 @@
+GET /~dirsvcs/ldap/doc/guides/slapd/8.html%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.umich.edu
+Connection: Keep-Alive
+

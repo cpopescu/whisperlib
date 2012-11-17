@@ -1,0 +1,6 @@
+GET /en-US/firefox/customize/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: en-us.www.mozilla.com
+Connection: Keep-Alive
+

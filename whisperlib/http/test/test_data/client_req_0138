@@ -1,0 +1,6 @@
+GET /sig/index.phtml%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: mapa.buenosaires.gov.ar
+Connection: Keep-Alive
+

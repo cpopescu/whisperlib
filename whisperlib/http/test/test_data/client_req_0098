@@ -1,0 +1,6 @@
+GET /ubuntu.uniklu/dists/dapper/uniklu-vserver/binary-amd64/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: ubuntu.uni-klu.ac.at
+Connection: Keep-Alive
+

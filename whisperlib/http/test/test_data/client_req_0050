@@ -1,0 +1,6 @@
+GET /2005/09/25-ldap%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: times.usefulinc.com
+Connection: Keep-Alive
+

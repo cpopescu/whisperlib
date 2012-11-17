@@ -1,0 +1,13 @@
+HTTP/1.1 301 Moved Permanently
+Date: Thu, 27 Mar 2008 08:54:55 GMT
+Server: zope.server.http (HTTP)
+X-Powered-By: Zope (www.zope.org), Python (www.python.org)
+X-Content-Type-Warning: guessed from content
+Content-Length: 0
+Content-Type: text/plain;charset=utf-8
+Location: https://launchpad.net/ubuntu/+addticket
+Via: 1.0 launchpad.net
+Vary: Accept-Encoding
+Keep-Alive: timeout=15, max=100
+Connection: Keep-Alive
+

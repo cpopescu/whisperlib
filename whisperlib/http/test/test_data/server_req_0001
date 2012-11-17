@@ -1,0 +1,10 @@
+HTTP/1.1 302 Found
+Date: Thu, 27 Mar 2008 08:54:49 GMT
+Server: Apache/2.2.3 (Red Hat)
+Location: https://addons.mozilla.org/firefox/bookmarks/
+Content-Length: 320
+Keep-Alive: timeout=20, max=955
+Connection: Keep-Alive
+Content-Type: text/html; charset=iso-8859-1
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

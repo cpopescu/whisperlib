@@ -1,0 +1,12 @@
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 08:55:12 GMT
+Server: Apache
+X-Powered-By: PHP/5.2.2-pl1-gentoo
+Content-language: en
+Vary: Accept-Encoding,Cookie
+Expires: Thu, 01 Jan 1970 00:00:00 GMT
+Cache-Control: private, must-revalidate, max-age=0
+Last-modified: Thu, 17 Jan 2008 23:03:53 GMT
+Connection: close
+Content-Type: text/html; charset=UTF-8
+

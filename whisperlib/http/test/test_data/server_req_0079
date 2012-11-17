@@ -1,0 +1,13 @@
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 08:55:34 GMT
+Server: Apache/2.0.59 (Unix) mod_ssl/2.0.59 OpenSSL/0.9.7a DAV/2 FrontPage/5.0.2.2635 PHP/4.4.4 mod_auth_passthrough/1.8 mod_bwlimited/1.4
+X-Powered-By: PHP/4.4.4
+Set-Cookie: PHPSESSID=30d89b71fe9acae20240037cd1287a8f; path=/
+Expires: Thu, 19 Nov 1981 08:52:00 GMT
+Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0
+Pragma: no-cache
+X-Pingback: http://mywheel.net/blog/xmlrpc.php
+Status: 404 Not Found
+Connection: close
+Content-Type: text/html
+

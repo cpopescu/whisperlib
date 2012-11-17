@@ -1,0 +1,11 @@
+HTTP/1.1 301 Moved Permanently
+Date: Thu, 27 Mar 2008 08:54:53 GMT
+Server: Apache/2.0.55 (Ubuntu) PHP/5.1.2 mod_ssl/2.0.55 OpenSSL/0.9.8a
+Location: https://wiki.ubuntu.com/FrontPage
+Content-Length: 241
+Content-Type: text/html; charset=iso-8859-1
+Via: 1.0 www.ubuntu.com
+Keep-Alive: timeout=15, max=100
+Connection: Keep-Alive
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

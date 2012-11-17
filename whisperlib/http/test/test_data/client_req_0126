@@ -1,0 +1,6 @@
+GET /artists.php?opt=artists&mod=profile&sort=5&search=&letter=&page=2&id=89&item=&subitem=&guid=635336188%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.artmix.ro
+Connection: Keep-Alive
+

@@ -1,0 +1,6 @@
+GET /wiki/List_of_mail_servers%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: en.wikipedia.org
+Connection: Keep-Alive
+

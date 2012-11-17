@@ -1,0 +1,11 @@
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 08:54:52 GMT
+Server: Apache
+Set-Cookie: BBCNewsAudience=International; path=/; domain=.bbc.co.uk; expires=Fri, 28-Mar-2008 08:54:52 GMT
+Set-Cookie: BBC-UID=44475e2bf6703dbcaae7f8e841bca3816de7ddec60d0316a749baae432acfb2a0Wget%2f1%2e10%2e2; expires=Fri, 27-Mar-09 08:54:52 GMT; path=/; domain=bbc.co.uk;
+Accept-Ranges: bytes
+Cache-Control: max-age=0
+Expires: Thu, 27 Mar 2008 08:54:52 GMT
+Connection: close
+Content-Type: text/html
+

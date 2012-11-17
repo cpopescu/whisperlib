@@ -1,0 +1,11 @@
+HTTP/1.1 302 Moved Temporarily
+Connection: close
+Date: Thu, 27 Mar 2008 08:56:21 GMT
+Server: Microsoft-IIS/6.0
+X-Powered-By: ASP.NET
+Set-Cookie: CFID=6860606;expires=Sat, 20-Mar-2038 08:56:21 GMT;path=/
+Set-Cookie: CFTOKEN=34285547;expires=Sat, 20-Mar-2038 08:56:21 GMT;path=/
+Set-Cookie: CFGLOBALS=urltoken%3DCFID%23%3D6860606%26CFTOKEN%23%3D34285547%23lastvisit%3D%7Bts%20%272008%2D03%2D27%2004%3A56%3A21%27%7D%23timecreated%3D%7Bts%20%272008%2D03%2D27%2004%3A56%3A21%27%7D%23hitcount%3D2%23cftoken%3D34285547%23cfid%3D6860606%23;expires=Sat, 20-Mar-2038 08:56:21 GMT;path=/
+location: /?
+Content-Type: text/html; charset=UTF-8
+

@@ -1,0 +1,12 @@
+HTTP/1.1 200 OK
+Age: 0         
+Date: Thu, 27 Mar 2008 08:54:45 GMT
+Xontent-Length:           
+Connection: Close     
+Via: NS-CACHE-6.0:   4
+ETag: "KXABLGIPHEOOKOVNPY"
+Server: Apache/2.2.3 (Red Hat)
+X-Powered-By: PHP/5.1.6
+X-AMO-ServedBy: mrapp06
+Content-Type: text/html; charset=UTF-8
+

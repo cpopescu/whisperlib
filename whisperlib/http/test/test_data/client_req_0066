@@ -1,0 +1,6 @@
+GET /articles/59149?tid=136&tid=86%250A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.linux.com
+Connection: Keep-Alive
+

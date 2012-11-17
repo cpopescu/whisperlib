@@ -1,0 +1,7 @@
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 08:56:46 GMT
+Server: Apache/2.2.8 (Debian)
+Vary: Accept-Encoding
+Connection: close
+Content-Type: text/html; charset=UTF-8
+

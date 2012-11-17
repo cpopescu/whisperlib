@@ -1,0 +1,6 @@
+GET /specialreports/06/12/19/0456207.shtml?tid=136&tid=86%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.linux.com
+Connection: Keep-Alive
+

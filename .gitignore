@@ -1,0 +1,10 @@
+.*
+*[~#]
+*.[oa]
+*.pyc
+*.so
+*.swap
+*.patch
+bin
+build
+TAGS

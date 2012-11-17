@@ -1,0 +1,6 @@
+GET /samba/ftp/Binary_Packages/Debian/samba/3/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: us1.samba.org
+Connection: Keep-Alive
+

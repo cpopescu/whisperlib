@@ -1,0 +1,7 @@
+HTTP/1.1 302 Found
+Date: Thu, 27 Mar 2008 08:54:54 GMT
+Server: Apache/2.0.55 (Ubuntu) mod_python/3.1.4 Python/2.4.3 mod_ssl/2.0.55 OpenSSL/0.9.8a
+Location: https://wiki.ubuntu.com/Home?action=show&redirect=FrontPage
+Connection: close
+Content-Type: text/html;charset=utf-8
+

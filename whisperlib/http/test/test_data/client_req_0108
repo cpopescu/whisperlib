@@ -1,0 +1,6 @@
+GET /tracks/index.cfm?&view=tracksearch&key=&tracksearchform=form&days=5&daysOrFewer=true&grade=5&gradeOrEasier=true&location=Christchurch&range=-1&CATEGORIES=&layout=table&classfilter=&sortBy=gradeId&sortDirection=desc&offset=51%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.tramper.co.nz
+Connection: Keep-Alive
+

@@ -1,0 +1,7 @@
+GET /ubuntu/+addquestion/+login HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: answers.launchpad.net
+Connection: Keep-Alive
+Cookie: lp=bkYAQfN3EOFxkLjtNt167kUIIMML6bp-a7K91mtOzFub2ZJ.d6WStc
+

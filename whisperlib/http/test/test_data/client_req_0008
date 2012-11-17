@@ -1,0 +1,6 @@
+GET /en-US/firefox/browse/type:1/cat:22/sort:popular HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: addons.mozilla.org
+Connection: Keep-Alive
+

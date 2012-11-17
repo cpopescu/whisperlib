@@ -1,0 +1,13 @@
+// Copyright: 1618labs, Inc. 2011 onwards.
+// All rights reserved.
+
+package io;
+option java_package = "com.whisperlib.test.io";
+option java_outer_classname = "TextProto";
+
+option optimize_for = LITE_RUNTIME;
+
+message TestData {
+    required int32 i = 1;
+    optional string s = 2;
+}

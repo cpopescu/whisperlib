@@ -1,0 +1,13 @@
+HTTP/1.1 302 Found
+Date: Thu, 27 Mar 2008 08:54:50 GMT
+Server: Apache/2.2.3 (Red Hat)
+X-Powered-By: PHP/5.1.6
+X-AMO-ServedBy: mrapp12
+Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0, private
+Pragma: no-cache
+Location: http://addons.mozilla.org/en-US/firefox/bookmarks/
+Content-Length: 0
+Keep-Alive: timeout=300, max=996
+Connection: Keep-Alive
+Content-Type: text/html; charset=UTF-8
+

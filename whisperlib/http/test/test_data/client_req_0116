@@ -1,0 +1,6 @@
+GET /disc1/index.html%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.rhymetorrents.com
+Connection: Keep-Alive
+

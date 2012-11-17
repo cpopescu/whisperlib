@@ -1,0 +1,11 @@
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 08:56:19 GMT
+Server: Apache/1.3.37 (Unix) mod_auth_passthrough/1.8 mod_log_bytes/1.2 mod_bwlimited/1.4 PHP/4.4.4 FrontPage/5.0.2.2635.SR1.2 mod_ssl/2.8.28 OpenSSL/0.9.7a
+X-Powered-By: PHP/4.4.4
+Set-Cookie: phpbb2mysql_t=a%3A1%3A%7Bi%3A116%3Bi%3A1206608179%3B%7D; path=/; domain=backpack-newzealand.com
+Cache-Control: private, pre-check=0, post-check=0, max-age=0
+Expires: 0
+Pragma: no-cache
+Connection: close
+Content-Type: text/html
+

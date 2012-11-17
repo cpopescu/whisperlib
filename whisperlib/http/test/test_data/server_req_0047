@@ -1,0 +1,13 @@
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 08:55:02 GMT
+Server: Apache
+X-Pingback: http://kimmo.suominen.com/wp/trunk/xmlrpc.php
+Expires: Thu, 27 Mar 2008 08:55:07 GMT
+Last-Modified: Thu, 27 Mar 2008 08:55:02 GMT
+Cache-Control: must-revalidate, max-age=5
+Pragma: no-cache
+X-Pavatar: http://kimmo.suominen.com/shared/images/avatar/80.jpg
+Content-Language: en, fi
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+

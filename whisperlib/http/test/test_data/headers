@@ -1,0 +1,1217 @@
+GET /en-US/firefox/bookmarks/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: en-us.add-ons.mozilla.com
+Connection: Keep-Alive
+
+HTTP/1.1 302 Found
+Date: Thu, 27 Mar 2008 08:54:49 GMT
+Server: Apache/2.2.3 (Red Hat)
+Location: https://addons.mozilla.org/firefox/bookmarks/
+Content-Length: 320
+Keep-Alive: timeout=20, max=955
+Connection: Keep-Alive
+Content-Type: text/html; charset=iso-8859-1
+
+GET /firefox/bookmarks/ HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: addons.mozilla.org
+Connection: Keep-Alive
+
+HTTP/1.1 302 Found
+Date: Thu, 27 Mar 2008 08:54:50 GMT
+Server: Apache/2.2.3 (Red Hat)
+X-Powered-By: PHP/5.1.6
+X-AMO-ServedBy: mrapp12
+Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0, private
+Pragma: no-cache
+Location: http://addons.mozilla.org/en-US/firefox/bookmarks/
+Content-Length: 0
+Keep-Alive: timeout=300, max=996
+Connection: Keep-Alive
+Content-Type: text/html; charset=UTF-8
+
+GET /en-US/firefox/bookmarks/ HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: addons.mozilla.org
+Connection: Keep-Alive
+
+HTTP/1.1 302 Object Moved
+Server: NS_6.1
+Location: https://addons.mozilla.org/en-US/firefox/bookmarks/
+Content Type: text/html
+Cache Control: private
+Connection: close
+
+GET /en-US/firefox/bookmarks/ HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: addons.mozilla.org
+Connection: Keep-Alive
+
+HTTP/1.1 302 Found
+Date: Thu, 27 Mar 2008 08:54:50 GMT
+Server: Apache/2.2.3 (Red Hat)
+X-Powered-By: PHP/5.1.6
+X-AMO-ServedBy: mrapp09
+Location: http://addons.mozilla.org/en-US/firefox/browse/type:1/cat:22/sort:popular
+Content-Length: 0
+Keep-Alive: timeout=300, max=661
+Connection: Keep-Alive
+Content-Type: text/html; charset=UTF-8
+
+GET /en-US/firefox/browse/type:1/cat:22/sort:popular HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: addons.mozilla.org
+Connection: Keep-Alive
+
+HTTP/1.1 302 Object Moved
+Server: NS_6.1
+Location: https://addons.mozilla.org/en-US/firefox/browse/type:1/cat:22/sort:popular
+Content Type: text/html
+Cache Control: private
+Connection: close
+
+GET /en-US/firefox/browse/type:1/cat:22/sort:popular HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: addons.mozilla.org
+Connection: Keep-Alive
+
+HTTP/1.1 200 OK
+Age: 0         
+Date: Thu, 27 Mar 2008 08:54:45 GMT
+Xontent-Length:           
+Connection: Close     
+Via: NS-CACHE-6.0:   4
+ETag: "KXABLGIPHEOOKOVNPY"
+Server: Apache/2.2.3 (Red Hat)
+X-Powered-By: PHP/5.1.6
+X-AMO-ServedBy: mrapp06
+Content-Type: text/html; charset=UTF-8
+
+GET /en-US/firefox/central/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: en-us.www.mozilla.com
+Connection: Keep-Alive
+
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 08:54:52 GMT
+Server: Apache/2.2.3 (Red Hat)
+X-Powered-By: PHP/5.1.6
+Status: 404 Not Found
+Pragma: no-cache
+Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0, private
+Content-Length: 5870
+Keep-Alive: timeout=20, max=771
+Connection: Keep-Alive
+Content-Type: text/html; charset=UTF-8
+
+GET /%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: news.bbc.co.uk
+Connection: Keep-Alive
+
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 08:54:52 GMT
+Server: Apache
+Set-Cookie: BBCNewsAudience=International; path=/; domain=.bbc.co.uk; expires=Fri, 28-Mar-2008 08:54:52 GMT
+Set-Cookie: BBC-UID=44475e2bf6703dbcaae7f8e841bca3816de7ddec60d0316a749baae432acfb2a0Wget%2f1%2e10%2e2; expires=Fri, 27-Mar-09 08:54:52 GMT; path=/; domain=bbc.co.uk;
+Accept-Ranges: bytes
+Cache-Control: max-age=0
+Expires: Thu, 27 Mar 2008 08:54:52 GMT
+Connection: close
+Content-Type: text/html
+
+GET /%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.ubuntulinux.org
+Connection: Keep-Alive
+
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 08:54:53 GMT
+Server: Apache/2.0.55 (Ubuntu) PHP/5.1.2 mod_ssl/2.0.55 OpenSSL/0.9.8a
+X-Powered-By: PHP/5.1.2
+Content-Type: text/html; charset=utf-8
+Set-Cookie: SESS1171245e7f799b66f709cf467c0c4c9d=ffc6089ac828194565eb2cbee50b7371; expires=Sat, 19 Apr 2008 12:28:13 GMT; path=/; domain=.www-drupal.ubuntu.com
+Via: 1.0 www.ubuntu.com
+Connection: close
+
+GET /support%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.ubuntu.com
+Connection: Keep-Alive
+
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 08:54:53 GMT
+Server: Apache/2.0.55 (Ubuntu) PHP/5.1.2 mod_ssl/2.0.55 OpenSSL/0.9.8a
+X-Powered-By: PHP/5.1.2
+Content-Type: text/html; charset=utf-8
+Set-Cookie: SESS1171245e7f799b66f709cf467c0c4c9d=d7124f28eca6f98b681f9fb0a54cb6f6; expires=Sat, 19 Apr 2008 12:28:13 GMT; path=/; domain=.www-drupal.ubuntu.com
+Via: 1.0 www.ubuntu.com
+Connection: close
+
+GET /wiki/FrontPage%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.ubuntulinux.org
+Connection: Keep-Alive
+
+HTTP/1.1 301 Moved Permanently
+Date: Thu, 27 Mar 2008 08:54:53 GMT
+Server: Apache/2.0.55 (Ubuntu) PHP/5.1.2 mod_ssl/2.0.55 OpenSSL/0.9.8a
+Location: https://wiki.ubuntu.com/FrontPage
+Content-Length: 241
+Content-Type: text/html; charset=iso-8859-1
+Via: 1.0 www.ubuntu.com
+Keep-Alive: timeout=15, max=100
+Connection: Keep-Alive
+
+GET /FrontPage HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: wiki.ubuntu.com
+Connection: Keep-Alive
+
+HTTP/1.1 302 Found
+Date: Thu, 27 Mar 2008 08:54:54 GMT
+Server: Apache/2.0.55 (Ubuntu) mod_python/3.1.4 Python/2.4.3 mod_ssl/2.0.55 OpenSSL/0.9.8a
+Location: https://wiki.ubuntu.com/Home?action=show&redirect=FrontPage
+Connection: close
+Content-Type: text/html;charset=utf-8
+
+GET /Home?action=show&redirect=FrontPage HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: wiki.ubuntu.com
+Connection: Keep-Alive
+
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 08:54:54 GMT
+Server: Apache/2.0.55 (Ubuntu) mod_python/3.1.4 Python/2.4.3 mod_ssl/2.0.55 OpenSSL/0.9.8a
+Connection: close
+Content-Type: text/html;charset=utf-8
+
+GET /distros/ubuntu/+addticket%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: launchpad.net
+Connection: Keep-Alive
+
+HTTP/1.1 301 Moved Permanently
+Date: Thu, 27 Mar 2008 08:54:55 GMT
+Server: zope.server.http (HTTP)
+X-Powered-By: Zope (www.zope.org), Python (www.python.org)
+X-Content-Type-Warning: guessed from content
+Content-Length: 0
+Content-Type: text/plain;charset=utf-8
+Location: https://launchpad.net/ubuntu/+addticket
+Via: 1.0 launchpad.net
+Vary: Accept-Encoding
+Keep-Alive: timeout=15, max=100
+Connection: Keep-Alive
+
+GET /ubuntu/+addticket HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: launchpad.net
+Connection: Keep-Alive
+
+HTTP/1.1 301 Moved Permanently
+Date: Thu, 27 Mar 2008 08:54:55 GMT
+Server: zope.server.http (HTTP)
+X-Powered-By: Zope (www.zope.org), Python (www.python.org)
+X-Content-Type-Warning: guessed from content
+Content-Length: 0
+Content-Type: text/plain;charset=utf-8
+Location: https://answers.launchpad.net/ubuntu/+addquestion
+Via: 1.0 launchpad.net
+Vary: Accept-Encoding
+Keep-Alive: timeout=15, max=99
+Connection: Keep-Alive
+
+GET /ubuntu/+addquestion HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: answers.launchpad.net
+Connection: Keep-Alive
+
+HTTP/1.1 303 See Other
+Date: Thu, 27 Mar 2008 08:54:56 GMT
+Server: zope.server.http (HTTP)
+X-Powered-By: Zope (www.zope.org), Python (www.python.org)
+X-Content-Type-Warning: guessed from content
+Content-Length: 0
+Content-Type: text/plain
+Location: https://answers.launchpad.net/ubuntu/+addquestion/+login
+Set-Cookie: lp=bkYAQfN3EOFxkLjtNt167kUIIMML6bp-a7K91mtOzFub2ZJ.d6WStc; Domain=.launchpad.net; expires=Fri, 27 Mar 2009 08:54:56 GMT; Path=/; secure;
+Via: 1.0 wildcard.launchpad.net
+Keep-Alive: timeout=15, max=100
+Connection: Keep-Alive
+
+GET /ubuntu/+addquestion/+login HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: answers.launchpad.net
+Connection: Keep-Alive
+Cookie: lp=bkYAQfN3EOFxkLjtNt167kUIIMML6bp-a7K91mtOzFub2ZJ.d6WStc
+
+HTTP/1.1 200 Ok
+Date: Thu, 27 Mar 2008 08:54:56 GMT
+Server: zope.server.http (HTTP)
+X-Powered-By: Zope (www.zope.org), Python (www.python.org)
+Content-Length: 8000
+Content-Type: text/html;charset=utf-8
+Set-Cookie: lp=bkYAQfN3EOFxkLjtNt167kUIIMML6bp-a7K91mtOzFub2ZJ.d6WStc; Domain=.launchpad.net; expires=Fri, 27 Mar 2009 08:54:56 GMT; Path=/; secure;
+Via: 1.0 wildcard.launchpad.net
+Keep-Alive: timeout=15, max=99
+Connection: Keep-Alive
+
+GET /%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.fsf.org
+Connection: Keep-Alive
+
+HTTP/1.0 200 OK
+Date: Thu, 27 Mar 2008 08:53:34 GMT
+Server: Zope/(Zope 2.7.3-0, python 2.3.5, linux2) ZServer/1.1 Plone/2.0.3
+Content-Length: 5279
+Content-Language: lang
+Vary: Accept-Language,Cookie,Accept-Encoding
+Last-Modified: Thu, 27 Mar 2008 08:53:34 +0000
+Cache-Control: must-revalidate,max-age=0,s-maxage=36000
+Content-Type: text/html;charset=utf-8
+X-Cache: MISS from www.fsf.org
+X-Cache: MISS from www.fsf.org
+X-Cache-Lookup: MISS from www.fsf.org:80
+Connection: keep-alive
+
+GET /%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.debian.org
+Connection: Keep-Alive
+
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 08:54:57 GMT
+Server: Apache
+Content-Length: 263
+Keep-Alive: timeout=15, max=100
+Connection: Keep-Alive
+Content-Type: text/html; charset=iso-8859-1
+
+GET /en-US/firefox/help/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: en-us.www.mozilla.com
+Connection: Keep-Alive
+
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 08:54:57 GMT
+Server: Apache/2.2.3 (Red Hat)
+X-Powered-By: PHP/5.1.6
+Status: 404 Not Found
+Pragma: no-cache
+Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0, private
+Content-Length: 5870
+Keep-Alive: timeout=20, max=798
+Connection: Keep-Alive
+Content-Type: text/html; charset=UTF-8
+
+GET /en-US/firefox/customize/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: en-us.www.mozilla.com
+Connection: Keep-Alive
+
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 08:54:58 GMT
+Server: Apache/2.2.3 (Red Hat)
+X-Powered-By: PHP/5.1.6
+Status: 404 Not Found
+Pragma: no-cache
+Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0, private
+Content-Length: 5870
+Keep-Alive: timeout=20, max=983
+Connection: Keep-Alive
+Content-Type: text/html; charset=UTF-8
+
+GET /en-US/firefox/community/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: en-us.www.mozilla.com
+Connection: Keep-Alive
+
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 08:54:58 GMT
+Server: Apache/2.2.3 (Red Hat)
+X-Powered-By: PHP/5.1.6
+Status: 404 Not Found
+Pragma: no-cache
+Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0, private
+Content-Length: 5870
+Keep-Alive: timeout=20, max=978
+Connection: Keep-Alive
+Content-Type: text/html; charset=UTF-8
+
+GET /en-US/firefox/about/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: en-us.www.mozilla.com
+Connection: Keep-Alive
+
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 08:54:58 GMT
+Server: Apache/2.2.3 (Red Hat)
+X-Powered-By: PHP/5.1.6
+Status: 404 Not Found
+Pragma: no-cache
+Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0, private
+Content-Length: 5870
+Keep-Alive: timeout=20, max=767
+Connection: Keep-Alive
+Content-Type: text/html; charset=UTF-8
+
+GET /docs/ssh/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: kimmo.suominen.com
+Connection: Keep-Alive
+
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 08:55:02 GMT
+Server: Apache
+X-Pingback: http://kimmo.suominen.com/wp/trunk/xmlrpc.php
+Expires: Thu, 27 Mar 2008 08:55:07 GMT
+Last-Modified: Thu, 27 Mar 2008 08:55:02 GMT
+Cache-Control: must-revalidate, max-age=5
+Pragma: no-cache
+X-Pavatar: http://kimmo.suominen.com/shared/images/avatar/80.jpg
+Content-Language: en, fi
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+GET /wiki/List_of_mail_servers%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: en.wikipedia.org
+Connection: Keep-Alive
+
+HTTP/1.0 200 OK
+Date: Thu, 27 Mar 2008 08:55:02 GMT
+Server: Apache
+X-Powered-By: PHP/5.1.4
+Cache-Control: private, s-maxage=0, max-age=0, must-revalidate
+Content-Language: en
+Vary: Accept-Encoding,Cookie
+X-Vary-Options: Accept-Encoding;list-contains=gzip,Cookie;string-contains=enwikiToken;string-contains=enwikiLoggedOut;string-contains=enwiki_session
+Expires: Thu, 01 Jan 1970 00:00:00 GMT
+Pragma: no-cache
+Content-Length: 10941
+Content-Type: text/html; charset=utf-8
+X-Cache: MISS from sq28.wikimedia.org
+X-Cache-Lookup: MISS from sq28.wikimedia.org:3128
+X-Cache: MISS from knsq26.knams.wikimedia.org
+X-Cache-Lookup: MISS from knsq26.knams.wikimedia.org:3128
+X-Cache: MISS from knsq26.knams.wikimedia.org
+X-Cache-Lookup: MISS from knsq26.knams.wikimedia.org:80
+Via: 1.0 sq28.wikimedia.org:3128 (squid/2.6.STABLE18), 1.0 knsq26.knams.wikimedia.org:3128 (squid/2.6.STABLE18), 1.0 knsq26.knams.wikimedia.org:80 (squid/2.6.STABLE18)
+Connection: keep-alive
+
+GET /2005/09/25-ldap%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: times.usefulinc.com
+Connection: Keep-Alive
+
+HTTP/1.1 302 Moved Temporarily
+Date: Thu, 27 Mar 2008 08:55:03 GMT
+Server: Mongrel 1.1.3
+Status: 302 Found
+Cache-Control: no-cache
+Content-Type: text/html; charset=UTF-8
+location: http://times.usefulinc.com/404.html
+Content-Length: 101
+Via: 1.0 times.usefulinc.com
+Keep-Alive: timeout=15, max=100
+Connection: Keep-Alive
+
+GET /404.html HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: times.usefulinc.com
+Connection: Keep-Alive
+
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 08:55:03 GMT
+ETag: "47e2473f-10a-3199e1"
+Last-Modified: Thu, 20 Mar 2008 11:15:11 GMT
+Content-Type: text/html; charset=UTF-8
+Content-Length: 266
+Via: 1.0 times.usefulinc.com
+Expires: Thu, 27 Mar 2008 08:55:27 GMT
+Keep-Alive: timeout=15, max=99
+Connection: Keep-Alive
+
+GET /Installation_on_Ubuntu%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: linux-vserver.org
+Connection: Keep-Alive
+
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 08:55:12 GMT
+Server: Apache
+X-Powered-By: PHP/5.2.2-pl1-gentoo
+Content-language: en
+Vary: Accept-Encoding,Cookie
+Expires: Thu, 01 Jan 1970 00:00:00 GMT
+Cache-Control: private, must-revalidate, max-age=0
+Last-modified: Thu, 17 Jan 2008 23:03:53 GMT
+Connection: close
+Content-Type: text/html; charset=UTF-8
+
+GET /~dirsvcs/ldap/doc/guides/slapd/8.html%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.umich.edu
+Connection: Keep-Alive
+
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 08:55:13 GMT
+Server: Apache
+Accept-Ranges: bytes
+Connection: close
+Content-Type: text/html; charset=utf-8
+
+GET /ubuntu.uniklu/dists/dapper/uniklu-vserver/binary-i386/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: ubuntu.uni-klu.ac.at
+Connection: Keep-Alive
+
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 08:55:13 GMT
+Server: Apache/1.3.34 (Debian) PHP/4.4.1-Debian-1uk3 mod_ssl/2.8.25 OpenSSL/0.9.7e
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+GET /%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: openvz.org
+Connection: Keep-Alive
+
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 08:55:14 GMT
+Server: Zope/(Zope 2.7.5-final, python 2.3.4, linux2) ZServer/1.1 Plone/2.0.5
+Content-Type: text/html;charset=utf-8
+Content-Length: 28030
+Vary: *
+Content-Language: en
+Via: 1.0 openvz.org
+Connection: close
+
+GET /specialreports/06/12/19/0456207.shtml?tid=136&tid=86%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: specialreports.linux.com
+Connection: Keep-Alive
+
+HTTP/1.1 301 Moved Permanently
+Date: Thu, 27 Mar 2008 08:55:16 GMT
+Server: Apache/2.2.8 (Unix) PHP/5.2.5
+Location: http://www.linux.com/specialreports/06/12/19/0456207.shtml?tid=136&tid=86%0A
+Content-Length: 288
+Keep-Alive: timeout=5, max=100
+Connection: Keep-Alive
+Content-Type: text/html; charset=iso-8859-1
+
+GET /specialreports/06/12/19/0456207.shtml?tid=136&tid=86%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.linux.com
+Connection: Keep-Alive
+
+HTTP/1.1 301 Moved Permanently
+Date: Thu, 27 Mar 2008 08:55:16 GMT
+Server: Apache/2.2.8 (Unix) PHP/5.2.5
+Location: http://www.linux.com/articles/59149?tid=136&tid=86%250A
+Content-Length: 267
+Keep-Alive: timeout=5, max=99
+Connection: Keep-Alive
+Content-Type: text/html; charset=iso-8859-1
+
+GET /articles/59149?tid=136&tid=86%250A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.linux.com
+Connection: Keep-Alive
+
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 08:55:16 GMT
+Server: Apache/2.2.8 (Unix) PHP/5.2.5
+X-Powered-By: PHP/5.2.5
+Set-Cookie: XARAYASID=b505f7h9jn8girunnna47iluv0; expires=Sun, 27 Mar 2033 14:55:16 GMT; path=/
+Expires: 0
+Cache-Control: public, must-revalidate
+Pragma: 
+ETag: 7be59f1ab06ab8ea67ff5cc069f9de3f1206608117
+Last-Modified: Thu, 27 Mar 2008 08:55:17 GMT
+Connection: close
+Content-Type: text/html; charset=utf-8
+Vary: Accept-Encoding, User-Agent
+
+GET /samba/ftp/Binary_Packages/Debian/samba/3/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: us1.samba.org
+Connection: Keep-Alive
+
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 08:55:26 GMT
+Server: Apache
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+GET /Photos/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: bobarnac.faces.com
+Connection: Keep-Alive
+
+HTTP/1.1 400 Bad Request
+Content-Type: text/html
+Date: Thu, 27 Mar 2008 08:55:30 GMT
+Connection: close
+Content-Length: 34
+
+GET /%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: dnsreport.com
+Connection: Keep-Alive
+
+HTTP/1.0 404 Not Found
+Server: RSP_WEBDNS
+Date: Thu, 27 Mar 2008 08:55:26 GMT
+Content-Type: text/html
+Set-Cookie: ID=a05d66c2021854; path=/; domain=.DNSstuff.com;
+Content-Length: 102
+
+GET /vserver/configuration/?a=source%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: deb.riseup.net
+Connection: Keep-Alive
+
+HTTP/1.1 302 Found
+Date: Thu, 27 Mar 2008 08:55:29 GMT
+Server: Apache/1.3.34 (Debian) PHP/5.2.0-8+etch10 mod_ssl/2.8.25 OpenSSL/0.9.8c
+Location: http://riseuplabs.org/grimoire//vserver/configuration/?a=source%250A
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+GET /grimoire//vserver/configuration/?a=source%250A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: riseuplabs.org
+Connection: Keep-Alive
+
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 08:55:33 GMT
+Server: Apache
+X-Powered-By: PHP/4.3.10-22
+Set-Cookie: PHPSESSID=b5b5260e1151abd816c715219718146a; path=/
+Expires: Thu, 19 Nov 1981 08:52:00 GMT
+Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0
+Pragma: no-cache
+Content-Length: 203
+Keep-Alive: timeout=3, max=100
+Connection: Keep-Alive
+Content-Type: text/html
+
+GET /blog/index.php/software-raid-in-ubuntu/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: mywheel.net
+Connection: Keep-Alive
+
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 08:55:34 GMT
+Server: Apache/2.0.59 (Unix) mod_ssl/2.0.59 OpenSSL/0.9.7a DAV/2 FrontPage/5.0.2.2635 PHP/4.4.4 mod_auth_passthrough/1.8 mod_bwlimited/1.4
+X-Powered-By: PHP/4.4.4
+Set-Cookie: PHPSESSID=30d89b71fe9acae20240037cd1287a8f; path=/
+Expires: Thu, 19 Nov 1981 08:52:00 GMT
+Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0
+Pragma: no-cache
+X-Pingback: http://mywheel.net/blog/xmlrpc.php
+Status: 404 Not Found
+Connection: close
+Content-Type: text/html
+
+GET /WFIC/index-en.html%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.wdmedia.org
+Connection: Keep-Alive
+
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 08:55:35 GMT
+Server: Apache/1.3.39 (Unix) PHP/4.4.8
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+GET /procesoare/intel/dual-core-xeon-5130-20ghz-active-1u-box/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.pcgarage.ro
+Connection: Keep-Alive
+
+HTTP/1.1 403 Forbidden
+Date: Thu, 27 Mar 2008 08:55:36 GMT
+Server: Apache
+Vary: accept-language,accept-charset,Accept-Encoding,User-Agent
+Accept-Ranges: bytes
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+Content-Language: en
+Expires: Thu, 27 Mar 2008 08:55:36 GMT
+
+GET /memorii/kingston/valueram-1gb-ddr2-667mhz-cl5-dual-channel-kit/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.pcgarage.ro
+Connection: Keep-Alive
+
+HTTP/1.1 403 Forbidden
+Date: Thu, 27 Mar 2008 08:55:36 GMT
+Server: Apache
+Vary: accept-language,accept-charset,Accept-Encoding,User-Agent
+Accept-Ranges: bytes
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+Content-Language: en
+Expires: Thu, 27 Mar 2008 08:55:36 GMT
+
+GET /hard-disk-uri/western-digital/320gb-sata-ii-7200rpm-8mb/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.pcgarage.ro
+Connection: Keep-Alive
+
+HTTP/1.1 403 Forbidden
+Date: Thu, 27 Mar 2008 08:55:36 GMT
+Server: Apache
+Vary: accept-language,accept-charset,Accept-Encoding,User-Agent
+Accept-Ranges: bytes
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+Content-Language: en
+Expires: Thu, 27 Mar 2008 08:55:36 GMT
+
+GET /cd-rom/sony/52-x-atapi-bulk/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.pcgarage.ro
+Connection: Keep-Alive
+
+HTTP/1.1 403 Forbidden
+Date: Thu, 27 Mar 2008 08:55:36 GMT
+Server: Apache
+Vary: accept-language,accept-charset,Accept-Encoding,User-Agent
+Accept-Ranges: bytes
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+Content-Language: en
+Expires: Thu, 27 Mar 2008 08:55:36 GMT
+
+GET /cd-rom/asus/52-x-retail-quiet/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.pcgarage.ro
+Connection: Keep-Alive
+
+HTTP/1.1 403 Forbidden
+Date: Thu, 27 Mar 2008 08:55:36 GMT
+Server: Apache
+Vary: accept-language,accept-charset,Accept-Encoding,User-Agent
+Accept-Ranges: bytes
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+Content-Language: en
+Expires: Thu, 27 Mar 2008 08:55:36 GMT
+
+GET /placi-de-baza/intel/s5000pslsata/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.pcgarage.ro
+Connection: Keep-Alive
+
+HTTP/1.1 403 Forbidden
+Date: Thu, 27 Mar 2008 08:55:36 GMT
+Server: Apache
+Vary: accept-language,accept-charset,Accept-Encoding,User-Agent
+Accept-Ranges: bytes
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+Content-Language: en
+Expires: Thu, 27 Mar 2008 08:55:36 GMT
+
+GET /%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: ffmpeg.mplayerhq.hu
+Connection: Keep-Alive
+
+HTTP/1.0 404 Not Found
+Connection: keep-alive
+Content-Type: text/html
+Content-Length: 345
+Date: Thu, 27 Mar 2008 08:55:44 GMT
+Server: lighttpd/1.4.13
+
+GET /wvstreams/tutorial/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: open.nit.ca
+Connection: Keep-Alive
+
+HTTP/1.1 404 Not Found
+Date: Wed, 26 Mar 2008 17:25:13 GMT
+Server: Apache
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+GET /ubuntu.uniklu/dists/dapper/uniklu-vserver/binary-amd64/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: ubuntu.uni-klu.ac.at
+Connection: Keep-Alive
+
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 08:55:57 GMT
+Server: Apache/1.3.34 (Debian) PHP/4.4.1-Debian-1uk3 mod_ssl/2.8.25 OpenSSL/0.9.7e
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+GET /cechy/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: rivers.raft.cz
+Connection: Keep-Alive
+
+HTTP/1.1 400 Bad Request
+Content-Type: text/html
+Date: Thu, 27 Mar 2008 08:42:07 GMT
+Connection: close
+Content-Length: 34
+
+GET /index.php?lang=ro&page=waters/cserna%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.whitewater.ro
+Connection: Keep-Alive
+
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 09:00:21 GMT
+Server: Apache
+Content-Length: 985
+Keep-Alive: timeout=100, max=100
+Connection: Keep-Alive
+Content-Type: text/html; charset=iso-8859-2
+
+GET /articles/nz9.php%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.backpack-newzealand.com
+Connection: Keep-Alive
+
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 08:56:18 GMT
+Server: Apache/1.3.37 (Unix) mod_auth_passthrough/1.8 mod_log_bytes/1.2 mod_bwlimited/1.4 PHP/4.4.4 FrontPage/5.0.2.2635.SR1.2 mod_ssl/2.8.28 OpenSSL/0.9.7a
+X-Powered-By: PHP/4.4.4
+Set-Cookie: phpbb2mysql_data=a%3A0%3A%7B%7D; expires=Friday, 27-Mar-09 08:56:19 GMT; path=/; domain=backpack-newzealand.com
+Set-Cookie: phpbb2mysql_sid=5436da50204d3495e3d2aa99a62ff937; path=/; domain=backpack-newzealand.com
+Cache-Control: private, pre-check=0, post-check=0, max-age=0
+Expires: 0
+Pragma: no-cache
+Connection: close
+Content-Type: text/html
+
+GET /articles/topic116.php%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.backpack-newzealand.com
+Connection: Keep-Alive
+
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 08:56:19 GMT
+Server: Apache/1.3.37 (Unix) mod_auth_passthrough/1.8 mod_log_bytes/1.2 mod_bwlimited/1.4 PHP/4.4.4 FrontPage/5.0.2.2635.SR1.2 mod_ssl/2.8.28 OpenSSL/0.9.7a
+X-Powered-By: PHP/4.4.4
+Set-Cookie: phpbb2mysql_t=a%3A1%3A%7Bi%3A116%3Bi%3A1206608179%3B%7D; path=/; domain=backpack-newzealand.com
+Cache-Control: private, pre-check=0, post-check=0, max-age=0
+Expires: 0
+Pragma: no-cache
+Connection: close
+Content-Type: text/html
+
+GET /tracks/index.cfm?&view=tracksearch&key=&tracksearchform=form&days=5&daysOrFewer=true&grade=5&gradeOrEasier=true&location=Christchurch&range=-1&CATEGORIES=&layout=table&classfilter=&sortBy=gradeId&sortDirection=desc&offset=51%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.tramper.co.nz
+Connection: Keep-Alive
+
+HTTP/1.1 302 Moved Temporarily
+Connection: close
+Date: Thu, 27 Mar 2008 08:56:21 GMT
+Server: Microsoft-IIS/6.0
+X-Powered-By: ASP.NET
+Set-Cookie: CFID=6860606;expires=Sat, 20-Mar-2038 08:56:21 GMT;path=/
+Set-Cookie: CFTOKEN=34285547;expires=Sat, 20-Mar-2038 08:56:21 GMT;path=/
+Set-Cookie: CFGLOBALS=urltoken%3DCFID%23%3D6860606%26CFTOKEN%23%3D34285547%23lastvisit%3D%7Bts%20%272008%2D03%2D27%2004%3A56%3A21%27%7D%23timecreated%3D%7Bts%20%272008%2D03%2D27%2004%3A56%3A21%27%7D%23hitcount%3D2%23cftoken%3D34285547%23cfid%3D6860606%23;expires=Sat, 20-Mar-2038 08:56:21 GMT;path=/
+location: /?
+Content-Type: text/html; charset=UTF-8
+
+GET /? HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.tramper.co.nz
+Connection: Keep-Alive
+
+HTTP/1.1 200 OK
+Connection: close
+Date: Thu, 27 Mar 2008 08:56:22 GMT
+Server: Microsoft-IIS/6.0
+X-Powered-By: ASP.NET
+Set-Cookie: CFID=6860607;expires=Sat, 20-Mar-2038 08:56:22 GMT;path=/
+Set-Cookie: CFTOKEN=81814714;expires=Sat, 20-Mar-2038 08:56:22 GMT;path=/
+Set-Cookie: CFGLOBALS=urltoken%3DCFID%23%3D6860607%26CFTOKEN%23%3D81814714%23lastvisit%3D%7Bts%20%272008%2D03%2D27%2004%3A56%3A22%27%7D%23timecreated%3D%7Bts%20%272008%2D03%2D27%2004%3A56%3A21%27%7D%23hitcount%3D2%23cftoken%3D81814714%23cfid%3D6860607%23;expires=Sat, 20-Mar-2038 08:56:22 GMT;path=/
+Pragma: no-cache
+Expires: 0
+Content-Language: en-NZ
+Content-Type: text/html; charset=UTF-8
+
+GET /major_tracks.htm%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.wildwalks.co.nz
+Connection: Keep-Alive
+
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 09:55:14 GMT
+Server: Apache/1.3.34 (Unix) mod_gzip/1.3.19.1a FrontPage/5.0.2.2635 PHP/4.4.2 mod_ssl/2.8.25 OpenSSL/0.9.7d
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+GET /watch?v=Fow7iUaKrq4%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.youtube.com
+Connection: Keep-Alive
+
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 08:56:26 GMT
+Server: Apache
+Set-Cookie: use_hitbox=72c46ff6cbcdb7c5585c36411b6b334edAEAAAAw; path=/; domain=.youtube.com
+Set-Cookie: VISITOR_INFO1_LIVE=X6t6-Nkwp7c; path=/; domain=.youtube.com; expires=Sun, 25-Mar-2018 08:56:26 GMT
+Set-Cookie: watched_video_id_list=0daf9244e7d1643abed57dc6eda0ff2cWwEAAABzCwAAAEZvdzdpVWFLcnE0; path=/; domain=.youtube.com
+Set-Cookie: GEO=0eb4179273c6fc8a9bcf69cb516bdbd5cxUAAABSTyxiLGJ1Y2hhcmVzdCwsLCwsLTE=; path=/; domain=.youtube.com; expires=Sat, 29-Mar-2008 08:56:26 GMT
+Set-Cookie: LOCALE_PREFERENCE=86d1d09eefe6b79b4068000ce05518a4dAUAAABlbl9VUw==; path=/; domain=.youtube.com; expires=Sun, 25-Mar-2018 08:56:26 GMT
+Cache-Control: no-cache
+Content-Length: 85683
+Keep-Alive: timeout=300
+Connection: Keep-Alive
+Content-Type: text/html; charset=utf-8
+
+GET /disc1/index.html%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.rhymetorrents.com
+Connection: Keep-Alive
+
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 08:56:28 GMT
+Server: Apache/2.0.61 (Unix) PHP/4.4.7 mod_ssl/2.0.61 OpenSSL/0.9.7e mod_fastcgi/2.4.2 DAV/2 SVN/1.4.2
+Vary: Accept-Encoding
+Content-Length: 334
+Keep-Alive: timeout=2, max=100
+Connection: Keep-Alive
+Content-Type: text/html; charset=iso-8859-1
+
+GET /templates/summary.aspx?id=39529%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.doc.govt.nz
+Connection: Keep-Alive
+
+HTTP/1.1 200 OK
+Connection: keep-alive
+Date: Thu, 27 Mar 2008 08:56:28 GMT
+Server: Microsoft-IIS/6.0
+X-Powered-By: ASP.NET
+X-AspNet-Version: 1.1.4322
+Set-Cookie: ASP.NET_SessionId=2f0m1p55fsmf1s55hozsdzi0; path=/
+Cache-Control: private
+Expires: Thu, 27 Mar 2008 08:56:28 GMT
+Content-Type: text/html; charset=utf-8
+Content-Length: 32335
+
+GET /default.aspx?p=83%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.alpineclub.org.nz
+Connection: Keep-Alive
+
+HTTP/1.1 200 OK
+Connection: keep-alive
+Date: Thu, 27 Mar 2008 09:00:41 GMT
+Server: Microsoft-IIS/6.0
+X-Powered-By: ASP.NET
+X-AspNet-Version: 1.1.4322
+Set-Cookie: ASP.NET_SessionId=2cw0uxbzjkkbwjbpw1h1nmfo; path=/
+Cache-Control: private
+Expires: Thu, 27 Mar 2008 08:59:41 GMT
+Content-Type: text/html; charset=utf-8
+Content-Length: 24092
+
+GET /~m.steel/runs.html%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.math.canterbury.ac.nz
+Connection: Keep-Alive
+
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 08:56:48 GMT
+Server: Apache
+X-Powered-By: PHP/5.1.2
+Content-Length: 7749
+Keep-Alive: timeout=15, max=100
+Connection: Keep-Alive
+Content-Type: text/html
+
+GET /ip.php%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: clienti.evolva.ro
+Connection: Keep-Alive
+
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 08:57:21 GMT
+Server: Apache/1.3.37 (Unix) PHP/5.1.6 mod_ssl/2.8.28 OpenSSL/0.9.7e
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+GET /artists.php?opt=artists&mod=profile&sort=5&search=&letter=&page=2&id=89&item=&subitem=&guid=635336188%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.artmix.ro
+Connection: Keep-Alive
+
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 08:56:46 GMT
+Server: Apache/2.2.8 (Debian)
+Vary: Accept-Encoding
+Connection: close
+Content-Type: text/html; charset=UTF-8
+
+GET /harti.html%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.paring.ro
+Connection: Keep-Alive
+
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 08:56:44 GMT
+Server: Apache/2.2.3 (CentOS)
+Content-Length: 287
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+GET /wiki/E_number%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: en.wikipedia.org
+Connection: Keep-Alive
+
+HTTP/1.0 200 OK
+Date: Thu, 27 Mar 2008 08:56:45 GMT
+Server: Apache
+X-Powered-By: PHP/5.2.1
+Cache-Control: private, s-maxage=0, max-age=0, must-revalidate
+Content-Language: en
+Vary: Accept-Encoding,Cookie
+X-Vary-Options: Accept-Encoding;list-contains=gzip,Cookie;string-contains=enwikiToken;string-contains=enwikiLoggedOut;string-contains=enwiki_session
+Expires: Thu, 01 Jan 1970 00:00:00 GMT
+Pragma: no-cache
+Content-Length: 10930
+Content-Type: text/html; charset=utf-8
+X-Cache: MISS from sq36.wikimedia.org
+X-Cache-Lookup: MISS from sq36.wikimedia.org:3128
+X-Cache: MISS from knsq1.knams.wikimedia.org
+X-Cache-Lookup: MISS from knsq1.knams.wikimedia.org:3128
+X-Cache: MISS from knsq30.knams.wikimedia.org
+X-Cache-Lookup: MISS from knsq30.knams.wikimedia.org:80
+Via: 1.0 sq36.wikimedia.org:3128 (squid/2.6.STABLE18), 1.0 knsq1.knams.wikimedia.org:3128 (squid/2.6.STABLE18), 1.0 knsq30.knams.wikimedia.org:80 (squid/2.6.STABLE18)
+Connection: keep-alive
+
+GET /articles/534%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.debian-administration.org
+Connection: Keep-Alive
+
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 09:01:09 GMT
+Server: Apache/2.2.3 (Debian) mod_ssl/2.2.3 OpenSSL/0.9.8c
+Set-Cookie: CGISESSID=53aeb977edb5cce096b8b8e49559b7a2; path=/; expires=Thu, 03-Apr-2008 09:01:10 GMT; HttpOnly
+Vary: Accept-Encoding
+Connection: close
+Content-Type: text/html; charset=UTF-8
+
+GET /php/tierra_expediciones_cordondeplata.php%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.4eadventure.com
+Connection: Keep-Alive
+
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 08:56:53 GMT
+Server: Apache/1.3.29
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+GET /shop/default.asp%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.andesmar.com
+Connection: Keep-Alive
+
+HTTP/1.1 400 Bad Request
+Content-Type: text/html
+Date: Thu, 27 Mar 2008 08:55:26 GMT
+Connection: close
+Content-Length: 34
+
+GET /sig/index.phtml%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: mapa.buenosaires.gov.ar
+Connection: Keep-Alive
+
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 08:56:57 GMT
+Server: Apache/2.0.53 (Linux/SUSE)
+Vary: accept-language,accept-charset
+Accept-Ranges: bytes
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+Content-Language: en
+Expires: Thu, 27 Mar 2008 08:56:57 GMT
+
+GET /index-es-ar.html%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.lan.com
+Connection: Keep-Alive
+
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 08:57:04 GMT
+Server: Apache/1.3.33 (Unix) mod_perl/1.29
+Last-Modified: Thu, 27 Mar 2008 08:57:09 GMT
+Cache-Control: max-age=36000, must-revalidate
+Content-Type: text/html; charset=ISO-8859-1
+Vary: Accept-Encoding
+Connection: close
+
+GET /area/range/152176/durmitor.html%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.summitpost.org
+Connection: Keep-Alive
+
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 08:57:10 GMT
+Server: Apache/2.0.52 (Red Hat)
+X-Powered-By: PHP/5.2.5
+Set-Cookie: cms_logged_in=0; expires=Fri, 27-Mar-2009 08:57:11 GMT; path=/
+Connection: close
+Content-Type: text/html; charset=ISO-8859-1
+
+GET /%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.ustream.tv
+Connection: Keep-Alive
+
+HTTP/1.0 404 Not Found
+Date: Thu, 27 Mar 2008 08:57:12 GMT
+Server: Apache
+Set-Cookie: PHPSESSID=e74e5ec543967294ab7712d53815b6c1527ea0a7; path=/
+Expires: Thu, 19 Nov 1981 08:52:00 GMT
+Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0
+Pragma: no-cache
+X-RSRC: web4.int
+Content-Length: 7934
+Connection: close
+Content-Type: text/html
+
+GET /e/dienstleistungen/steuerrechner/steuerrechner.htm%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.estv.admin.ch
+Connection: Keep-Alive
+
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 08:57:13 GMT
+Server: Apache/2.0.59 (Unix)
+Content-Length: 249
+Keep-Alive: timeout=3, max=10
+Connection: Keep-Alive
+Content-Type: text/html; charset=iso-8859-1
+
+GET /df/impots/faq_impots_formulaires.jsp?id=270&id1=262&id2=248%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: etat.geneve.ch
+Connection: Keep-Alive
+
+HTTP/1.1 200 OK
+Date: Thu, 27 Mar 2008 08:53:22 GMT
+Server: Apache Coyote/1.0
+Content-Type: text/html;charset=ISO-8859-1
+Set-Cookie: JSESSIONID=C9C037D091E9EF7173DEBC2D0293C5AD; Path=/df
+Connection: close
+
+GET /murat/%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.umphreys.com
+Connection: Keep-Alive
+
+HTTP/1.1 404 Not Found
+Date: Thu, 27 Mar 2008 07:21:22 GMT
+Server: Apache/1.3.37 (Unix) PHP/4.4.6
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+GET /tags/ref_urlencode.asp%0A HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: www.w3schools.com
+Connection: Keep-Alive
+
+HTTP/1.1 400 Bad Request
+Content-Type: text/html
+Date: Thu, 27 Mar 2008 08:57:20 GMT
+Connection: close
+Content-Length: 34
+

@@ -1,0 +1,6 @@
+GET /ubuntu/+addquestion HTTP/1.0
+User-Agent: Wget/1.10.2
+Accept: */*
+Host: answers.launchpad.net
+Connection: Keep-Alive
+
