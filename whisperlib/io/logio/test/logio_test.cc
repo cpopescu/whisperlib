@@ -135,7 +135,7 @@ void WriterThread() {
                                  FLAGS_deflate);
       CHECK(writer->Initialize());
     }
-    LOG_EVERY_N(INFO, 1000) << "Writing record: " << rid;
+    // LOG_EVERY_N(INFO, 1000) << "Writing record: " << rid;
     io::MemoryStream rec;
     GenerateRecord(rid, &rec);
     CHECK(writer->WriteRecord(&rec));
@@ -173,7 +173,7 @@ void ReaderThread() {
       continue;
     }
     CHECK(!rec.IsEmpty());
-    LOG_EVERY_N(INFO, 1000) << "Read record: " << crt_rid;
+    // LOG_EVERY_N(INFO, 1000) << "Read record: " << crt_rid;
     int64 rid = VerifyRecord(&rec);
     CHECK(rid == crt_rid) << "Found rid: " << rid << ", expected: " << crt_rid;
     crt_rid++;
@@ -185,7 +185,7 @@ int main(int argc, char* argv[]) {
   g_rand_seed = FLAGS_rand_seed;
   if ( g_rand_seed == 0 ) {
     g_rand_seed = ::time(NULL);
-    LOG(INFO) << "Random Seed initialized to: " << g_rand_seed;
+    LOG_INFO << "Random Seed initialized to: " << g_rand_seed;
   }
   srand(g_rand_seed);
 

@@ -90,15 +90,15 @@ int main(int argc, char* argv[]) {
     }
     if ( file_base == "" ) {
       file_base = f;
-      LOG(INFO) << "Detected file_base: [" << file_base << "]";
+      LOG_INFO << "Detected file_base: [" << file_base << "]";
     }
     if ( block_size == 0 ) {
       block_size = bs;
-      LOG(INFO) << "Detected blocksize: " << block_size;
+      LOG_INFO << "Detected blocksize: " << block_size;
     }
     if ( blocks_per_file == 0 ) {
       blocks_per_file = bpf;
-      LOG(INFO) << "Detected blocks_per_file: " << blocks_per_file;
+      LOG_INFO << "Detected blocks_per_file: " << blocks_per_file;
     }
   }
   if ( file_base == "" || block_size == 0 || blocks_per_file == 0 ) {

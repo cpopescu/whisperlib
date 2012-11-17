@@ -438,7 +438,6 @@ class Arch:
         configure_cxx_defines(ctx)
         ctx.env.LINKFLAGS.append(
             '-L%s' % os.path.abspath(Arch.GetOutputDir(ctx, ctx.options.repo)))
-        print ctx.env.LINKFLAGS
 
         if ctx.env.MACOSX:
             framework_dir = '/System/Library/Frameworks/'
@@ -446,8 +445,8 @@ class Arch:
             ctx.env.CXXFLAGS.append('-I%s/OpenGL.framework/Headers/' % framework_dir)
             ctx.env.LINKFLAGS.append('-F%s' % framework_dir)
 
-        ctx.env.USE_GLOG_LOGGING = True
-        ctx.env.USE_GFLAGS = True
+        ctx.env.USE_GLOG_LOGGING = False # True
+        ctx.env.USE_GFLAGS = False # True
         ctx.env.DEFINES.append('USE_GLOG_LOGGING')
         ctx.env.DEFINES.append('USE_GFLAGS')
         # From google-perftools instruction:
@@ -563,7 +562,6 @@ class Arch:
 
             '-llog', '-lc', '-lm',
             ]
-        print ctx.env.LINKFLAGS
 
         ctx.env.THREAD_LIB_TO_USE = 'c'
         ctx.env.LINKFLAGS_cxxshlib = ['-shared']
@@ -637,8 +635,6 @@ class Arch:
         ctx.env.LINKFLAGS.append(
             '-L%s' % os.path.abspath(Arch.GetOutputDir(ctx, ctx.options.repo)))
 
-        print ctx.env.LINKFLAGS
-
         if arch != Arch.IOS_SIMULATOR:
             ctx.env.LINKFLAGS.extend(['-syslibroot', ctx.env.SDKROOT])
 
@@ -699,7 +695,10 @@ def __change_toplib_options(ctx, toplib, replace, **kwargs):
 def simple_binary(ctx, files, prefix='', extra_use = [], extra_lib = [], extra_framework=[]):
     if ctx.env.ANDROID or ctx.env.IOS:
         return
-    goog_libs = ['gflags','glog', 'tcmalloc'] if ctx.env.HAVE_GFLAGS else []
+    goog_libs = []
+    if ctx.env.HAVE_GFLAGS: goog_libs.append('gflags')
+    if ctx.env.HAVE_GLOG: goog_libs.append('glog')
+    if ctx.env.HAVE_GOOGLE_PERFTOOLS: goog_libs.append('tcmalloc')
 
     for t in files:
         ctx.cc_binary(
