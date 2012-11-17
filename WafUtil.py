@@ -445,8 +445,8 @@ class Arch:
             ctx.env.CXXFLAGS.append('-I%s/OpenGL.framework/Headers/' % framework_dir)
             ctx.env.LINKFLAGS.append('-F%s' % framework_dir)
 
-        ctx.env.USE_GLOG_LOGGING = False # True
-        ctx.env.USE_GFLAGS = False # True
+        ctx.env.USE_GLOG_LOGGING = True
+        ctx.env.USE_GFLAGS = True
         ctx.env.DEFINES.append('USE_GLOG_LOGGING')
         ctx.env.DEFINES.append('USE_GFLAGS')
         # From google-perftools instruction:
