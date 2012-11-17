@@ -15,7 +15,7 @@ def build(ctx):
             'zlib/zlibwrapper.cc',
             ])
     ctx.install_all_includes(ctx)
-    ctx.add_subdirs(['buffer',
+    ctx.recurse(['buffer',
                      'file',
                      'logio',
                      'checkpoint'

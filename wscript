@@ -34,7 +34,7 @@ def build(ctx):
     WafUtil.setup_context_includes(ctx, '.')
 
     # Recursively add build targets in sub-directories
-    ctx.add_subdirs(subdirs)
+    ctx.recurse(subdirs)
     ctx.set_toplib_options(ctx, 'whisperlib', install_path = '${INSTALL_LIBDIR}')
     ctx.build_top_lib(ctx, 'whisperlib')
 

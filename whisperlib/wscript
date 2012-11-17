@@ -23,7 +23,7 @@ def build(ctx):
 
     ctx.add_whisper_tests = add_whisper_tests
 
-    ctx.add_subdirs(['base',
+    ctx.recurse(['base',
                      'http',
                      'io',
                      'net',
