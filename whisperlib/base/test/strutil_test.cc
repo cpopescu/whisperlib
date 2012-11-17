@@ -32,7 +32,7 @@
 #include "whisperlib/base/log.h"
 #include "whisperlib/base/strutil.h"
 #include "whisperlib/base/system.h"
-
+#include "whisperlib/base/gflags.h"
 
 int main(int argc, char* argv[]) {
   common::Init(argc, argv);

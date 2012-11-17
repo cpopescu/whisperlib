@@ -1667,13 +1667,13 @@ def check_HAVE_GLOG(conf):
     CheckWithFragment(conf, 'HAVE_GLOG', '''
      #include <glog/logging.h>
      int main() { return 0; }
-     ''')
+     ''', lib="glog")
 
 def check_HAVE_GOOGLE_PERFTOOLS(conf):
     CheckWithFragment(conf, 'HAVE_GOOGLE_PERFTOOLS', '''
      #include <google/heap-profiler.h>
      int main() { return 0; }
-     ''')
+     ''', lib="tcmalloc")
 
 
 
@@ -1681,7 +1681,7 @@ def check_HAVE_GFLAGS(conf):
     CheckWithFragment(conf, 'HAVE_GFLAGS', '''
      #include <gflags/gflags.h>
      int main() { return 0; }
-     ''')
+     ''', lib="gflags")
 
 
 def check_HAVE_Include(conf, include, function=None, mandatory=False):
@@ -1693,7 +1693,7 @@ def check_HAVE_Include(conf, include, function=None, mandatory=False):
                mandatory=mandatory,
                compile_mode='cxx')
 
-def CheckWithFragment(conf, var, fragment, mandatory=False):
+def CheckWithFragment(conf, var, fragment, mandatory=False, lib=[]):
     execute = Arch.ArchCanExecute(conf)
     try:
         conf.check_cxx(fragment    = fragment,
@@ -1701,6 +1701,7 @@ def CheckWithFragment(conf, var, fragment, mandatory=False):
                        execute     = execute,
                        define_ret  = True,
                        mandatory   = mandatory,
+                       lib         = lib,
                        msg         = 'Checking for %s' % var)
     except Exception, e:
         if mandatory:
