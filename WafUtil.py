@@ -445,10 +445,18 @@ class Arch:
             ctx.env.CXXFLAGS.append('-I%s/OpenGL.framework/Headers/' % framework_dir)
             ctx.env.LINKFLAGS.append('-F%s' % framework_dir)
 
-        ctx.env.USE_GLOG_LOGGING = True
-        ctx.env.USE_GFLAGS = True
-        ctx.env.DEFINES.append('USE_GLOG_LOGGING')
-        ctx.env.DEFINES.append('USE_GFLAGS')
+        if ctx.env.HAVE_GFLAGS: 
+            ctx.env.USE_GFLAGS = True
+            ctx.env.DEFINES.append('USE_GFLAGS')
+            if ctx.env.HAVE_GLOG:
+                ctx.env.USE_GLOG_LOGGING = True
+                ctx.env.DEFINES.append('USE_GLOG_LOGGING')
+            else:
+                ctx.env.USE_GLOG_LOGGING = False 
+        else:
+            ctx.env.USE_GLOG_LOGGING = False 
+            ctx.env.USE_GFLAGS = False
+
         # From google-perftools instruction:
         # ctx.env.CXXFLAGS = Utils.to_list(ctx.env.CXXFLAGS) +
         #               ['-Wl,--eh-frame-hdr']
