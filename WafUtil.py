@@ -1693,7 +1693,7 @@ def check_HAVE_Include(conf, include, function=None, mandatory=False):
                mandatory=mandatory,
                compile_mode='cxx')
 
-def CheckWithFragment(conf, var, fragment, mandatory=False, lib=[]):
+def CheckWithFragment(conf, var, fragment, mandatory=False, lib=""):
     execute = Arch.ArchCanExecute(conf)
     try:
         conf.check_cxx(fragment    = fragment,
