@@ -717,7 +717,7 @@ def simple_binary(ctx, files, prefix='', extra_use = [], extra_lib = [], extra_f
                     'whisperlib'
                     ] + extra_use,
              framework = extra_framework,
-             lib = goog_libs + extra_lib + ['z'],
+             lib = goog_libs + extra_lib + ['z', 'pthread'],
              libpath = [ctx.path.get_bld().abspath()],
              install_path = None,
              )
