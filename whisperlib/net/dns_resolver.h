@@ -38,6 +38,7 @@
 #include <whisperlib/base/ref_counted.h>
 #include <whisperlib/base/callback/callback1.h>
 #include <whisperlib/base/strutil.h>
+#include <whisperlib/base/timer.h>
 #include <whisperlib/net/address.h>
 #include <whisperlib/net/selector.h>
 #include <whisperlib/sync/mutex.h>
@@ -56,13 +57,21 @@ namespace net {
 //   The actual resolve uses ::getaddrinfo().. but that may be changed.
 
 struct DnsHostInfo : public RefCounted {
+  bool valid_;
   string hostname_;
+  int64 time_;
   vector<IpAddress> ipv4_;
   vector<IpAddress> ipv6_;
+    DnsHostInfo(const string& hostname, synch::MutexPool* mutex_pool)
+    : RefCounted(mutex_pool->GetMutex(this)),
+      valid_(false), hostname_(hostname), time_(timer::TicksNsec()){
+  }
   DnsHostInfo(const string& hostname, set<IpAddress> ipv4, set<IpAddress> ipv6,
               synch::MutexPool* mutex_pool)
     : RefCounted(mutex_pool->GetMutex(this)),
+      valid_(true),
       hostname_(hostname),
+      time_(timer::TicksNsec()),
       ipv4_(ipv4.begin(), ipv4.end()),
       ipv6_(ipv6.begin(), ipv6.end()) {}
   string ToString() const {
@@ -71,6 +80,12 @@ struct DnsHostInfo : public RefCounted {
         hostname_.c_str(),
         strutil::ToString(ipv4_).c_str(),
         strutil::ToString(ipv6_).c_str());
+  }
+  bool is_valid() {
+      return valid_;
+  }
+  bool is_expired() {
+      return !valid_ && (timer::TicksNsec() - time_) > 5000000000LL;  // 5 sec
   }
 };
 typedef Callback1< scoped_ref<DnsHostInfo> > DnsResultHandler;

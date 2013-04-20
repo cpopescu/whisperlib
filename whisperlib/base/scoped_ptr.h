@@ -119,7 +119,7 @@ class scoped_ptr {
   template <class C2> bool operator==(scoped_ptr<C2> const& p2) const;
   template <class C2> bool operator!=(scoped_ptr<C2> const& p2) const;
 
-  DISALLOW_EVIL_CONSTRUCTORS(scoped_ptr);
+  DISALLOW_COPY_AND_ASSIGN(scoped_ptr);
 };
 
 // Free functions
@@ -234,7 +234,7 @@ class scoped_array {
   template <class C2> bool operator==(scoped_array<C2> const& p2) const;
   template <class C2> bool operator!=(scoped_array<C2> const& p2) const;
 
-  DISALLOW_EVIL_CONSTRUCTORS(scoped_array);
+  DISALLOW_COPY_AND_ASSIGN(scoped_array);
 };
 
 // Free functions
@@ -353,7 +353,7 @@ class scoped_ptr_malloc {
 
   static FreeProc const free_;
 
-  DISALLOW_EVIL_CONSTRUCTORS(scoped_ptr_malloc);
+  DISALLOW_COPY_AND_ASSIGN(scoped_ptr_malloc);
 };
 
 template<class C, class FP>
@@ -374,4 +374,4 @@ bool operator!=(C* p, const scoped_ptr_malloc<C, FP>& b) {
   return p != b.get();
 }
 
-#endif  // __WHISPERLIB_BASE_SCOPED_PTR_H
+#endif

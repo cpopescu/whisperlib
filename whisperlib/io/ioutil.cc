@@ -32,6 +32,7 @@
 #include <dirent.h>
 
 #include <stdio.h>
+#include <unistd.h>
 
 #include "whisperlib/io/ioutil.h"
 #include "whisperlib/base/strutil.h"
@@ -114,17 +115,12 @@ bool CreateRecursiveDirs(const char* dirname, mode_t mode) {
       return false;
     }
     to_create.push_back(crt_dir);
-    const size_t pos_slash = crt_dir.find_last_of('/');
-    if ( pos_slash == string::npos ) {
-      break;
-    }
-    crt_dir = crt_dir.substr(0, pos_slash);
+    crt_dir = strutil::Dirname(crt_dir);
   }
   for ( int i = to_create.size() - 1; i >= 0; --i ) {
     if ( ::mkdir(to_create[i].c_str(), mode) ) {
       LOG_ERROR << "Error creating directory: " << to_create[i]
                 << " : " << GetSystemErrorDescription(errno);
-      return false;
     }
   }
   return true;
@@ -175,15 +171,34 @@ bool Rmdir(const string& path) {
   return true;
 }
 
-bool RmFilesUnder(const string& path, const re::RE* pattern) {
+bool RmFilesUnder(const string& path, const re::RE* pattern, bool all) {
     vector<string> files;
     bool error = false;
-    if (io::DirList(path, io::LIST_FILES | io::LIST_RECURSIVE, pattern, &files)) {
+    int options = 0;
+    if (all) {
+        options = io::LIST_DIRS | io::LIST_FILES | io::LIST_RECURSIVE;
+    } else {
+        options = io::LIST_FILES | io::LIST_RECURSIVE;
+    }
+    vector<string> dirs;
+    if (io::DirList(path, options, pattern, &files)) {
         LOG_INFO << " Removing: " << files.size() << " files.";
         for (int i = 0; i < files.size(); ++i) {
             LOG_INFO << " Removing [" << files[i] << "]";
-            if (!io::Rm(strutil::JoinPaths(path, files[i]))) {
+            const string f(strutil::JoinPaths(path, files[i]));
+            if (all && io::IsDir(f)) {
+                dirs.push_back(f);
+                continue;
+            }
+            if (!io::Rm(f)) {
                 LOG_WARNING << " Error removing: " << files[i];
+                error = true;
+            }
+        }
+        // Reverse on dirs
+        for (int i = dirs.size() - 1; i >= 0; --i) {
+            if (!io::Rmdir(dirs[i])) {
+                LOG_WARNING << " Error removing dir: " << dirs[i];
                 error = true;
             }
         }

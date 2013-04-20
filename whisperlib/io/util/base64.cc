@@ -147,16 +147,16 @@ int EncodeBlockEnd(char* code_out, EncodeState* state_in) {
 
 void InitDecodeState(DecodeState* state_in) {
   state_in->step = DecodeState::STEP_A;
-  state_in->plainchar = 0;
+  state_in->decchar = 0;
 }
 
 int DecodeBlock(const char* code_in, const int length_in,
-                char* plaintext_out, DecodeState* state_in) {
+                uint8* decoded_out, DecodeState* state_in) {
   const char* codechar = code_in;
-  char* plainchar = plaintext_out;
+  uint8* decchar = decoded_out;
   char fragment;
 
-  *plainchar = state_in->plainchar;
+  *decchar = state_in->decchar;
 
   switch (state_in->step) {
     while (1) {
@@ -164,48 +164,48 @@ int DecodeBlock(const char* code_in, const int length_in,
         do {
           if (codechar == code_in+length_in) {
             state_in->step = DecodeState::STEP_A;
-            state_in->plainchar = *plainchar;
-            return plainchar - plaintext_out;
+            state_in->decchar = *decchar;
+            return decchar - decoded_out;
           }
           fragment = (char)DecodeValue(*codechar++);
         } while (fragment < 0);
-        *plainchar    = (fragment & 0x03f) << 2;
+        *decchar    = (fragment & 0x03f) << 2;
       case DecodeState::STEP_B:
         do {
           if (codechar == code_in+length_in) {
             state_in->step = DecodeState::STEP_B;
-            state_in->plainchar = *plainchar;
-            return plainchar - plaintext_out;
+            state_in->decchar = *decchar;
+            return decchar - decoded_out;
           }
           fragment = (char)DecodeValue(*codechar++);
         } while (fragment < 0);
-        *plainchar++ |= (fragment & 0x030) >> 4;
-        *plainchar    = (fragment & 0x00f) << 4;
+        *decchar++ |= (fragment & 0x030) >> 4;
+        *decchar    = (fragment & 0x00f) << 4;
       case DecodeState::STEP_C:
         do {
           if (codechar == code_in+length_in) {
             state_in->step = DecodeState::STEP_C;
-            state_in->plainchar = *plainchar;
-            return plainchar - plaintext_out;
+            state_in->decchar = *decchar;
+            return decchar - decoded_out;
           }
           fragment = (char)DecodeValue(*codechar++);
         } while (fragment < 0);
-        *plainchar++ |= (fragment & 0x03c) >> 2;
-        *plainchar    = (fragment & 0x003) << 6;
+        *decchar++ |= (fragment & 0x03c) >> 2;
+        *decchar    = (fragment & 0x003) << 6;
       case DecodeState::STEP_D:
         do {
           if (codechar == code_in+length_in) {
             state_in->step = DecodeState::STEP_D;
-            state_in->plainchar = *plainchar;
-            return plainchar - plaintext_out;
+            state_in->decchar = *decchar;
+            return decchar - decoded_out;
           }
           fragment = (char)DecodeValue(*codechar++);
         } while (fragment < 0);
-        *plainchar++   |= (fragment & 0x03f);
+        *decchar++   |= (fragment & 0x03f);
     }
   }
   // control should not reach here
-  return plainchar - plaintext_out;
+  return decchar - decoded_out;
 }
 
 }

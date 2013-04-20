@@ -104,12 +104,17 @@ class File {
   bool Open(const string& filename, Access access, CreationDisposition cd);
   void Close();
 
+  void Set(const string& filename, int fd);
+
   bool is_open() const {
     return fd_ != INVALID_FD_VALUE;
   }
 
   const string& filename() const {
     return filename_;
+  }
+  const int fd() const {
+    return fd_;
   }
 
   // Returns current file size. The file must be opened.

@@ -579,6 +579,7 @@ bool TcpConnection::Connect(const HostPort& remote_addr) {
   // maybe start DNS resolve
   if ( state() == DISCONNECTED && remote_addr.ip_object().IsInvalid() ) {
     remote_address_ = remote_addr;
+    LOG_INFO << " Resolving first: " << remote_addr.host() << " to connect";
     DnsResolve(net_selector(), remote_addr.host(), handle_dns_result_);
     set_state(RESOLVING);
     // NEXT: HandleDnsResult will be called when DNS query completes
@@ -1104,7 +1105,9 @@ void TcpConnection::HandleTimeoutEvent(int64 timeout_id) {
 }
 
 void TcpConnection::HandleDnsResult(scoped_ref<DnsHostInfo> info) {
-  CHECK_EQ(state(), RESOLVING);
+  if (state() != RESOLVING) {
+    return;   // probably in course of closing
+  }
   if ( info.get() == NULL || info->ipv4_.empty() ) {
     LOG_ERROR << "Cannot resolve: " << remote_address_.host()
               << ", info: " << info.ToString();

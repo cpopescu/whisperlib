@@ -1,3 +1,4 @@
+// -*- Mode:c++; c-basic-offset:2; indent-tabs-mode:nil; coding:utf-8 -*-
 // Copyright (c) 2009, Whispersoft s.r.l.
 // All rights reserved.
 //
@@ -38,6 +39,20 @@
 #include "whisperlib/base/scoped_ptr.h"
 
 namespace strutil {
+
+// Convert binary string to hex
+string ToHex(const unsigned char* cp, int len) {
+  char buf[len * 2 + 1];
+  for (int i = 0; i < len; ++i) {
+    sprintf(buf + i * 2, "%02x", cp[i]);
+  }
+  return string(buf, len * 2);
+}
+
+string ToHex(const string& str) {
+  return ToHex(reinterpret_cast<const unsigned char*>(str.data()), str.size());
+}
+
 
 bool StrEql(const char* str1, const char* str2) {
   return (str1 == str2 ||
@@ -827,12 +842,43 @@ string StrMapFormat(const char* s,
 }
 
 int Utf8Strlen(const char *s) {
-  const char* p = s;
-  int len = 0;
-  while ( *p ) {
-      if ((*p & 0xc0) != 0x80) ++len;
-      ++p;
-  }
-  return len;
+    const uint8* p = (const uint8*) s;
+    int len = 0;
+    int in_seq = 0;
+
+    while (*p) {
+        if (in_seq) {
+            --in_seq;
+            ++p;
+            continue;
+        }
+        ++len;
+        if (*p <= 0x7F)  {
+            /* 0XXX XXXX one byte */
+            in_seq = 0;
+        } else if (((*p) & 0xE0) == 0xC0) {
+            /* 110X XXXX  two bytes */
+            in_seq = 1;
+        } else if (((*p) & 0xF0) == 0xE0) {
+            /* 1110 XXXX  three bytes */
+            in_seq = 2;
+        } else if (((*p) & 0xF8) == 0xF0) {
+            /* 1111 0XXX  four bytes */
+            in_seq = 3;
+        } else if (((*p) & 0xFC) == 0xF8) {
+            /* 1111 10XX  five bytes */
+            in_seq = 4;
+        } else if (((*p) & 0xFE) == 0xFC) {
+            /* 1111 110X  six bytes */
+            in_seq = 5;
+        } else {
+            return 0;
+        }
+        ++p;
+    }
+    if (in_seq) {
+        return 0;
+    }
+    return len;
 }
 }

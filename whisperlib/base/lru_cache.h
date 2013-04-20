@@ -204,7 +204,7 @@ class LruCache {
      */
     bool Put(const K& key, V* value) {
         ref_counted<V>* previous;
-        if (Put(key, value, &previous)) {
+        if (Put(key, value, &previous, NULL)) {
             previous->DecRef();
             return true;
         } else {
@@ -218,8 +218,11 @@ class LruCache {
      *
      * @return if a value was replaced.
      */
-    bool Put(const K& key, V* value, ref_counted<V>** previous) {
+    bool Put(const K& key, V* value, ref_counted<V>** previous, ref_counted<V>** added) {
         bool entry_removed = false;
+        if (added) {
+            *added = NULL;
+        }
 
         mutex_.Lock();
         ++put_count_;
@@ -232,6 +235,10 @@ class LruCache {
             it->second.second = list_.insert(list_.begin(), key);
             ref_counted<V>* ref = new ref_counted<V>(value, pool_->GetMutex(value));
             ref->IncRef();
+            if (added) {
+                ref->IncRef();
+                *added = ref;
+            }
             it->second.first = ref;
             entry_removed = true;
         } else {
@@ -239,6 +246,10 @@ class LruCache {
             ref_counted<V>* ref = new ref_counted<V>(value, pool_->GetMutex(value));
             ref->IncRef();
             map_.insert(make_pair(key, make_pair(ref, it_key)));
+            if (added) {
+                ref->IncRef();
+                *added = ref;
+            }
         }
         size_ += SafeSizeOf(key, value);
 

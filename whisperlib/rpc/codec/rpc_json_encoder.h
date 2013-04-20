@@ -100,7 +100,7 @@ class JsonEncoder : public codec::Encoder {
                         format" ", object));                            \
       } else {                                                          \
         out_->Write(strutil::StringPrintf(                              \
-                        "\""format"\"", object));                       \
+                        "\"" format "\"", object));                       \
       }                                                                 \
     } while(false)
 
@@ -113,10 +113,10 @@ class JsonEncoder : public codec::Encoder {
     PrintBody("%u", obj);
   }
   void EncodeBody(const int64& obj) {
-    PrintBody("%"PRId64"", obj);
+    PrintBody("%" PRId64 "", obj);
   }
   void EncodeBody(const uint64& obj) {
-    PrintBody("%"PRIu64"", obj);
+    PrintBody("%" PRIu64 "", obj);
   }
   void EncodeBody(const double& obj) {
     PrintBody("%.60e", obj);

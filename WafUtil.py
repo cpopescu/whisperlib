@@ -59,12 +59,14 @@ def setup_options(opt):
                    'wout root dir/install')
     opt.add_option('--use_icu', action='store_true', default=False,
                    help='Use ICU library if found')
-    opt.add_option('--icu_config', action='store_true', default='',
+    opt.add_option('--icu_config', action='store', default='',
                    help='If you want to use a ICU, give the icuconfig path '
                    'here if not in normal path')
-    opt.add_option('--jni_include_dir', action='store_true',
-                   default='/System/Library/Frameworks/JavaVM.framework/Headers',
-                   help='Where the jni.h include dir is placed. Unfortunately '
+    opt.add_option('--jni_include_dirs', action='store',
+                   default='/System/Library/Frameworks/JavaVM.framework/Headers,' +
+                   '/Library/Java/JavaVirtualMachines/jdk1.7.0_09.jdk/Contents/Home/include,' +
+                   '/usr/lib/jvm/java-6-openjdk/include',
+                   help='Where the jni.h include dir is placed. Unfortunately ' +
                    'there is no easy way to determine this automatically.')
     repo = os.path.basename(os.getcwd())
     opt.add_option('--repo', action='store_true',
@@ -113,6 +115,7 @@ def setup_build(ctx):
     ctx.add_toplib_options = add_toplib_options
     ctx.add_jnilib = add_jnilib
     ctx.android_build = android_build
+    ctx.prepare_standard_deps = prepare_standard_deps
 
     # Install helpers
     ctx.install_all_includes = install_all_includes
@@ -142,6 +145,8 @@ class Arch:
     ANDROID_9_x86 = 'android-9-x86'
     ANDROID_14_ARM = 'android-14-arm'
     ANDROID_14_x86 = 'android-14-x86'
+    ANDROID_17_ARM = 'android-17-arm'
+    ANDROID_17_x86 = 'android-17-x86'
 
     DEFAULT = ''
 
@@ -285,8 +290,8 @@ class Arch:
     @staticmethod
     def GetAndroidToolsPrefix(ctx):
         arch = Arch.GetAndroidArch(ctx)
-        for system in ['darwin-x86']:
-            for ver in ['4.4.3']:
+        for system in ['darwin-x86', 'darwin-x86_64', 'linux-x86', 'linux-x86_64']:
+            for ver in ['4.7', '4.6', '4.4.3']:
                 path = '%s/toolchains/arm-linux-androideabi-%s/'\
                     'prebuilt/%s/bin' % (
                     ctx.options.android_ndk_path, ver, system)
@@ -340,7 +345,7 @@ class Arch:
         arch_libs = Arch.GetAndroidLibsSubDir(ctx)
         if not arch_libs:
             return (None, None)
-        for version in ['',  '4.4.3/']:
+        for version in ['', '4.7', '4.6',  '4.4.3/']:
             dirs = ('%s/sources/cxx-stl/gnu-libstdc++/%sinclude'
                 % (ctx.options.android_ndk_path, version),
                 '%s/sources/cxx-stl/gnu-libstdc++/%slibs/%s'
@@ -413,7 +418,11 @@ class Arch:
     def PrepareDefaultEnv(ctx):
 
         ctx.env.CXXFLAGS = ['-I/usr/local/include/']
-        ctx.env.LINKFLAGS = ['-L/usr/local/lib/']
+        jni_dirs = ctx.options.jni_include_dirs.split(',')
+        ctx.env.CXXFLAGS.extend(['-I%s' % d for d in jni_dirs])
+
+        ctx.env.LINKFLAGS = []
+        # ctx.env.LINKFLAGS = ['-L/usr/local/lib/']
         if ctx.env.MACOSX:
             ctx.env.CXXFLAGS.append('-DMACOSX')
         ctx.env.CXXFLAGS.append('-I/usr/include/libxml2/')
@@ -431,9 +440,15 @@ class Arch:
             if icu_cppflags and icu_ldflags:
                 ctx.env.HAVE_ICU = True
                 ctx.env.USE_ICU = True
-                ctx.env.DEFINES.append('HAVE_ICU')
-                ctx.env.DEFINES.append('USE_ICU')
+                ctx.env.DEFINES.append('-DHAVE_ICU')
+                ctx.env.DEFINES.append('-DUSE_ICU')
 
+
+        # to enable openssl
+        #ctx.env.USE_OPENSSL = True
+        #ctx.env.CXXFLAGS.append('-DUSE_OPENSSL')
+        #ctx.env.CXXFLAGS.append('-DOPENSSL_NO_SHA256')
+        #ctx.env.CXXFLAGS.append('-Wdeprecated-declarations')
 
         configure_cxx_defines(ctx)
         ctx.env.LINKFLAGS.append(
@@ -441,20 +456,35 @@ class Arch:
 
         if ctx.env.MACOSX:
             framework_dir = '/System/Library/Frameworks/'
+            for ver in ['10.8','10.7']:
+                path = '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX%s.sdk/System/Library/Frameworks' % ver
+                if os.path.isdir(path):
+                    framework_dir = path
+                    ctx.env.CXXFLAGS.append('-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX%s.sdk/usr/include/' % ver)
+                    break
             ctx.env.CXXFLAGS.append('-F%s' % framework_dir)
             ctx.env.CXXFLAGS.append('-I%s/OpenGL.framework/Headers/' % framework_dir)
+            ctx.env.CXXFLAGS.append('-I/usr/include/GL/')
             ctx.env.LINKFLAGS.append('-F%s' % framework_dir)
+            ctx.env.CXXFLAGS.extend(['-I%s/darwin/' % d for d in jni_dirs])
+        if ctx.env.LINUX:
+            ctx.env.CXXFLAGS.append('-lrt')
+        ctx.env.USE_GLOG_LOGGING = True
+        ctx.env.USE_GFLAGS = True
+        ctx.env.DEFINES.append('USE_GLOG_LOGGING')
+        ctx.env.DEFINES.append('USE_GFLAGS')
 
-        if ctx.env.HAVE_GFLAGS: 
+
+        if ctx.env.HAVE_GFLAGS:
             ctx.env.USE_GFLAGS = True
             ctx.env.DEFINES.append('USE_GFLAGS')
             if ctx.env.HAVE_GLOG:
                 ctx.env.USE_GLOG_LOGGING = True
                 ctx.env.DEFINES.append('USE_GLOG_LOGGING')
             else:
-                ctx.env.USE_GLOG_LOGGING = False 
+                ctx.env.USE_GLOG_LOGGING = False
         else:
-            ctx.env.USE_GLOG_LOGGING = False 
+            ctx.env.USE_GLOG_LOGGING = False
             ctx.env.USE_GFLAGS = False
 
         # From google-perftools instruction:
@@ -526,6 +556,7 @@ class Arch:
         ctx.env.IOS = False
         ctx.env.ANDROID = True
         ctx.env.MACOSX = False
+        ctx.env.LINUX = False
         ctx.env.ANDROID_ARCH = Arch.GetAndroidArch(ctx)
 
         ctx.env.ANDROID_NDKROOT = Arch.GetDevRoot(ctx)
@@ -569,10 +600,11 @@ class Arch:
             '-L%s' % os.path.abspath(Arch.GetOutputDir(ctx, ctx.options.repo)),
 
             '-llog', '-lc', '-lm',
+            '-rdynamic'
             ]
 
         ctx.env.THREAD_LIB_TO_USE = 'c'
-        ctx.env.LINKFLAGS_cxxshlib = ['-shared']
+        ctx.env.LINKFLAGS_cxxshlib = ['-shared', '-lgnustl_shared']
 
         ctx.env.LINK_CXX = '%s/bin/%s-g++' % (ctx.env.ANDROID_TOOLSDIR,
                                               ctx.env.ANDROID_TOOLSPREFIX)
@@ -616,13 +648,14 @@ class Arch:
         ctx.env.IOS = True
         ctx.env.ANDROID = False
         ctx.env.MACOSX = False
+        ctx.env.LINUX = False
         ctx.env.DEFINES.append('IOS')
         ctx.env.DEVROOT = Arch.GetDevRoot(ctx, arch)
         ctx.env.AR = ctx.env.DEVROOT + '/usr/bin/ar'   #os.environ['AR']
 
         # Find SDK directory to setup SDKROOT
         min_ver = '3.2'
-        for ver in ['4.3','5.0', '5.1', '6.0']:
+        for ver in ['4.3','5.0', '5.1', '6.0', '6.1']:
             path = '{0}/SDKs/{1}{2}.sdk'.format(
                 ctx.env.DEVROOT, Arch.__IOS_ARCH[arch][1], ver)
             if os.path.isdir(path):  break
@@ -646,6 +679,62 @@ class Arch:
         if arch != Arch.IOS_SIMULATOR:
             ctx.env.LINKFLAGS.extend(['-syslibroot', ctx.env.SDKROOT])
 
+def prepare_standard_deps(ctx, **kwargs):
+    toplib = kwargs.get('toplib', None)
+    if not toplib:
+        ctx.fatal('Please specify toplib')
+
+    deps = kwargs.get('deps', [])
+    use =  kwargs.get('use', [])
+
+    framework = []
+    lib = ['m', 'z']
+
+    if ctx.env.THREAD_LIB_TO_USE:
+        lib.append(ctx.env.THREAD_LIB_TO_USE)
+    else:
+        lib.append('pthread')
+
+    if ctx.env.USE_GLOG_LOGGING:
+        lib.append('glog')
+    if ctx.env.USE_GFLAGS:
+        lib.append('gflags')
+
+    if 'gl' in deps:
+        if ctx.env.ANDROID:
+            lib.append('GLESv1_CM')  # EGL ??
+            lib.append('GLESv2')  # EGL ??
+        elif not ctx.env.IOS and not ctx.env.MACOSX:
+            lib.append('GL')
+
+        if ctx.env.LINUX:
+            lib.append('GLEW')
+
+        if ctx.env.IOS:
+            framework.append('OpenGLES')
+
+    if not ctx.env.ANDROID:
+        lib.append('stdc++')
+    # Else we append differently lib.append('gnustl_static')
+    # else:
+
+    if ctx.env.IOS:
+        framework.extend(['ImageIO',
+                          'MobileCoreServices',
+                          'CoreText',
+                          'CoreFoundation',
+                          'CoreGraphics'])
+    elif ctx.env.MACOSX:
+        framework.extend(["Cocoa"])
+
+    ctx.add_lib(ctx,
+                toplib = toplib,
+                name = toplib + 'lib.root',
+                target = toplib,
+                use = use,
+                framework = framework,
+                lib = lib)
+
 ######################################################################
 #
 # Library building (top level / dynamic)
@@ -663,6 +752,8 @@ def add_lib(ctx, **kwargs):
     toplibs = kwargs.get('toplib', None)
     toponly = kwargs.get('toponly', toplibs != None)
     targets = []
+    use = kwargs.get('use', None)
+
     if toplibs is not None:
         del kwargs['toplib']
         for toplib in make_iterable(toplibs):
@@ -703,7 +794,19 @@ def __change_toplib_options(ctx, toplib, replace, **kwargs):
 def simple_binary(ctx, files, prefix='', extra_use = [], extra_lib = [], extra_framework=[]):
     if ctx.env.ANDROID or ctx.env.IOS:
         return
-    goog_libs = []
+    goog_libs = ['gflags','glog', 'tcmalloc'] if ctx.env.HAVE_GFLAGS else []
+    libs = []
+    frameworks = []
+    if ctx.env.MACOSX:
+        # Possibly needed:
+        # frameworks = ["Cocoa", "OpenGL"]
+        if ctx.env.USE_OPENSSL:
+            libs = ['ssl', 'crypto']
+    if ctx.env.LINUX:
+        # Possibly needed:
+        # libs = ['GL', 'GLEW']
+        if ctx.env.USE_OPENSSL:
+            libs.extend(['ssl', 'crypto'])
     if ctx.env.HAVE_GFLAGS: goog_libs.append('gflags')
     if ctx.env.HAVE_GLOG: goog_libs.append('glog')
     if ctx.env.HAVE_GOOGLE_PERFTOOLS: goog_libs.append('tcmalloc')
@@ -716,8 +819,8 @@ def simple_binary(ctx, files, prefix='', extra_use = [], extra_lib = [], extra_f
              use = ['whisperlib_includes',
                     'whisperlib'
                     ] + extra_use,
-             framework = extra_framework,
-             lib = goog_libs + extra_lib + ['z', 'pthread'],
+             framework = frameworks + extra_framework,
+             lib = libs + goog_libs + extra_lib + ['z', 'pthread'],
              libpath = [ctx.path.get_bld().abspath()],
              install_path = None,
              )
@@ -756,7 +859,7 @@ def build_top_lib(ctx, toplibs):
         # Target to build the object filed for the sources.
         # Separate target to build once
         lib_args_copy['target'] = 'objects_%s' % toplib
-        lib_args_copy['use'] = [elem for elem in uses]
+        lib_args_copy['use'] = [elem for elem in uses if elem != toplib]
         ctx.objects(**lib_args_copy)
 
         # Prepare for library building - dependent on the objects.
@@ -785,7 +888,10 @@ def get_verified_android_target(ctx):
                   ctx.options.android_sdk_path)
     return android_target
 
-def android_configure(ctx, path_prefix, lib_deps=None, is_lib=False,
+def android_configure(ctx, path_prefix,
+                      lib_deps=None,
+                      jar_deps=None,
+                      is_lib=False,
                       proguard_file='proguard.cfg'):
     """
     Used to configure android directory for ant build.
@@ -805,7 +911,16 @@ def android_configure(ctx, path_prefix, lib_deps=None, is_lib=False,
         os.makedirs(build_path)
 
     bin_link = os.path.join(src_path, 'bin')
+
+    libs_dir = os.path.join(src_path, 'libs')
+    if not os.access(libs_dir, os.R_OK):
+        os.makedirs(libs_dir)
+
     safe_symlink(build_path, bin_link)
+    if jar_deps:
+        for j in jar_deps:
+            safe_symlink(os.path.join(ctx.path.abspath(), 'libs', j),
+                         os.path.join(libs_dir, j));
 
     print '... Writing : %s' % ant_properties
     open(ant_properties, 'w').write(
@@ -1207,11 +1322,15 @@ def add_jnilib(ctx, **kwargs):
     jni_classes = kwargs.get('jni_classes', None)
     if not jni_classes:
         ctx.fatal('Need to specify some jni classes.')
-    if not os.access(os.path.join(ctx.options.jni_include_dir,
-                                  'jni.h'), os.R_OK):
+    jni_dirs = ctx.options.jni_include_dirs.split(',')
+    jni_h_readable = False
+    for d in jni_dirs:
+        if os.access(os.path.join(d, 'jni.h'), os.R_OK):
+            jni_h_readable = True
+    if not jni_h_readable:
         ctx.fatal('Cannot determine the proper jni.h include path. '
-                  'Please provide it w/ --jni_include_dir (currently: %s)' %
-                  ctx.options.jni_include_dir)
+                  'Please provide it w/ --jni_include_dirs (currently: %s)' %
+                  ctx.options.jni_include_dirs)
 
     gen_node = ctx.path.get_bld()
     gen_dir = gen_node.abspath()
@@ -1230,15 +1349,21 @@ def add_jnilib(ctx, **kwargs):
             ctx.fatal('Cannot read jni source: %s' % src_file)
 
         target = os.path.join(gen_dir, '%s.h' % name)
-        target_class = '%s.class' % os.path.join(gen_dir, name)
-        cmd = 'javac -d %(gen_dir)s %(src_file)s && '\
-            'javah -o %(target)s -classpath %(gen_dir)s -jni %(cn)s' % {
+
+        android_target = Arch.GetAndroidTarget(ctx)
+
+        android_class_path = '%s/platforms/%s/android.jar' % (
+            ctx.options.android_sdk_path, android_target)
+
+        cmd = 'javac -d %(gen_dir)s -cp %(acp)s %(src_file)s && '\
+            'javah -o %(target)s -classpath "%(gen_dir)s:%(acp)s" -jni %(cn)s' % {
             'src_file' : src_file, 'target' : target,
+            'acp' : android_class_path,
             'gen_dir' : gen_dir, 'cn': cn }
         waf_target = os.path.basename(target)
         print 'JNI class generation: %s.java [%s] => %s [%s]\n=> %s' % (
             name, cn, target, waf_target, cmd)
-        ctx(rule = cmd, source = '%s.java' % name, target=waf_target)
+        ctx(rule = cmd, source = ['%s.java' % name], target=waf_target)
         inter_targets.append(waf_target)
         header_files.append(target)
 
@@ -1277,7 +1402,8 @@ def add_jnilib(ctx, **kwargs):
                     [os.path.relpath(t, ctx.path.abspath())
                      for t in header_files])
     extend_list_key(kwargs, 'depends_on', inter_targets)
-    extend_list_key(kwargs, 'includes', [ctx.options.jni_include_dir])
+    extend_list_key(kwargs, 'includes', jni_dirs)
+       # [ctx.options.jni_include_dir])
 
     # Add the actual library for building
     add_lib(ctx, **kwargs)
@@ -1290,6 +1416,8 @@ from waflib.TaskGen import feature, before_method
 @before_method('process_rule')
 def post_the_other(self):
     deps = getattr(self, 'depends_on', [])
+    if type(deps) == type(''):
+        deps = [deps]
     for name in deps:
         dep = self.bld.get_tgen_by_name(name)
         dep.post()
@@ -1319,7 +1447,8 @@ def get_icu_config(ctx):
 def setup_context_includes(ctx, core_dir):
     # Export core_includes, thrift_includes to be list as build deps
     ctx(name = 'whisperlib_includes',
-        export_includes = [core_dir])
+        export_includes = ['.',
+                           core_dir, os.path.abspath(core_dir)])
     ctx(name = 'proto_includes',
         export_includes = ['.', core_dir, Arch.GetOutputDir(ctx, 'whisperlib')])
     ctx(name = 'proto_compiler_includes',

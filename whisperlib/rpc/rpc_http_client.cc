@@ -98,8 +98,9 @@ void HttpClient::StartClose() {
   mutex_.Unlock();
 
   for (int i = 0; i < to_cancel.size(); ++i) {
-    CancelRequest(to_cancel[0]);
+    CancelRequest(to_cancel[i]);
   }
+  failsafe_client_->ForceCloseAll();
 
   selector_->DeleteInSelectLoop(this);
 }
@@ -149,11 +150,13 @@ void HttpClient::CallMethod(const google::protobuf::MethodDescriptor* method,
   }
   const int64 xid = GetNextXid();
 
-  req->request()->client_header()->AddField(kRpcHttpXid, sizeof(kRpcHttpXid) - 1,
-                                            strutil::StringPrintf("%lld", xid), true, true);
-  req->request()->client_header()->AddField(http::kHeaderContentType,
-                                            sizeof(http::kHeaderContentType) - 1,
-                                            kRpcContentType, sizeof(kRpcContentType) - 1, true, true);
+  req->request()->client_header()->AddField(
+    kRpcHttpXid, sizeof(kRpcHttpXid) - 1,
+    strutil::StringPrintf("%" PRId64, xid), true, true);
+  req->request()->client_header()->AddField(
+    http::kHeaderContentType,
+    sizeof(http::kHeaderContentType) - 1,
+    kRpcContentType, sizeof(kRpcContentType) - 1, true, true);
   //req->request()->client_header()->AddField(http::kHeaderContentEncoding,
   //                                          sizeof(http::kHeaderContentEncoding) - 1,
   //                                          kRpcGzipEncoding, sizeof(kRpcGzipEncoding) - 1,
@@ -198,10 +201,12 @@ void HttpClient::StartRequest(HttpClient::QueryStruct* qs) {
       mutex_.Unlock();
       done->Run();
     } else {
-      Closure* const req_done_callback = ::NewCallback(this, &rpc::HttpClient::CallbackRequestDone, qs);
+      Closure* const req_done_callback = ::NewCallback(
+        this, &rpc::HttpClient::CallbackRequestDone, qs);
       selector_->RunInSelectLoop(::NewCallback(failsafe_client_,
-                                               &http::FailSafeClient::StartRequest,
-                                               qs->req_, req_done_callback));
+                                               &http::FailSafeClient::StartRequestWithUrgency,
+                                               qs->req_, req_done_callback,
+                                               qs->controller_->is_urgent()));
       mutex_.Unlock();
     }
   }
@@ -232,13 +237,16 @@ void HttpClient::CancelRequest(int64 xid) {
   if (qs == NULL) {
     return;   // nothing left to cancel
   }
+  LOG_INFO << "Cancelling request: " << xid << " / " << ToString()
+           << qs->cancelled_ << " // " << qs->req_->name();
+  DCHECK(selector_->IsInSelectThread());
 
   qs->cancel_callback_ = NULL;
   CHECK(!qs->cancelled_);
   qs->cancelled_ = true;
 
   if (qs->started_) {
-    if (failsafe_client_->CancelRequest(qs->req_) || is_closing) {
+    if (failsafe_client_->CancelRequest(qs->req_)) {
       // We'll never get the CallbackRequestDone
       CallbackRequestDone(qs);
     }  // else we will receive a callback
@@ -246,7 +254,7 @@ void HttpClient::CancelRequest(int64 xid) {
 }
 
 string HttpClient::ToString(const HttpClient::QueryStruct* qs) const {
-  return strutil::StringPrintf("%s @%s xid:%lld",
+  return strutil::StringPrintf("%s @%s xid:%" PRId64,
                                http_request_path_.c_str(),
                                qs->method_->DebugString().c_str(),
                                qs->xid_);
@@ -255,6 +263,8 @@ string HttpClient::ToString(const HttpClient::QueryStruct* qs) const {
 
 void HttpClient::CallbackRequestDone(HttpClient::QueryStruct* qs) {
   DCHECK(selector_->IsInSelectThread());
+  VLOG(3) << "Callback done request: " << qs->xid_ << " / " << ToString()
+          << qs->cancelled_ << " // " << qs->req_->name();
 
   mutex_.Lock();
   CHECK(queries_.erase(qs->xid_));

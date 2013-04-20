@@ -89,6 +89,7 @@ class FailSafeClient {
   net::Selector* selector() const {
     return selector_;
   }
+  void Reset() const;
 
   void StartRequest(ClientRequest* request,
                     Closure* completion_callback) {
@@ -104,7 +105,19 @@ class FailSafeClient {
   // callback if not permanent.
   bool CancelRequest(ClientRequest* request);
 
+  void ScheduleStatusLog();
+
+  // Force reopening of all connections
+  void Reset();
+
+  // Forces a close of all pending request - call this if you want 
+  // to cleanup your caller before this failsafe client gets deleted
+  void ForceCloseAll();
+
  private:
+  void WriteStatusLog() const;
+  void StatusString(string* s) const;
+
   struct PendingStruct {
     int64 start_time_;
     int retries_left_;
@@ -122,6 +135,7 @@ class FailSafeClient {
           canceled_(false),
           urgent_(urgent) {
     }
+    string ToString(int64 crt_time) const;
   };
 
   void RequeuePendingAlarm();
@@ -149,6 +163,8 @@ class FailSafeClient {
   PendingQueue* pending_requests_;
   typedef hash_map<ClientRequest*, PendingStruct*> PendingMap;
   PendingMap* pending_map_;
+
+  deque<pair<int64, string>> completion_events_;
 
   bool closing_;
   Closure* requeue_pending_callback_;

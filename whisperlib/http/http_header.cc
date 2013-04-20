@@ -516,7 +516,8 @@ bool Header::GetAuthorizationField(string* user, string* passwd) {
   len -= p - s;
   char* const decoded_field = new char[len];
   base64::Decoder decoder;
-  int32 decoded_len = decoder.Decode(p, len, decoded_field);
+  int32 decoded_len = decoder.Decode(p, len,
+                                     reinterpret_cast<uint8*>(decoded_field));
   if ( decoded_len == 0 ) {
     delete [] decoded_field;
     return false;

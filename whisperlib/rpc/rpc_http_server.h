@@ -46,6 +46,7 @@
 #include <string>
 #include <whisperlib/base/types.h>
 #include <whisperlib/sync/mutex.h>
+#include <whisperlib/net/address.h>
 
 #include WHISPER_HASH_SET_HEADER
 
@@ -98,6 +99,8 @@ class HttpServer {
   const string& path() const {
     return path_;
   }
+
+  static net::HostPort GetRemoteAddress(http::ServerRequest* req);
 
 protected:
   struct RpcData {

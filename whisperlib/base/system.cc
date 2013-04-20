@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string>
+#include <unistd.h>
 
 #include "whisperlib/base/log.h"
 #include "whisperlib/base/strutil.h"

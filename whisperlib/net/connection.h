@@ -649,10 +649,13 @@ class TcpConnection : public NetConnection, private Selectable {
 ////////////////////////////////////////////////////////////////////////
 
 #if defined(HAVE_OPENSSL_SSL_H) && defined(USE_OPENSSL)
+}
+
 // apt-get install libssl-dev
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
+namespace net {
 struct SslConnectionParams : public NetConnectionParams {
   SslConnectionParams(
       SSL_CTX* ssl_context = NULL,

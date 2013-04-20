@@ -4,11 +4,11 @@ def build(ctx):
     source = ['errno.cc',
               'date.cc',
               'strutil.cc',
+              'strutil_format.cc',
               'system.cc',
               're.cc',
               'timer.cc',
               'util.cc',
-              'stringprintf.cc',
               ]
     if 'HAVE_REGEX_H' in ctx.env.DEFINES:
         source.append('re.cc')

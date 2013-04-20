@@ -249,7 +249,7 @@ inline ostream& operator<<(ostream& os, const IpAddress& ip) {
   return os << ip.ToString();
 }
 inline ostream& operator<<(ostream& os, const HostPort& hp) {
-  return os << hp.ip_object() << ":" << hp.port();
+  return os << hp.ToString();
 }
 
 // This is a filter of addresses. Add ip strings like "12.23.4.2" or

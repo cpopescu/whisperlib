@@ -133,13 +133,6 @@ class InputStream : public StreamBase {
   //  -- This is amazingly expensive !! Use it only for debugging --
   virtual string ToString() const {
 
-// On android cannot convince it to have this defined in inttypes.h
-// So may need to define it here.
-#ifndef PRId64
-#define PRId64 "ld"
-#define __INTERNAL_PRId64_DEFINED
-#endif
-
 #ifdef _DEBUG
     InputStream& in = const_cast<InputStream&>(*this);
     const int64 size = in.Readable();

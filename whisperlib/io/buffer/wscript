@@ -5,3 +5,13 @@ def build(ctx):
             'data_block_test.cc',
             'memory_stream_test.cc',
             ])
+    return
+
+    ctx.proto_lib(ctx,
+                  name = 'io.TestProto_pb',
+                  target = 'io_test_proto_pb',
+                  source = ['test/test_proto.proto'],
+                  install_dir_h = False)
+    ctx.add_whisper_tests(ctx, ['test_proto.cc'],
+                          extra_use = ['io_test_proto_pb'],
+                          extra_lib = ['io_test_proto_pb'])

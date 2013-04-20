@@ -12,11 +12,12 @@ def build(ctx):
             'output_stream.cc',
             'stream_base.cc',
             'util/base64.cc',
+            'util/sha256.cc',
             'zlib/zlibwrapper.cc',
             ])
     ctx.install_all_includes(ctx)
     ctx.recurse(['buffer',
-                     'file',
-                     'logio',
-                     'checkpoint'
-                     ])
+                 'file',
+                 'logio',
+                 'checkpoint'
+                 ])

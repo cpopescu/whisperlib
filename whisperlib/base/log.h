@@ -11,8 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef WHISPERLIB_BASE_LOGGING_H_
-#define WHISPERLIB_BASE_LOGGING_H_
+// NOTE: contains modifications by giao and cp@1618labs.com
+
+#ifndef _WHISPERLIB_BASE_LOG_H
+#define _WHISPERLIB_BASE_LOG_H
 
 #ifdef ANDROID
 #include <android/log.h>
@@ -52,7 +54,7 @@ class LogMessage {
 #endif
         {
 #ifdef ANDROID
-        oss
+        oss << "1618labs: "
 #else
         std::cerr
 #endif
@@ -256,4 +258,4 @@ inline char* const LogMessage::DateLogger::HumanDate() {
     else                                                                \
         LOG_FATAL << " Pointer " << #p << "(" << LHEX(p) << ") is not NULL. "
 
-#endif  // BASE_LOGGING_H_
+#endif  // _WHISPERLIB_BASE_LOG_H

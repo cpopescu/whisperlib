@@ -36,6 +36,7 @@
 #include <whisperlib/base/errno.h>
 #include <whisperlib/net/selector_base.h>
 #include <whisperlib/net/selector.h>
+#include <unistd.h>
 
 namespace net {
 
@@ -65,7 +66,7 @@ bool SelectorBase::Add(int fd, void* user_data, int32 desires) {
   if ( fd == INVALID_FD_VALUE ) {
     return true;
   }
-  epoll_event event = { DesiresToEpollEvents(desires), };
+  epoll_event event = { static_cast<unsigned int>(DesiresToEpollEvents(desires)), };
   event.data.ptr = user_data;
 
   DLOG_INFO << "  Adding to epoll: " << fd;
@@ -82,7 +83,7 @@ bool SelectorBase::Update(int fd, void* user_data, int32 desires) {
   if ( fd == INVALID_FD_VALUE ) {
     return true;
   }
-  epoll_event event = { DesiresToEpollEvents(desires), };
+  epoll_event event = { static_cast<unsigned int>(DesiresToEpollEvents(desires)), };
   event.data.ptr = user_data;
 
   if ( epoll_ctl(epfd_, EPOLL_CTL_MOD, fd, &event) ) {

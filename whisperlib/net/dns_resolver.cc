@@ -48,6 +48,12 @@ DEFINE_int32(dns_timeout_ms, 10000,
 
 
 namespace {
+void CloseThread(thread::Thread** t) {
+    (*t)->Join();
+    delete *t;
+    delete t;
+}
+
 class DnsResolver {
  private:
   struct Query {
@@ -69,9 +75,7 @@ class DnsResolver {
 
  public:
   DnsResolver()
-    : thread_(NULL),
-      query_map_(),
-      query_queue_(kQueryQueueMaxSize),
+    : query_map_(),
       cache_(util::CacheBase::LRU, kCacheSize, kCacheTimeout, NULL, NULL) {
   }
   virtual ~DnsResolver() {
@@ -79,12 +83,15 @@ class DnsResolver {
   }
 
   void Start() {
+      /*
     CHECK_NULL(thread_) << "Already started";
     thread_ = new thread::Thread(NewCallback(this, &DnsResolver::Run));
     bool success = thread_->Start();
     CHECK(success) << "Failed to start DNS";
+      */
   }
   void Stop() {
+      /*
     if ( !IsRunning() ) {
       return;
     }
@@ -94,37 +101,53 @@ class DnsResolver {
     thread_->Join();
     delete thread_;
     thread_ = NULL;
+      */
   }
 
   bool IsRunning() const {
-    return thread_ != NULL;
+      return true;  // thread_ != NULL;
   }
 
   void Resolve(net::Selector* selector, const string& hostname,
-      net::DnsResultHandler* result_handler) {
+               net::DnsResultHandler* result_handler) {
     CHECK_NOT_NULL(selector);
     CHECK_NOT_NULL(result_handler);
     CHECK(result_handler->is_permanent());
     DCHECK(IsRunning());
-    if ( query_queue_.IsFull() ) {
-      LOG_ERROR << "Too many queries, fail for hostname: ["
-                << hostname << "]";
-      Return(selector, result_handler, NULL);
-      return;
-    }
 
     synch::MutexLocker lock(&mutex_);
     scoped_ref<net::DnsHostInfo> info = cache_.Get(hostname);
     if ( info.get() != NULL ) {
-      VLOG(5) << "Cache hit for hostname: [" << hostname << "]";
-      Return(selector, result_handler, info);
-      return;
+      if (!info->is_expired()) {
+          VLOG(5) << "Cache hit for hostname: [" << hostname << "]";
+          Return(selector, result_handler, info);
+          return;
+      }
+      cache_.Del(hostname);
     }
     VLOG(4) << "Cache miss for hostname: [" << hostname
             << "]" << ". Resolving";
     Query* query = new Query(selector, hostname, result_handler);
-    query_queue_.Put(query);
     query_map_[result_handler] = query;
+
+    WaitingMap::iterator it = waiting_queries_.find(hostname);
+    bool start_thread = false;
+    if (it == waiting_queries_.end()) {
+        vector<Query*>* v = new vector<Query*>;
+        v->push_back(query);
+        waiting_queries_.insert(make_pair(hostname, v));
+        start_thread = true;
+    } else {
+        it->second->push_back(query);
+    }
+    if (start_thread) {
+        thread::Thread** p = new thread::Thread*;
+        *p = new thread::Thread(NewCallback(this, &DnsResolver::Run, query, p));
+        (*p)->SetStackSize(65536);
+        (*p)->Start();
+    }
+
+    // query_queue_.Put(query);
   }
   void Cancel(net::DnsResultHandler* result_handler) {
     synch::MutexLocker lock(&mutex_);
@@ -136,41 +159,44 @@ class DnsResolver {
   }
 
  private:
-  void Run() {
-    LOG_INFO << "DnsResolver running..";
-    while ( true ) {
-      Query* query = query_queue_.Get();
-      scoped_ptr<Query> auto_del_query(query);
-
-      // a NULL Query is the exit signal
-      if ( query == NULL ) {
-        break;
-      }
-
+  void Run(Query* query, thread::Thread** t) {
       // a NULL result_handler means a Canceled query
       if ( query->result_handler_ == NULL ) {
-        continue;
+          synch::MutexLocker lock(&mutex_);
+          if (waiting_queries_[query->hostname_]->size() == 1) {
+              delete waiting_queries_[query->hostname_];
+              waiting_queries_.erase(query->hostname_);
+          }
+          delete query;
+          query->selector_->RunInSelectLoop(NewCallback(&CloseThread, t));
+          return;
       }
-
       // blocking resolve
       scoped_ref<net::DnsHostInfo> info =
           net::DnsBlockingResolve(query->hostname_);
 
-      // deliver result
+       // copy here as query may disappear
+      net::Selector* selector = query->selector_;
+      string hostname(query->hostname_);
       {
         synch::MutexLocker lock(&mutex_);
-        cache_.Add(query->hostname_, info);
-        // a NULL result_handler means a Canceled query
-        if ( query->result_handler_ != NULL ) {
-          query_map_.erase(query->result_handler_);
-          Return(query->selector_, query->result_handler_, info);
+        cache_.Add(hostname, info);
+        for (int i = 0; i < waiting_queries_[hostname]->size(); ++i) {
+            Query* q = waiting_queries_[hostname]->at(i);
+            if (q->result_handler_ != NULL) {
+                query_map_.erase(q->result_handler_);
+                Return(q->selector_, q->result_handler_, info);
+            }
+            delete q;
         }
+        delete waiting_queries_[hostname];
+        waiting_queries_.erase(hostname);
       }
-    }
-    LOG_INFO << "DnsResolver stopped.";
+      selector->RunInSelectLoop(NewCallback(&CloseThread, t));
   }
+
   void Return(net::Selector* selector, net::DnsResultHandler* handler,
-              scoped_ref<net::DnsHostInfo> info) {
+                scoped_ref<net::DnsHostInfo> info) {
     selector->RunInSelectLoop(NewCallback(this, &DnsResolver::Return,
         handler, info));
   }
@@ -179,17 +205,15 @@ class DnsResolver {
   }
 
  private:
-  // internal resolver thread
-  thread::Thread* thread_;
-
   // synchronize access to query_map_, cache_
   synch::Mutex mutex_;
 
   // map by DnsResultHandler, useful when we want to Cancel a query
   QueryMap query_map_;
 
-  // communicates with the internal resolver thread
-  synch::ProducerConsumerQueue<Query*> query_queue_;
+  // queries waiting solution per string
+  typedef map<string, vector<Query*>* > WaitingMap;
+  WaitingMap waiting_queries_;
 
   // cache of solved queries
   util::Cache<string, scoped_ref<net::DnsHostInfo> > cache_;
@@ -243,12 +267,15 @@ void DnsExit() {
 ////////////////////////////////////////////////////////////////////////////
 
 scoped_ref<DnsHostInfo> DnsBlockingResolve(const string& hostname) {
+    //
+    // TODO(cp) : lookup through canonical names
+    //
   struct addrinfo* result = NULL;
   const int error = ::getaddrinfo(hostname.c_str(), NULL, NULL, &result);
   if ( error != 0 ) {
     LOG_ERROR << "Error resolving hostname: [" << hostname << "]"
         ", error: " << ::gai_strerror(error);
-    return NULL;
+    return new DnsHostInfo(hostname, &g_mutex_pool);
   }
   set<IpAddress> ipv4, ipv6;
   for (struct addrinfo* res = result; res != NULL; res = res->ai_next) {

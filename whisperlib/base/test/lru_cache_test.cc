@@ -45,7 +45,7 @@ void TestCache() {
         CHECK(!cache.HasKey(i - 1));
         CHECK(!cache.Put(i + 1, new int(1000 + i + 1)));
         CHECK(!cache.HasKey(i - 2));
-        CHECK(cache.Put(i, new int(2000 + i), &val));
+        CHECK(cache.Put(i, new int(2000 + i), &val, NULL));
         CHECK_EQ(*val->get(), 1000 + i);
         val->DecRef();
         CHECK(cache.Get(i, &val));

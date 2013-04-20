@@ -165,8 +165,8 @@ bool Rm(const string& path);
 // Fails if the target directory is not empty.
 bool Rmdir(const string& path);
 
-// Removes all files under the given directory (NOTE: just the files)
-bool RmFilesUnder(const string& path, const re::RE* pattern = NULL);
+// Removes all files under the given directory (NOTE: just the files if all is false)
+bool RmFilesUnder(const string& path, const re::RE* pattern = NULL, bool all = false);
 
 // Move file or directory to destination directory.
 // If a directory with the same name already exists, the source directory

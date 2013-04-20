@@ -173,12 +173,22 @@ void HttpServer::ProcessRequest(http::ServerRequest* req) {
   }
   mutex_.Unlock();
 
+  net::HostPort peer_address(GetRemoteAddress(req));
+  if (peer_address.IsInvalid()) {
+    LOG_ERROR << " Peer address cannot be determined: " << req->ToString();
+    ReplyToRequest(req, http::BAD_REQUEST, NULL, kRpcErrorBadProxyHeader);
+    return;
+  }
+
   if ( accepted_clients_ != NULL &&
-       !accepted_clients_->IsInClass(req->remote_address().ip_object()) ) {
+       !accepted_clients_->IsInClass(peer_address.ip_object()) ) {
     // TODO(cpopescu): stats
+    LOG_ERROR << " Client not accepted: " << req->ToString()
+              << " / peer: " << peer_address.ToString();
     ReplyToRequest(req, http::UNAUTHORIZED, NULL, kRpcErrorUnauthorizedIP);
     return;
   }
+
 
   ///////////////////////////////////////////////////////////////
   //
@@ -188,9 +198,10 @@ void HttpServer::ProcessRequest(http::ServerRequest* req) {
 
   std::string sub_path = url_path.substr(path_.size());
   sub_path = strutil::StrTrimChars(sub_path, "/");
-  DLOG_INFO << "url: [" << url_path << "] , path_: [" << path_
-            << "], sub_path: [" << sub_path << "]"
-            << " client url: " << req->request()->client_header()->uri();
+  LOG_INFO << "peer: " << peer_address.ToString()
+           << " url: [" << url_path << "] , path_: [" << path_
+           << "], sub_path: [" << sub_path << "]"
+           << " client url: " << req->request()->client_header()->uri();
 
   // sub_path should be "a/b/c/service_name/method_name"
   //
@@ -298,20 +309,24 @@ void HttpServer::ProcessAuthenticatedRequest(
 
 ////////////////////////////////////////////////////////////////////
 
-void HttpServer::StartProcessing(
-    http::ServerRequest* req,
-    google::protobuf::Service* service,
-    const google::protobuf::MethodDescriptor* method,
-    google::protobuf::Message* request) {
-  net::HostPort peer_address(req->remote_address());
-  if (!FLAGS_rpc_remote_address_header.empty()) {
-    int32 len;
-    const char* field = req->request()->client_header()->FindField(
-      FLAGS_rpc_remote_address_header, &len);
-    if (field != NULL) {
-      peer_address = net::HostPort(string(field, len), 80);  // pull a valid port
-    }
+net::HostPort HttpServer::GetRemoteAddress(http::ServerRequest* req) {
+  if (FLAGS_rpc_remote_address_header.empty()) {
+    return req->remote_address();
   }
+  int32 len;
+  const char* field = req->request()->client_header()->FindField(
+    FLAGS_rpc_remote_address_header, &len);
+  if (field == NULL) {
+    return req->remote_address();
+  }
+  return net::HostPort(string(field, len), 80);  // pull a valid port
+}
+
+void HttpServer::StartProcessing(http::ServerRequest* req,
+                                 google::protobuf::Service* service,
+                                 const google::protobuf::MethodDescriptor* method,
+                                 google::protobuf::Message* request) {
+  net::HostPort peer_address(GetRemoteAddress(req));
   if (peer_address.IsInvalid()) {
     delete request;
     ReplyToRequest(req, http::BAD_REQUEST, NULL, kRpcErrorBadProxyHeader);
@@ -340,6 +355,9 @@ void HttpServer::StartProcessing(
   }
 
   // TODO(cpopescu): parametrize this one ?
+  req->request()->server_header()->AddField(http::kHeaderContentType,
+                                            "application/octet-stream",
+                                            true);
   req->request()->set_server_use_gzip_encoding(true);
 
   google::protobuf::Message* response = service->GetResponsePrototype(method).New();

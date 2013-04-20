@@ -33,6 +33,7 @@
 
 #include <whisperlib/base/app.h>
 #include <whisperlib/base/strutil.h>
+#include <whisperlib/base/system.h>
 #include <whisperlib/sync/mutex.h>
 
 #include <whisperlib/base/signal_handlers.h>
@@ -56,6 +57,8 @@ App::App(int argc, char** argv)
   g_app = this;
 
   name_ = strutil::Basename(argv[0]);
+
+  common::Init(argc_, argv_);
 
   SignalSetup();
 }

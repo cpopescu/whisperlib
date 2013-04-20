@@ -77,13 +77,32 @@ struct LogPos {
     record_num_ = other.record_num_;
     return *this;
   }
+
+  // 3-way compare function returns:  -1 for less, 0 for equal, 1 for greater
+  int Compare(const LogPos& other) const {
+    if (file_num_ < other.file_num_)  return -1;
+    if (file_num_ > other.file_num_)  return 1;
+    if (block_num_ < other.block_num_)  return -1;
+    if (block_num_ > other.block_num_)  return 1;
+    if (record_num_ < other.record_num_)  return -1;
+    if (record_num_ > other.record_num_)  return 1;
+    return 0;
+  }
+
   bool operator==(const LogPos& other) const {
     return (file_num_ == other.file_num_ &&
             block_num_ == other.block_num_ &&
             record_num_ == other.record_num_);
   }
+
   bool IsNull() const {
     return file_num_ == -1;
+  }
+
+  string ToString() const {
+    return strutil::StringPrintf(
+      "LogPos{file#: %5d; block#: %5d; record#: %5d}",
+      file_num_, block_num_, record_num_);
   }
   string StrEncode() const {
     return strutil::StringPrintf(
@@ -105,11 +124,6 @@ struct LogPos {
     block_num_ = ::strtol(pairs[1].second.c_str(), NULL, 10);
     record_num_ = ::strtol(pairs[2].second.c_str(), NULL, 10);
     return true;
-  }
-  string ToString() const {
-    return strutil::StringPrintf(
-      "LogPos{file#: %5d; block#: %5d; record#: %5d}",
-      file_num_, block_num_, record_num_);
   }
 };
 

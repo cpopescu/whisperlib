@@ -238,7 +238,7 @@ string BufferManager::GetHtmlStats() const {
   for ( BufferMap::const_iterator it = active_buffers_.begin();
         it != active_buffers_.end(); ++it ) {
     out += strutil::StringPrintf(
-        "<tr><td>%s</td><td>%d</td><td>%d</td><td>%"PRId64"</td></tr>",
+        "<tr><td>%s</td><td>%d</td><td>%d</td><td>%" PRId64 "</td></tr>",
         it->first.c_str(),
         it->second->use_count_,
         it->second->state_,
@@ -251,7 +251,7 @@ string BufferManager::GetHtmlStats() const {
         it != usage_set_.rend(); ++it ) {
     int64 now = timer::Date::Now();
     out += strutil::StringPrintf(
-        "<tr><td>%s</td><td>%"PRId64"</td><td>%"PRId64"</td></tr>",
+        "<tr><td>%s</td><td>%" PRId64 "</td><td>%" PRId64 "</td></tr>",
         it->second->data_key_.c_str(),
         it->second->reuse_count_,
         (it->first - now) / 1000);

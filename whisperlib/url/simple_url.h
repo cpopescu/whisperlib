@@ -1,5 +1,9 @@
 // -*- c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil; coding: utf-8 -*-
 //
+// (c) Copyright 2011, 1618labs
+// All rights reserved.
+// Author: Catalin Popescu (cp@1618labs.com)
+//
 // Simple URL implementation -for a system w/o utf8 libraries (as android).
 // Good enough for whisperlib http usage. If utf8 is available, use the
 // open source gurl, which deals w/ utf8 / unicode.  This library will not do
@@ -75,7 +79,7 @@ public:
     url.path_ = strutil::NormalizeUrlPath(
       strutil::JoinPaths(path_, relative_path));
     url.Reassemble();
-    return url;
+    return URL(url.Reassemble());
   }
 
   // Returns true if the given parameter (should be lower-case ASCII to match

@@ -1,34 +1,8 @@
 // -*- c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil; coding: utf-8 -*-
 //
-// (c) Copyright 2012, 1618labs
+// (c) Copyright 2011, 1618labs
 // All rights reserved.
 // Author: Catalin Popescu (cp@1618labs.com)
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-// * Redistributions of source code must retain the above copyright
-// notice, this list of conditions and the following disclaimer.
-// * Redistributions in binary form must reproduce the above
-// copyright notice, this list of conditions and the following disclaimer
-// in the documentation and/or other materials provided with the
-// distribution.
-// * Neither the name of 1618labs nor the names of its
-// contributors may be used to endorse or promote products derived from
-// this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 
 #ifndef __WHISPERLIB_RPC_RPC_CONTROLLER_H__
@@ -136,6 +110,9 @@ public:
   // then cancel it, or may not even cancel the call at all.  If the call is
   // canceled, the "done" callback will still be called and the rpc::Controller
   // will indicate that the call failed at that time.
+  //
+  // NOTE(cp): not fully tested - may crash occasionally
+  //
   virtual void StartCancel();
 
   // Server-side methods ---------------------------------------------
@@ -179,8 +156,12 @@ public:
   // Available *only* at server side:
   const Transport* transport() const { return transport_; }
 
+  // TODO(cp) : timeout not implemented at this level
   int64 timeout_ms() const { return timeout_ms_; }
   void set_timeout_ms(int64 timeout_ms) { timeout_ms_ = timeout_ms; }
+
+  bool is_urgent() const { return is_urgent_; }
+  void set_is_urgent(bool is_urgent) { is_urgent_ = is_urgent; }
 
 private:
   mutable synch::Mutex mutex_;
@@ -188,7 +169,8 @@ private:
   google::protobuf::Closure* cancel_callback_;
   ErrorCode error_code_;
   string error_reason_;
-  int64 timeout_ms_;
+  int64 timeout_ms_;    // TODO(cp): actually implement this
+  bool is_urgent_;
 
   DISALLOW_EVIL_CONSTRUCTORS(Controller);
 };

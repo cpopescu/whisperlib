@@ -36,6 +36,43 @@
 
 namespace synch {
 
+Mutex::Mutex(bool is_reentrant) : initialized_(true) {
+  pthread_mutexattr_init(&attr_);
+  if ( is_reentrant ) {
+    CHECK_SYS_FUN(pthread_mutexattr_settype(&attr_, PTHREAD_MUTEX_RECURSIVE), 0);
+  } else {
+    CHECK_SYS_FUN(pthread_mutexattr_settype(&attr_, PTHREAD_MUTEX_NORMAL), 0);
+  }
+  CHECK_SYS_FUN(pthread_mutex_init(&mutex_, &attr_), 0);
+}
+
+Mutex::Mutex(const pthread_mutex_t& mutex)
+    : initialized_(false),
+      mutex_(mutex) {
+}
+
+Mutex::~Mutex() {
+  if (initialized_) {
+    CHECK_SYS_FUN(pthread_mutex_destroy(&mutex_), 0);
+    pthread_mutexattr_destroy(&attr_);
+  }
+}
+
+MutexPool::MutexPool(size_t num, bool is_reentrant)
+    : mutex_(new Mutex*[num]),
+      num_(num) {
+  for ( int i = 0; i < num_; ++i ) {
+    mutex_[i] = new Mutex(is_reentrant);
+  }
+}
+MutexPool::~MutexPool() {
+  for ( int i = 0; i < num_; ++i ) {
+    delete mutex_[i];
+  }
+  delete [] mutex_;
+}
+
+
 Event::Event(bool is_signaled, bool manual_reset)
   : is_signaled_(is_signaled),
     manual_reset_(manual_reset) {

@@ -49,9 +49,13 @@
 #include WHISPER_HASH_MAP_HEADER
 #include WHISPER_HASH_SET_HEADER
 #include <whisperlib/base/log.h>
-#include <whisperlib/base/stringprintf.h>
+#include <whisperlib/base/strutil_format.h>
 
 namespace strutil {
+
+// Convert binary string to hex
+string ToHex(const unsigned char* cp, int len);
+string ToHex(const string& str);
 
 // Test string equality.
 bool StrEql(const char* str1, const char* str2);

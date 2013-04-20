@@ -4,8 +4,12 @@ RPC_SERVER_SOURCES = [
     "rpc_http_server.cc",
 ]
 RPC_SOURCES = [
+    # "thrift_http_async_channel.cc",
+    # "thrift_util.cc",
     "rpc_controller.cc",
     "rpc_http_client.cc",
+    "codec/rpc_json_decoder.cc",
+    "codec/rpc_json_encoder.cc",
 ]
 
 def build(ctx):
@@ -20,11 +24,12 @@ def build(ctx):
         source = sources)
     ctx.install_all_includes(ctx)
 
-
+    return
     ctx.proto_lib(ctx,
                   name = 'rpc.TestProto_pb',
                   target = 'rpc_test_proto_pb',
-                  source = ['test/rpc_test_proto.proto'])
+                  source = ['test/rpc_test_proto.proto'],
+                  install_dir_h = False)
 
     ctx.add_whisper_tests(ctx, ['rpc_test_server.cc',
                                 'rpc_test_client.cc'],

@@ -48,6 +48,11 @@
 #include <whisperlib/net/address.h>
 #include <whisperlib/url/url.h>
 
+#ifndef PRId64
+#define PRId64 "ld"
+#define __INTERNAL_PRId64_DEFINED
+#endif
+
 namespace http {
 
 //////////////////////////////////////////////////////////////////////
@@ -466,8 +471,18 @@ class ClientProtocol : public BaseClientProtocol  {
   // We want to expire the proper connection
   bool HandleTimeout(int64 timeout_id);
 
-  // Calls are resolve callbacks and closes the connection
+
+  // Calls are resolve callbacks and closes the connection with the current
+  // connection error.
   void ResolveAllRequestsWithError();
+  // Calls are resolve callbacks and closes the connection with the provided
+  // connection error.
+  void ResolveAllRequestsWithProvidedError(ClientError err) {
+    conn_error_ = err;
+    ResolveAllRequestsWithError();
+  }
+
+  string StatusString() const;
 
  private:
   // Finds which active request is currently in reading process (based
@@ -557,7 +572,7 @@ class ClientRequest  {
   string name() const {
     return strutil::StrTrim(
         request_.client_header()->ComposeFirstLine()) +
-        strutil::StringPrintf(" req_id: %"PRId64"", request_id_);
+        strutil::StringPrintf(" req_id: %" PRId64, request_id_);
   }
  private:
   http::Request request_;
@@ -578,5 +593,8 @@ class ClientRequest  {
 };
 }
 
+#ifdef __INTERNAL_PRId64_DEFINED
+#undef __INTERNAL_PRId64_DEFINED
+#endif
 
 #endif  // __NET_HTTP_HTTP_CLIENT_PROTOCOL_H__

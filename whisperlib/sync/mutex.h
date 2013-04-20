@@ -43,27 +43,9 @@ class Mutex {
   pthread_mutexattr_t attr_;
   bool initialized_;
 public:
-  explicit Mutex(bool is_reentrant = false) : initialized_(true) {
-    pthread_mutexattr_init(&attr_);
-    if ( is_reentrant ) {
-      CHECK_SYS_FUN(pthread_mutexattr_settype(&attr_, PTHREAD_MUTEX_RECURSIVE), 0);
-    } else {
-      CHECK_SYS_FUN(pthread_mutexattr_settype(&attr_, PTHREAD_MUTEX_NORMAL), 0);
-    }
-    CHECK_SYS_FUN(pthread_mutex_init(&mutex_, &attr_), 0);
-  }
-
-  explicit Mutex(pthread_mutex_t mutex)
-    : initialized_(false),
-      mutex_(mutex){
-  }
-
-  virtual ~Mutex() {
-    if (initialized_) {
-      CHECK_SYS_FUN(pthread_mutex_destroy(&mutex_), 0);
-      pthread_mutexattr_destroy(&attr_);
-    }
-  }
+  Mutex(bool is_reentrant = false);
+  explicit Mutex(const pthread_mutex_t& mutex);
+  virtual ~Mutex();
 
   void Lock() {
     CHECK_SYS_FUN(pthread_mutex_lock(&mutex_), 0);
@@ -85,27 +67,20 @@ public:
 // else it will choose same mutexes..
 class MutexPool {
  public:
-  MutexPool(int num, bool is_reentrant = false)
-      : mutex_(new Mutex*[num]),
-        num_(num) {
-    for ( int i = 0; i < num_; ++i ) {
-      mutex_[i] = new Mutex(is_reentrant);
-    }
-  }
-  ~MutexPool() {
-    for ( int i = 0; i < num_; ++i ) {
-      delete mutex_[i];
-    }
-    delete [] mutex_;
+  MutexPool(size_t num, bool is_reentrant = false);
+  ~MutexPool();
+
+  Mutex* GetMutex(size_t p) {
+    return mutex_[p % num_];
   }
   Mutex* GetMutex(const void* p) {
     // 'p' can have any value!
     // e.g. 0xffffffff when cast to int => -1
-    return mutex_[reinterpret_cast<long long unsigned int>(p) % num_];
+    return GetMutex(reinterpret_cast<size_t>(p));
   }
  private:
   Mutex** mutex_;
-  int num_;
+  const size_t num_;
 };
 
 // Utility class for scope protected locking

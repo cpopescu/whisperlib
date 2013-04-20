@@ -588,8 +588,10 @@ uint32 CleanLog(const string& log_dir, const string& file_base,
   return num_deleted;
 }
 
-bool DetectLogSettings(const string& log_dir, string* out_file_base,
-    int32* out_block_size, int32* out_blocks_per_file) {
+bool DetectLogSettings(const string& log_dir,
+                       string* out_file_base,
+                       int32* out_block_size,
+                       int32* out_blocks_per_file) {
   // NOTE: returned filenames are relative to dir !!
   vector<string> files;
   re::RE re("_[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]"

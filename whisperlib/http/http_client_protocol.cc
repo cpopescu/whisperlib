@@ -33,7 +33,7 @@
 #include "whisperlib/base/errno.h"
 
 #define LOG_HTTP \
-  LOG_INFO_IF(params_->dlog_level_) << " - HTTP[" << server_ << "]: "
+    LOG_INFO_IF(params_->dlog_level_) << " - HTTP[" << server_ << "]: "
 
 namespace http {
 
@@ -120,6 +120,7 @@ ClientRequest::ClientRequest(HttpMethod http_method,
 ClientRequest::ClientRequest(HttpMethod http_method,
                              const string& escaped_query_path)
     : error_(http::CONN_INCOMPLETE),
+      request_id_(0),
       request_timeout_ms_(0),
       is_pure_dumping_(false) {
   request_.client_header()->PrepareRequestLine(escaped_query_path.c_str(),
@@ -719,17 +720,21 @@ bool ClientProtocol::NotifyConnectionRead() {
   if ( reading_request_->request_id() > 0 ) {
     timeouter_.UnsetTimeout(kRequestTimeout +
                             reading_request_->request_id());
-    CHECK(active_requests_.erase(reading_request_->request_id()));
+    active_requests_.erase(reading_request_->request_id());
     const CallbackMap::iterator
         it_cb = callback_map_.find(reading_request_);
-    CHECK(it_cb != callback_map_.end());
-    Closure* const closure = it_cb->second;
-    callback_map_.erase(it_cb);
-    closure->Run();
+    if (it_cb != callback_map_.end()) {
+        Closure* const closure = it_cb->second;
+        callback_map_.erase(it_cb);
+        closure->Run();
+    }
   } else {
     LOG_HTTP << "Deleting an orphaned request: "
              << reading_request_->name();
     delete reading_request_;
+    // We cannot trust this connection any more
+    conn_error_ = CONN_DEPENDENCY_FAILURE;
+    return false;
   }
   reading_request_ = NULL;
   if ( parser_.InErrorState() ) {
@@ -741,10 +746,8 @@ bool ClientProtocol::NotifyConnectionRead() {
     conn_error_ = CONN_DEPENDENCY_FAILURE;
     return false;
   }
-  if ( !waiting_requests_.empty() ) {
-    // Putting more requests on line
-    WriteRequestsToServer();
-  }
+  // Putting more requests on line
+  WriteRequestsToServer();
   return true;
 }
 
@@ -777,18 +780,22 @@ bool ClientProtocol::IdentifyReadingRequest() {
   CHECK(reading_request_ != NULL);
   CHECK_EQ(reading_request_->request_id(), 0);
   Header* const hs = reading_request_->request()->server_header();
-  const string req_id = hs->FindField(kHeaderXRequestId);
-  if ( !req_id.empty() ) {
+  const string req_id_str = hs->FindField(kHeaderXRequestId);
+
+  int64 req_id = -1;
+  if ( !req_id_str.empty() ) {
     char* endptr;
     errno = 0;  // essential
-    const int64 id = strtoll(req_id.c_str(), &endptr, 10);
+    req_id = strtoll(req_id_str.c_str(), &endptr, 10);
     if ( errno || endptr == NULL || *endptr != '\0' ) {
-      LOG_WARNING << "HTTP[" << server_ << "]: "
-                  << " - Invalid request-id received: \n"
-                  << hs->ToString();
-      reading_request_->set_request_id(-1);
-    } else {
-      const RequestMap::const_iterator it = active_requests_.find(id);
+      req_id = -1;
+    }
+  } else if ( params_->max_concurrent_requests_  == 1 && current_request_ != NULL ) {
+    req_id = current_request_->request_id();
+  }
+
+  if (req_id != -1) {
+      const RequestMap::const_iterator it = active_requests_.find(req_id);
       if ( it == active_requests_.end() ) {
         LOG_WARNING  << "HTTP[" << server_ << "]: "
                      << " Orphaned response received from the server:\n"
@@ -806,7 +813,6 @@ bool ClientProtocol::IdentifyReadingRequest() {
         delete reading_request_;
         reading_request_ = it->second;
       }
-    }
   } else {
     LOG_WARNING << "HTTP[" << server_ << "]: "
                 << " - Expecting a request-id header from "
@@ -827,7 +833,8 @@ void ClientProtocol::ResolveAllRequestsWithError() {
            << " with error: "
            << http::ClientErrorName(conn_error_);
   if ( !active_requests_.empty() ) {
-    CHECK_NE(conn_error_, http::CONN_INCOMPLETE);
+    // CHECK_NE(conn_error_, http::CONN_INCOMPLETE);
+    //   Can actually happen when requested
     for ( RequestMap::const_iterator it = active_requests_.begin();
           it != active_requests_.end(); ++it ) {
       it->second->set_error(conn_error_);
@@ -857,7 +864,7 @@ void ClientProtocol::WriteRequestsToServer() {
     CHECK(current_request_ != NULL);
     hc->AddField(
         kHeaderXRequestId,
-        strutil::StringPrintf("%"PRId64"", current_request_->request_id()),
+        strutil::StringPrintf("%" PRId64 "", current_request_->request_id()),
         true);
     // TODO(cpopescu): figure out timeouts !!
     CHECK(!hc->IsChunkedTransfer())
@@ -865,12 +872,31 @@ void ClientProtocol::WriteRequestsToServer() {
         << " w/ ClientProtocol please.";
     LOG_HTTP << " Sending request to server: "
              << current_request_->name();
-    SendRequestToServer(current_request_);
     CHECK(active_requests_.insert(
               make_pair(current_request_->request_id(),
                         current_request_)).second);
+    SendRequestToServer(current_request_);
     current_request_ = NULL;
   }
+  LOG_HTTP << " WriteRequestsToServer ended with: " << active_requests_.size()
+           << " waiting and " << waiting_requests_.size() << " active. ";
+}
+
+string ClientProtocol::StatusString() const {
+    string s;
+    s += "\n\n ========>  Waiting requests: ";
+    for (int i = 0; i < waiting_requests_.size(); ++i) {
+        s += "\n";
+        s += waiting_requests_[i]->name();
+    }
+    s += "\n ========> Active requests requests: ";
+    for (RequestMap::const_iterator it = active_requests_.begin();
+         it != active_requests_.end(); ++it) {
+        s += "\n";
+        s += it->second->name();
+    }
+    s += "\n";
+    return s;
 }
 
 //////////////////////////////////////////////////////////////////////

@@ -32,7 +32,7 @@
 #include "whisperlib/base/log.h"
 #include "whisperlib/base/strutil.h"
 #include "whisperlib/base/system.h"
-#include "whisperlib/base/gflags.h"
+
 
 int main(int argc, char* argv[]) {
   common::Init(argc, argv);
@@ -57,6 +57,13 @@ int main(int argc, char* argv[]) {
   CHECK(strutil::StrIEql("Abcd", "aBcD"));
   CHECK(!strutil::StrIEql("Abcd", "aBcDe"));
   CHECK(!strutil::StrEql("abcd", "falkjgyabcde"));
+
+  LOG_INFO << " Testing strutil::ToHex";
+  const unsigned char buf[] = { 0xff, 0x12, 0xe9, 0x0c, 0xad, 0xb6, 0x75 };
+  CHECK(strutil::StrEql(strutil::ToHex(buf, 7), "ff12e90cadb675"));
+  CHECK(strutil::StrEql(strutil::ToHex("abcxyz"), "61626378797a"));
+  CHECK(strutil::StrEql(strutil::ToHex("hello"), "68656c6c6f"));
+  CHECK(strutil::StrEql(strutil::ToHex("9876543210"), "39383736353433323130"));
 
   LOG_INFO << " Testing strutil::StrPrefix";
   CHECK(strutil::StrPrefix(test, test));

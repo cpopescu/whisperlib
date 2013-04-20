@@ -133,11 +133,11 @@ void ServerAcceptor::Close() {
 }
 
 bool ServerAcceptor::AcceptorFilterHandler(const net::HostPort& peer_address) {
-  LOG_INFO << acceptor_->PrefixInfo()
-           << "Filtering an accept from: " << peer_address
-           << " with: " << server_->num_connections() << " active connections"
-           << " and a max of: "
-           << server_->protocol_params().max_concurrent_connections_;
+  VLOG(1) << acceptor_->PrefixInfo()
+          << "Filtering an accept from: " << peer_address
+          << " with: " << server_->num_connections() << " active connections"
+          << " and a max of: "
+          << server_->protocol_params().max_concurrent_connections_;
   if ( server_->num_connections() >=
        server_->protocol_params().max_concurrent_connections_ ) {
     LOG_ERROR << acceptor_->PrefixInfo() << "Too many connections ! - refusing";
@@ -208,8 +208,8 @@ void ServerConnection::ConnectionCloseHandler(
     protocol_->NotifyConnectionDeletion();
     protocol_ = NULL;
   }
-  LOG_INFO << "HTTP ServerConnection completely closed,"
-              " deleting in select loop..";
+  VLOG(1) << "HTTP ServerConnection completely closed,"
+      " deleting in select loop..";
   selector_->DeleteInSelectLoop(this);
 }
 
@@ -336,8 +336,8 @@ void Server::AddClient(ServerProtocol* proto) {
 
 void Server::DeleteClient(ServerProtocol* proto) {
   synch::MutexLocker l(&mutex_);
-  LOG_INFO << name() << " HTTP Deleting client: " << proto->name()
-           << " from: " << protocols_.size() << " clients already serving";
+  VLOG(1) << name() << " HTTP Deleting client: " << proto->name()
+          << " from: " << protocols_.size() << " clients already serving";
   CHECK(protocols_.erase(proto));
 }
 
@@ -526,15 +526,15 @@ net::NetConnection* ServerProtocol::DetachFromFd(ServerRequest* req) {
 
 void ServerProtocol::NotifyConnectionDeletion() {
   CHECK(net_selector()->IsInSelectThread());
-  LOG_ERROR << "Client closed on us - closing all stuff.. ";
+  VLOG(1) << "Client closed on us - closing all stuff.. ";
   connection_ = NULL;
   closed_ = true;
   timeouter_.UnsetAllTimeouts();
   server_->DeleteClient(this);
   if ( active_requests_.empty() ) {
-    LOG_INFO << "HTTP :" << name()
-             << " No active requests - deleting client";
-    // LOG_HTTP << " No active requests - deleting client";
+    // LOG_HTTP << "HTTP :" << name()
+    //         << " No active requests - deleting client";
+    LOG_HTTP << " No active requests - deleting client";
     net_selector_->DeleteInSelectLoop(this);
   } else {
     LOG_INFO << "HTTP :" << name()

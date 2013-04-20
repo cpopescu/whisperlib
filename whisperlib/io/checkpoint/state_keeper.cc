@@ -462,7 +462,7 @@ bool StateKeepUser::CleanTimeout() {
   if ( crt_timeout_ <= 0 ) {
     return true;
   }
-  const string original_timeout_key(strutil::StringPrintf("%s/%025"PRId64"/%s",
+  const string original_timeout_key(strutil::StringPrintf("%s/%025" PRId64 "/%s",
           kStateKeeperTimeoutKey, crt_timeout_, prefix_.c_str()));
   if ( !state_keeper_->DeleteValue(original_timeout_key) ) {
     return false;
@@ -481,17 +481,17 @@ bool StateKeepUser::UpdateTimeout() {
   }
   string original_timeout_key;
   if ( crt_timeout_ > 0 ) {
-    original_timeout_key = strutil::StringPrintf("%s/%025"PRId64"/%s",
+    original_timeout_key = strutil::StringPrintf("%s/%025" PRId64 "/%s",
         kStateKeeperTimeoutKey, crt_timeout_, prefix_.c_str());
   }
   crt_timeout_ = new_timeout;
-  const string new_timeout_key(strutil::StringPrintf("%s/%025"PRId64"/%s",
+  const string new_timeout_key(strutil::StringPrintf("%s/%025" PRId64 "/%s",
       kStateKeeperTimeoutKey, crt_timeout_, prefix_.c_str()));
   if ( !state_keeper_->SetValue(new_timeout_key, prefix_) ) {
     return false;
   }
   SetValue(kStateKeeperTimeoutKey,
-      strutil::StringPrintf("%"PRId64, crt_timeout_));
+      strutil::StringPrintf("%" PRId64, crt_timeout_));
   ILOG_DEBUG << "Added NEW timeout key: [" << new_timeout_key << "]";
   // Only now delete the old key !!
   if ( !original_timeout_key.empty() ) {

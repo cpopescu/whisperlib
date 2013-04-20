@@ -170,6 +170,12 @@ bool File::Open(const string& filename,  Access acc, CreationDisposition cd) {
 
   return true;
 }
+void File::Set(const string& filename, int fd) {
+  filename_ = filename;
+  fd_ = fd;
+  UpdateSize();
+  UpdatePosition();
+}
 
 void File::Close() {
   if ( !is_open() ) {

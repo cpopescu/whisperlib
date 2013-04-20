@@ -1,5 +1,9 @@
 // -*- c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil; coding: utf-8 -*-
 //
+// (c) Copyright 2011, 1618labs
+// All rights reserved.
+// Author: Catalin Popescu (cp@1618labs.com)
+//
 
 #include "whisperlib/url/simple_url.h"
 #include "whisperlib/base/scoped_ptr.h"

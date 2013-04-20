@@ -70,7 +70,7 @@ int64 TicksNsec() {
 int64 TicksNsec() {
   struct timeval now;
   int ret = gettimeofday(&now, NULL);
-  return now.tv_sec * 1000000000L + now.tv_usec * 1000L;
+  return now.tv_sec * 1000000000LL + now.tv_usec * 1000LL;
 }
 
 #else

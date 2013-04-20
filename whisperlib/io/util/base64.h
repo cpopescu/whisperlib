@@ -109,7 +109,7 @@ struct DecodeState {
     STEP_A, STEP_B, STEP_C, STEP_D
   };
   DecodeStep step;
-  char plainchar;
+  uint8 decchar;
 };
 
 void InitDecodeState(DecodeState* state_in);
@@ -134,7 +134,7 @@ inline int DecodeValue(char value_in) {
 int DecodeValue(char value_in);
 
 int DecodeBlock(const char* code_in, const int length_in,
-                char* plaintext_out, DecodeState* state_in);
+                uint8* decoded_out, DecodeState* state_in);
 
 struct Decoder {
   DecodeState state_;
@@ -145,8 +145,8 @@ struct Decoder {
     return DecodeValue(value_in);
   }
   int Decode(const char* code_in, const int length_in,
-             char* plaintext_out) {
-    return DecodeBlock(code_in, length_in, plaintext_out, &state_);
+             uint8* decoded_out) {
+    return DecodeBlock(code_in, length_in, decoded_out, &state_);
   }
 };
 }  // namespace base64
