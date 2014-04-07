@@ -51,6 +51,25 @@
 #include <whisperlib/base/log.h>
 #include <whisperlib/base/strutil_format.h>
 
+#if defined __CYGWIN32__ && !defined __CYGWIN__
+   /* For backwards compatibility with Cygwin b19 and
+      earlier, we define __CYGWIN__ here, so that
+      we can rely on checking just for that macro. */
+#  define __CYGWIN__  __CYGWIN32__
+#endif
+
+#if defined _WIN32 && !defined __CYGWIN__ && !defined(PATH_SEPARATOR)
+   /* Use Windows separators on all _WIN32 defining
+      environments, except Cygwin. */
+#  define PATH_SEPARATOR		'\\'
+#endif
+
+#ifndef PATH_SEPARATOR
+   /* Assume that not having this is an indicator that all
+      are missing. */
+#  define PATH_SEPARATOR		'/'
+#endif
+
 namespace strutil {
 
 // Convert binary string to hex
