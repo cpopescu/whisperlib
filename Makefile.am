@@ -4,72 +4,56 @@ lib_LIBRARIES = google/protobuf/libprotobuf.a whisperlib/libwhisperlib.a
 
 google_protobuf_libprotobuf_a_SOURCES = \
   google/protobuf/descriptor.cc \
-  google/protobuf/descriptor.h \
   google/protobuf/descriptor.pb.cc \
-  google/protobuf/descriptor.pb.h \
   google/protobuf/descriptor_database.cc \
-  google/protobuf/descriptor_database.h \
   google/protobuf/dynamic_message.cc \
-  google/protobuf/dynamic_message.h \
   google/protobuf/extension_set.cc \
-  google/protobuf/extension_set.h \
   google/protobuf/extension_set_heavy.cc \
   google/protobuf/generated_message_reflection.cc \
-  google/protobuf/generated_message_reflection.h \
   google/protobuf/generated_message_util.cc \
-  google/protobuf/generated_message_util.h \
-  google/protobuf/io \
   google/protobuf/message.cc \
-  google/protobuf/message.h \
   google/protobuf/message_lite.cc \
-  google/protobuf/message_lite.h \
   google/protobuf/reflection_ops.cc \
-  google/protobuf/reflection_ops.h \
   google/protobuf/repeated_field.cc \
-  google/protobuf/repeated_field.h \
   google/protobuf/service.cc \
-  google/protobuf/service.h \
-  google/protobuf/stubs \
   google/protobuf/text_format.cc \
-  google/protobuf/text_format.h \
   google/protobuf/unknown_field_set.cc \
-  google/protobuf/unknown_field_set.h \
   google/protobuf/wire_format.cc \
-  google/protobuf/wire_format.h \
   google/protobuf/wire_format_lite.cc \
-  google/protobuf/wire_format_lite.h \
-  google/protobuf/wire_format_lite_inl.h \
-  google/protobuf/wscript \
   google/protobuf/io/coded_stream.cc \
-  google/protobuf/io/coded_stream.h \
-  google/protobuf/io/coded_stream_inl.h \
   google/protobuf/io/gzip_stream.cc \
-  google/protobuf/io/gzip_stream.h \
   google/protobuf/io/printer.cc \
-  google/protobuf/io/printer.h \
   google/protobuf/io/tokenizer.cc \
-  google/protobuf/io/tokenizer.h \
   google/protobuf/io/zero_copy_stream.cc \
-  google/protobuf/io/zero_copy_stream.h \
   google/protobuf/io/zero_copy_stream_impl.cc \
-  google/protobuf/io/zero_copy_stream_impl.h \
   google/protobuf/io/zero_copy_stream_impl_lite.cc \
-  google/protobuf/io/zero_copy_stream_impl_lite.h \
   google/protobuf/stubs/common.cc \
-  google/protobuf/stubs/common.h \
-  google/protobuf/stubs/hash.h \
-  google/protobuf/stubs/map-util.h \
   google/protobuf/stubs/once.cc \
-  google/protobuf/stubs/once.h \
-  google/protobuf/stubs/stl_util-inl.h \
   google/protobuf/stubs/structurally_valid.cc \
   google/protobuf/stubs/strutil.cc \
-  google/protobuf/stubs/strutil.h \
-  google/protobuf/stubs/substitute.cc \
-  google/protobuf/stubs/substitute.h
+  google/protobuf/stubs/substitute.cc
 
+if HAVE_ICU
+EXTRA_whisperlib_libwhisperlib_a_SOURCES = \
+  whisperlib/url/google-url/gurl.cc \
+  whisperlib/url/google-url/url_canon_etc.cc \
+  whisperlib/url/google-url/url_canon_fileurl.cc \
+  whisperlib/url/google-url/url_canon_host.cc \
+  whisperlib/url/google-url/url_canon_icu.cc \
+  whisperlib/url/google-url/url_canon_internal.cc \
+  whisperlib/url/google-url/url_canon_ip.cc \
+  whisperlib/url/google-url/url_canon_path.cc \
+  whisperlib/url/google-url/url_canon_pathurl.cc \
+  whisperlib/url/google-url/url_canon_query.cc \
+  whisperlib/url/google-url/url_canon_relative.cc \
+  whisperlib/url/google-url/url_canon_stdurl.cc \
+  whisperlib/url/google-url/url_parse.cc \
+  whisperlib/url/google-url/url_parse_file.cc \
+  whisperlib/url/google-url/url_util.cc
+endif
 
 whisperlib_libwhisperlib_a_SOURCES = \
+  $(EXTRA_whisperlib_libwhisperlib_a_SOURCES) \
   whisperlib/base/app.cc \
   whisperlib/base/date.cc \
   whisperlib/base/errno.cc \
@@ -128,25 +112,6 @@ whisperlib_libwhisperlib_a_SOURCES = \
   whisperlib/sync/thread.cc \
   whisperlib/sync/thread_pool.cc \
   whisperlib/url/simple_url.cc
-
-if HAVE_ICU
-EXTRA_whisperlib_libwhisperlib_a_SOURCES = \
-  whisperlib/url/google-url/gurl.cc \
-  whisperlib/url/google-url/url_canon_etc.cc \
-  whisperlib/url/google-url/url_canon_fileurl.cc \
-  whisperlib/url/google-url/url_canon_host.cc \
-  whisperlib/url/google-url/url_canon_icu.cc \
-  whisperlib/url/google-url/url_canon_internal.cc \
-  whisperlib/url/google-url/url_canon_ip.cc \
-  whisperlib/url/google-url/url_canon_path.cc \
-  whisperlib/url/google-url/url_canon_pathurl.cc \
-  whisperlib/url/google-url/url_canon_query.cc \
-  whisperlib/url/google-url/url_canon_relative.cc \
-  whisperlib/url/google-url/url_canon_stdurl.cc \
-  whisperlib/url/google-url/url_parse.cc \
-  whisperlib/url/google-url/url_parse_file.cc \
-  whisperlib/url/google-url/url_util.cc
-endif
 
 nobase_include_HEADERS = \
   whisperlib/base/app.h \

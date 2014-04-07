@@ -25,26 +25,25 @@ CXX_FLAG_CHECK([-stdlib=libc++])
 
 # Add check for ICU. Let the user disable the use of ICU if it's
 # present on the system by passing --without-icu to configure.
-AC_ARG_ENABLE([icu],
+AC_ARG_WITH([icu],
    AS_HELP_STRING(
         [--without-icu],
         [Ignore the presence of ICU and disable it]))
 
-AS_IF([test "x$have_icu" != "xno"],
-  [AX_CHECK_ICU([],
-   [HAVE_ICU=1
+AS_IF([test "x$with_icu" != "xno"],
+  [AX_CHECK_ICU([51],
+   [AC_DEFINE(HAVE_ICU)
     have_icu=yes
    ])],
   [have_icu=no])
 
-AM_CONDITIONAL([HAVE_ICU], [test x$HAVE_ICU = x1])
+AM_CONDITIONAL([HAVE_ICU], [test "x$have_icu" = "xyes"])
 
 AS_IF([test "x$have_icu" = "xyes"],
   [],
   [AS_IF([test "x$with_icu" = "xyes"],
     [AC_MSG_ERROR([ICU library requested but not found])])
     ])
-
 
 AC_C_BIGENDIAN
 

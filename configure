@@ -735,7 +735,7 @@ ac_user_opts='
 enable_option_checking
 enable_silent_rules
 enable_dependency_tracking
-enable_icu
+with_icu
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1371,6 +1371,10 @@ Optional Features:
                           do not reject slow dependency extractors
   --disable-dependency-tracking
                           speeds up one-time build
+
+Optional Packages:
+  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
+  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --without-icu           Ignore the presence of ICU and disable it
 
 Some influential environment variables:
@@ -6184,13 +6188,14 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 # Add check for ICU. Let the user disable the use of ICU if it's
 # present on the system by passing --without-icu to configure.
-# Check whether --enable-icu was given.
-if test "${enable_icu+set}" = set; then :
-  enableval=$enable_icu;
+
+# Check whether --with-icu was given.
+if test "${with_icu+set}" = set; then :
+  withval=$with_icu;
 fi
 
 
-if test "x$have_icu" != "xno"; then :
+if test "x$with_icu" != "xno"; then :
 
   succeeded=no
 
@@ -6238,11 +6243,11 @@ fi
 
   fi
 
-  if test "$ICU_CONFIG" = "yes" ; then
+  if test "$ICU_CONFIG" != "no" ; then
     ICU_VERSION=`$ICU_CONFIG --version`
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ICU >= " >&5
-$as_echo_n "checking for ICU >= ... " >&6; }
-    VERSION_CHECK=`expr $ICU_VERSION \>\= `
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ICU >= 51" >&5
+$as_echo_n "checking for ICU >= 51... " >&6; }
+    VERSION_CHECK=`expr $ICU_VERSION \>\= 51`
     if test "$VERSION_CHECK" = "1" ; then
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
@@ -6278,7 +6283,7 @@ $as_echo "$ICU_LIBS" >&6; }
         ICU_LIBS=""
         ## If we have a custom action on failure, don't print errors, but
         ## do set a variable so people can do so.
-        echo "can't find ICU >= "
+        echo "can't find ICU >= 51"
     fi
 
 
@@ -6288,7 +6293,8 @@ $as_echo "$ICU_LIBS" >&6; }
   fi
 
   if test $succeeded = yes; then
-     HAVE_ICU=1
+     $as_echo "#define HAVE_ICU 1" >>confdefs.h
+
     have_icu=yes
 
   else
@@ -6300,7 +6306,7 @@ else
   have_icu=no
 fi
 
- if test x$HAVE_ICU = x1; then
+ if test "x$have_icu" = "xyes"; then
   HAVE_ICU_TRUE=
   HAVE_ICU_FALSE='#'
 else
@@ -6317,7 +6323,6 @@ else
 fi
 
 fi
-
 
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'

@@ -80,7 +80,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
-	$(top_srcdir)/configure $(am__configure_deps) \
+	$(top_srcdir)/configure $(am__configure_deps) acconfig.h \
 	$(srcdir)/config.h.in depcomp $(dist_doc_DATA) \
 	$(nobase_include_HEADERS) ar-lib compile config.guess \
 	config.sub install-sh missing
@@ -167,9 +167,80 @@ google_protobuf_libprotobuf_a_OBJECTS =  \
 	$(am_google_protobuf_libprotobuf_a_OBJECTS)
 whisperlib_libwhisperlib_a_AR = $(AR) $(ARFLAGS)
 whisperlib_libwhisperlib_a_LIBADD =
-am_whisperlib_libwhisperlib_a_OBJECTS = whisperlib/base/app.$(OBJEXT) \
-	whisperlib/base/date.$(OBJEXT) whisperlib/base/errno.$(OBJEXT) \
-	whisperlib/base/re.$(OBJEXT) \
+am__whisperlib_libwhisperlib_a_SOURCES_DIST =  \
+	whisperlib/url/google-url/gurl.cc \
+	whisperlib/url/google-url/url_canon_etc.cc \
+	whisperlib/url/google-url/url_canon_fileurl.cc \
+	whisperlib/url/google-url/url_canon_host.cc \
+	whisperlib/url/google-url/url_canon_icu.cc \
+	whisperlib/url/google-url/url_canon_internal.cc \
+	whisperlib/url/google-url/url_canon_ip.cc \
+	whisperlib/url/google-url/url_canon_path.cc \
+	whisperlib/url/google-url/url_canon_pathurl.cc \
+	whisperlib/url/google-url/url_canon_query.cc \
+	whisperlib/url/google-url/url_canon_relative.cc \
+	whisperlib/url/google-url/url_canon_stdurl.cc \
+	whisperlib/url/google-url/url_parse.cc \
+	whisperlib/url/google-url/url_parse_file.cc \
+	whisperlib/url/google-url/url_util.cc whisperlib/base/app.cc \
+	whisperlib/base/date.cc whisperlib/base/errno.cc \
+	whisperlib/base/re.cc whisperlib/base/signal_handlers.cc \
+	whisperlib/base/stringprintf.cc whisperlib/base/strutil.cc \
+	whisperlib/base/strutil_format.cc whisperlib/base/system.cc \
+	whisperlib/base/timer.cc whisperlib/base/util.cc \
+	whisperlib/http/failsafe_http_client.cc \
+	whisperlib/http/http_client_protocol.cc \
+	whisperlib/http/http_consts.cc whisperlib/http/http_header.cc \
+	whisperlib/http/http_request.cc \
+	whisperlib/http/http_server_protocol.cc \
+	whisperlib/io/buffer/data_block.cc \
+	whisperlib/io/buffer/memory_stream.cc \
+	whisperlib/io/checkpoint/checkpoint_tool.cc \
+	whisperlib/io/checkpoint/checkpointing.cc \
+	whisperlib/io/checkpoint/state_keeper.cc \
+	whisperlib/io/checkpoint/state_keeper_tool.cc \
+	whisperlib/io/file/aio_file.cc \
+	whisperlib/io/file/buffer_manager.cc whisperlib/io/file/fd.cc \
+	whisperlib/io/file/fd_input_stream.cc \
+	whisperlib/io/file/file.cc \
+	whisperlib/io/file/file_input_stream.cc \
+	whisperlib/io/file/file_output_stream.cc \
+	whisperlib/io/ioutil.cc whisperlib/io/logio/logio.cc \
+	whisperlib/io/logio/recordio.cc whisperlib/io/output_stream.cc \
+	whisperlib/io/stream_base.cc whisperlib/io/util/base64.cc \
+	whisperlib/io/util/sha256.cc whisperlib/io/zlib/zlibwrapper.cc \
+	whisperlib/net/address.cc whisperlib/net/alarm.cc \
+	whisperlib/net/connection.cc whisperlib/net/dns_resolver.cc \
+	whisperlib/net/ipclassifier.cc whisperlib/net/selectable.cc \
+	whisperlib/net/selectable_filereader.cc \
+	whisperlib/net/selector.cc whisperlib/net/selector_base.cc \
+	whisperlib/net/timeouter.cc whisperlib/net/udp_connection.cc \
+	whisperlib/rpc/codec/rpc_json_decoder.cc \
+	whisperlib/rpc/codec/rpc_json_encoder.cc \
+	whisperlib/rpc/rpc_controller.cc \
+	whisperlib/rpc/rpc_http_client.cc \
+	whisperlib/rpc/rpc_http_server.cc whisperlib/sync/event.cc \
+	whisperlib/sync/thread.cc whisperlib/sync/thread_pool.cc \
+	whisperlib/url/simple_url.cc
+@HAVE_ICU_TRUE@am__objects_1 =  \
+@HAVE_ICU_TRUE@	whisperlib/url/google-url/gurl.$(OBJEXT) \
+@HAVE_ICU_TRUE@	whisperlib/url/google-url/url_canon_etc.$(OBJEXT) \
+@HAVE_ICU_TRUE@	whisperlib/url/google-url/url_canon_fileurl.$(OBJEXT) \
+@HAVE_ICU_TRUE@	whisperlib/url/google-url/url_canon_host.$(OBJEXT) \
+@HAVE_ICU_TRUE@	whisperlib/url/google-url/url_canon_icu.$(OBJEXT) \
+@HAVE_ICU_TRUE@	whisperlib/url/google-url/url_canon_internal.$(OBJEXT) \
+@HAVE_ICU_TRUE@	whisperlib/url/google-url/url_canon_ip.$(OBJEXT) \
+@HAVE_ICU_TRUE@	whisperlib/url/google-url/url_canon_path.$(OBJEXT) \
+@HAVE_ICU_TRUE@	whisperlib/url/google-url/url_canon_pathurl.$(OBJEXT) \
+@HAVE_ICU_TRUE@	whisperlib/url/google-url/url_canon_query.$(OBJEXT) \
+@HAVE_ICU_TRUE@	whisperlib/url/google-url/url_canon_relative.$(OBJEXT) \
+@HAVE_ICU_TRUE@	whisperlib/url/google-url/url_canon_stdurl.$(OBJEXT) \
+@HAVE_ICU_TRUE@	whisperlib/url/google-url/url_parse.$(OBJEXT) \
+@HAVE_ICU_TRUE@	whisperlib/url/google-url/url_parse_file.$(OBJEXT) \
+@HAVE_ICU_TRUE@	whisperlib/url/google-url/url_util.$(OBJEXT)
+am_whisperlib_libwhisperlib_a_OBJECTS = $(am__objects_1) \
+	whisperlib/base/app.$(OBJEXT) whisperlib/base/date.$(OBJEXT) \
+	whisperlib/base/errno.$(OBJEXT) whisperlib/base/re.$(OBJEXT) \
 	whisperlib/base/signal_handlers.$(OBJEXT) \
 	whisperlib/base/stringprintf.$(OBJEXT) \
 	whisperlib/base/strutil.$(OBJEXT) \
@@ -270,23 +341,11 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
-COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
-	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-AM_V_CC = $(am__v_CC_@AM_V@)
-am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
-am__v_CC_0 = @echo "  CC      " $@;
-am__v_CC_1 = 
-CCLD = $(CC)
-LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-AM_V_CCLD = $(am__v_CCLD_@AM_V@)
-am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
-am__v_CCLD_0 = @echo "  CCLD    " $@;
-am__v_CCLD_1 = 
 SOURCES = $(google_protobuf_libprotobuf_a_SOURCES) \
 	$(whisperlib_libwhisperlib_a_SOURCES) \
 	$(EXTRA_whisperlib_libwhisperlib_a_SOURCES)
 DIST_SOURCES = $(google_protobuf_libprotobuf_a_SOURCES) \
-	$(whisperlib_libwhisperlib_a_SOURCES) \
+	$(am__whisperlib_libwhisperlib_a_SOURCES_DIST) \
 	$(am__EXTRA_whisperlib_libwhisperlib_a_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
@@ -442,71 +501,54 @@ dist_doc_DATA = README.md
 lib_LIBRARIES = google/protobuf/libprotobuf.a whisperlib/libwhisperlib.a
 google_protobuf_libprotobuf_a_SOURCES = \
   google/protobuf/descriptor.cc \
-  google/protobuf/descriptor.h \
   google/protobuf/descriptor.pb.cc \
-  google/protobuf/descriptor.pb.h \
   google/protobuf/descriptor_database.cc \
-  google/protobuf/descriptor_database.h \
   google/protobuf/dynamic_message.cc \
-  google/protobuf/dynamic_message.h \
   google/protobuf/extension_set.cc \
-  google/protobuf/extension_set.h \
   google/protobuf/extension_set_heavy.cc \
   google/protobuf/generated_message_reflection.cc \
-  google/protobuf/generated_message_reflection.h \
   google/protobuf/generated_message_util.cc \
-  google/protobuf/generated_message_util.h \
-  google/protobuf/io \
   google/protobuf/message.cc \
-  google/protobuf/message.h \
   google/protobuf/message_lite.cc \
-  google/protobuf/message_lite.h \
   google/protobuf/reflection_ops.cc \
-  google/protobuf/reflection_ops.h \
   google/protobuf/repeated_field.cc \
-  google/protobuf/repeated_field.h \
   google/protobuf/service.cc \
-  google/protobuf/service.h \
-  google/protobuf/stubs \
   google/protobuf/text_format.cc \
-  google/protobuf/text_format.h \
   google/protobuf/unknown_field_set.cc \
-  google/protobuf/unknown_field_set.h \
   google/protobuf/wire_format.cc \
-  google/protobuf/wire_format.h \
   google/protobuf/wire_format_lite.cc \
-  google/protobuf/wire_format_lite.h \
-  google/protobuf/wire_format_lite_inl.h \
-  google/protobuf/wscript \
   google/protobuf/io/coded_stream.cc \
-  google/protobuf/io/coded_stream.h \
-  google/protobuf/io/coded_stream_inl.h \
   google/protobuf/io/gzip_stream.cc \
-  google/protobuf/io/gzip_stream.h \
   google/protobuf/io/printer.cc \
-  google/protobuf/io/printer.h \
   google/protobuf/io/tokenizer.cc \
-  google/protobuf/io/tokenizer.h \
   google/protobuf/io/zero_copy_stream.cc \
-  google/protobuf/io/zero_copy_stream.h \
   google/protobuf/io/zero_copy_stream_impl.cc \
-  google/protobuf/io/zero_copy_stream_impl.h \
   google/protobuf/io/zero_copy_stream_impl_lite.cc \
-  google/protobuf/io/zero_copy_stream_impl_lite.h \
   google/protobuf/stubs/common.cc \
-  google/protobuf/stubs/common.h \
-  google/protobuf/stubs/hash.h \
-  google/protobuf/stubs/map-util.h \
   google/protobuf/stubs/once.cc \
-  google/protobuf/stubs/once.h \
-  google/protobuf/stubs/stl_util-inl.h \
   google/protobuf/stubs/structurally_valid.cc \
   google/protobuf/stubs/strutil.cc \
-  google/protobuf/stubs/strutil.h \
-  google/protobuf/stubs/substitute.cc \
-  google/protobuf/stubs/substitute.h
+  google/protobuf/stubs/substitute.cc
+
+@HAVE_ICU_TRUE@EXTRA_whisperlib_libwhisperlib_a_SOURCES = \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/gurl.cc \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_etc.cc \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_fileurl.cc \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_host.cc \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_icu.cc \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_internal.cc \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_ip.cc \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_path.cc \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_pathurl.cc \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_query.cc \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_relative.cc \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_stdurl.cc \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_parse.cc \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_parse_file.cc \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_util.cc
 
 whisperlib_libwhisperlib_a_SOURCES = \
+  $(EXTRA_whisperlib_libwhisperlib_a_SOURCES) \
   whisperlib/base/app.cc \
   whisperlib/base/date.cc \
   whisperlib/base/errno.cc \
@@ -565,23 +607,6 @@ whisperlib_libwhisperlib_a_SOURCES = \
   whisperlib/sync/thread.cc \
   whisperlib/sync/thread_pool.cc \
   whisperlib/url/simple_url.cc
-
-@HAVE_ICU_TRUE@EXTRA_whisperlib_libwhisperlib_a_SOURCES = \
-@HAVE_ICU_TRUE@  whisperlib/url/google-url/gurl.cc \
-@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_etc.cc \
-@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_fileurl.cc \
-@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_host.cc \
-@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_icu.cc \
-@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_internal.cc \
-@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_ip.cc \
-@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_path.cc \
-@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_pathurl.cc \
-@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_query.cc \
-@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_relative.cc \
-@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_stdurl.cc \
-@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_parse.cc \
-@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_parse_file.cc \
-@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_util.cc
 
 nobase_include_HEADERS = \
   whisperlib/base/app.h \
@@ -718,7 +743,7 @@ config.h: stamp-h1
 stamp-h1: $(srcdir)/config.h.in $(top_builddir)/config.status
 	@rm -f stamp-h1
 	cd $(top_builddir) && $(SHELL) ./config.status config.h
-$(srcdir)/config.h.in:  $(am__configure_deps) 
+$(srcdir)/config.h.in:  $(am__configure_deps) $(top_srcdir)/acconfig.h
 	($(am__cd) $(top_srcdir) && $(AUTOHEADER))
 	rm -f stamp-h1
 	touch $@
@@ -863,6 +888,57 @@ google/protobuf/libprotobuf.a: $(google_protobuf_libprotobuf_a_OBJECTS) $(google
 	$(AM_V_at)-rm -f google/protobuf/libprotobuf.a
 	$(AM_V_AR)$(google_protobuf_libprotobuf_a_AR) google/protobuf/libprotobuf.a $(google_protobuf_libprotobuf_a_OBJECTS) $(google_protobuf_libprotobuf_a_LIBADD)
 	$(AM_V_at)$(RANLIB) google/protobuf/libprotobuf.a
+whisperlib/url/google-url/$(am__dirstamp):
+	@$(MKDIR_P) whisperlib/url/google-url
+	@: > whisperlib/url/google-url/$(am__dirstamp)
+whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) whisperlib/url/google-url/$(DEPDIR)
+	@: > whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
+whisperlib/url/google-url/gurl.$(OBJEXT):  \
+	whisperlib/url/google-url/$(am__dirstamp) \
+	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
+whisperlib/url/google-url/url_canon_etc.$(OBJEXT):  \
+	whisperlib/url/google-url/$(am__dirstamp) \
+	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
+whisperlib/url/google-url/url_canon_fileurl.$(OBJEXT):  \
+	whisperlib/url/google-url/$(am__dirstamp) \
+	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
+whisperlib/url/google-url/url_canon_host.$(OBJEXT):  \
+	whisperlib/url/google-url/$(am__dirstamp) \
+	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
+whisperlib/url/google-url/url_canon_icu.$(OBJEXT):  \
+	whisperlib/url/google-url/$(am__dirstamp) \
+	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
+whisperlib/url/google-url/url_canon_internal.$(OBJEXT):  \
+	whisperlib/url/google-url/$(am__dirstamp) \
+	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
+whisperlib/url/google-url/url_canon_ip.$(OBJEXT):  \
+	whisperlib/url/google-url/$(am__dirstamp) \
+	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
+whisperlib/url/google-url/url_canon_path.$(OBJEXT):  \
+	whisperlib/url/google-url/$(am__dirstamp) \
+	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
+whisperlib/url/google-url/url_canon_pathurl.$(OBJEXT):  \
+	whisperlib/url/google-url/$(am__dirstamp) \
+	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
+whisperlib/url/google-url/url_canon_query.$(OBJEXT):  \
+	whisperlib/url/google-url/$(am__dirstamp) \
+	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
+whisperlib/url/google-url/url_canon_relative.$(OBJEXT):  \
+	whisperlib/url/google-url/$(am__dirstamp) \
+	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
+whisperlib/url/google-url/url_canon_stdurl.$(OBJEXT):  \
+	whisperlib/url/google-url/$(am__dirstamp) \
+	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
+whisperlib/url/google-url/url_parse.$(OBJEXT):  \
+	whisperlib/url/google-url/$(am__dirstamp) \
+	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
+whisperlib/url/google-url/url_parse_file.$(OBJEXT):  \
+	whisperlib/url/google-url/$(am__dirstamp) \
+	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
+whisperlib/url/google-url/url_util.$(OBJEXT):  \
+	whisperlib/url/google-url/$(am__dirstamp) \
+	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
 whisperlib/base/$(am__dirstamp):
 	@$(MKDIR_P) whisperlib/base
 	@: > whisperlib/base/$(am__dirstamp)
@@ -1097,57 +1173,6 @@ whisperlib/url/$(DEPDIR)/$(am__dirstamp):
 	@: > whisperlib/url/$(DEPDIR)/$(am__dirstamp)
 whisperlib/url/simple_url.$(OBJEXT): whisperlib/url/$(am__dirstamp) \
 	whisperlib/url/$(DEPDIR)/$(am__dirstamp)
-whisperlib/url/google-url/$(am__dirstamp):
-	@$(MKDIR_P) whisperlib/url/google-url
-	@: > whisperlib/url/google-url/$(am__dirstamp)
-whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) whisperlib/url/google-url/$(DEPDIR)
-	@: > whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
-whisperlib/url/google-url/gurl.$(OBJEXT):  \
-	whisperlib/url/google-url/$(am__dirstamp) \
-	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
-whisperlib/url/google-url/url_canon_etc.$(OBJEXT):  \
-	whisperlib/url/google-url/$(am__dirstamp) \
-	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
-whisperlib/url/google-url/url_canon_fileurl.$(OBJEXT):  \
-	whisperlib/url/google-url/$(am__dirstamp) \
-	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
-whisperlib/url/google-url/url_canon_host.$(OBJEXT):  \
-	whisperlib/url/google-url/$(am__dirstamp) \
-	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
-whisperlib/url/google-url/url_canon_icu.$(OBJEXT):  \
-	whisperlib/url/google-url/$(am__dirstamp) \
-	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
-whisperlib/url/google-url/url_canon_internal.$(OBJEXT):  \
-	whisperlib/url/google-url/$(am__dirstamp) \
-	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
-whisperlib/url/google-url/url_canon_ip.$(OBJEXT):  \
-	whisperlib/url/google-url/$(am__dirstamp) \
-	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
-whisperlib/url/google-url/url_canon_path.$(OBJEXT):  \
-	whisperlib/url/google-url/$(am__dirstamp) \
-	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
-whisperlib/url/google-url/url_canon_pathurl.$(OBJEXT):  \
-	whisperlib/url/google-url/$(am__dirstamp) \
-	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
-whisperlib/url/google-url/url_canon_query.$(OBJEXT):  \
-	whisperlib/url/google-url/$(am__dirstamp) \
-	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
-whisperlib/url/google-url/url_canon_relative.$(OBJEXT):  \
-	whisperlib/url/google-url/$(am__dirstamp) \
-	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
-whisperlib/url/google-url/url_canon_stdurl.$(OBJEXT):  \
-	whisperlib/url/google-url/$(am__dirstamp) \
-	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
-whisperlib/url/google-url/url_parse.$(OBJEXT):  \
-	whisperlib/url/google-url/$(am__dirstamp) \
-	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
-whisperlib/url/google-url/url_parse_file.$(OBJEXT):  \
-	whisperlib/url/google-url/$(am__dirstamp) \
-	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
-whisperlib/url/google-url/url_util.$(OBJEXT):  \
-	whisperlib/url/google-url/$(am__dirstamp) \
-	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
 whisperlib/$(am__dirstamp):
 	@$(MKDIR_P) whisperlib
 	@: > whisperlib/$(am__dirstamp)

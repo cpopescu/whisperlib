@@ -49,9 +49,9 @@ AC_DEFUN([AX_CHECK_ICU], [
     AC_PATH_PROG(ICU_CONFIG, icu-config, no)
   fi
 
-  if test "$ICU_CONFIG" = "yes" ; then
+  if test "$ICU_CONFIG" != "no" ; then
     ICU_VERSION=`$ICU_CONFIG --version`
-    AC_MSG_CHECKING(for ICU >= $1)
+    AC_MSG_CHECKING([for ICU >= $1])
     VERSION_CHECK=`expr $ICU_VERSION \>\= $1`
     if test "$VERSION_CHECK" = "1" ; then
         AC_MSG_RESULT(yes)
