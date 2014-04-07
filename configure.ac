@@ -18,15 +18,38 @@ AC_LANG(C++)
 AC_PROG_CXX
 AC_PROG_CC
 
-AX_CXX_COMPILE_STDCXX_11([noext],[mandatory])
+# Require the GNU stl
+AX_CXX_COMPILE_STDCXX_11([ext],[mandatory])
+
 CXX_FLAG_CHECK([-stdlib=libc++])
+
+# Add check for ICU. Let the user disable the use of ICU if it's
+# present on the system by passing --without-icu to configure.
+AC_ARG_ENABLE([icu],
+   AS_HELP_STRING(
+        [--without-icu],
+        [Ignore the presence of ICU and disable it]))
+
+AS_IF([test "x$have_icu" != "xno"],
+  [AX_CHECK_ICU([],
+   [HAVE_ICU=1
+    have_icu=yes
+   ])],
+  [have_icu=no])
+
+AM_CONDITIONAL([HAVE_ICU], [test x$HAVE_ICU = x1])
+
+AS_IF([test "x$have_icu" = "xyes"],
+  [],
+  [AS_IF([test "x$with_icu" = "xyes"],
+    [AC_MSG_ERROR([ICU library requested but not found])])
+    ])
+
 
 AC_C_BIGENDIAN
 
-# Checks for libraries.
-
 # Checks for header files.
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h float.h inttypes.h limits.h memory.h netdb.h netinet/in.h stddef.h stdint.h stdlib.h string.h strings.h sys/param.h sys/socket.h sys/time.h unistd.h gflags/gflags.h glog/logging.h nameser8_compat.h endian.h])
+AC_CHECK_HEADERS([arpa/inet.h fcntl.h float.h inttypes.h limits.h memory.h netdb.h netinet/in.h stddef.h stdint.h stdlib.h string.h strings.h sys/param.h sys/socket.h sys/stat.h sys/time.h unistd.h gflags/gflags.h glog/logging.h nameser8_compat.h endian.h sys/epoll.h sys/poll.h poll.h])
 
 AC_CHECK_HEADERS([unordered_set tr1/unordered_set ext/hash_set unordered_map tr1/unordered_map ext/hash_map functional_hash.h tr1/functional_hash.h ext/hash_fun.h])
 

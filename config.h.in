@@ -363,3 +363,11 @@
 #  define BYTE_ORDER LITTLE_ENDIAN
 # endif
 #endif
+
+#undef HAVE_SYS_EPOLL_H
+#undef HAVE_SYS_POLL_H
+#undef HAVE_POLL_H
+
+#undef HAVE_SYS_STAT_H
+
+#undef HAVE_ICU

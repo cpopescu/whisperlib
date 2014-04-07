@@ -1,6 +1,6 @@
 dist_doc_DATA = README.md
 
-noinst_LIBRARIES = google/protobuf/libprotobuf.a whisperlib/libwhisperlib.a
+lib_LIBRARIES = google/protobuf/libprotobuf.a whisperlib/libwhisperlib.a
 
 google_protobuf_libprotobuf_a_SOURCES = \
   google/protobuf/descriptor.cc \
@@ -127,6 +127,10 @@ whisperlib_libwhisperlib_a_SOURCES = \
   whisperlib/sync/event.cc \
   whisperlib/sync/thread.cc \
   whisperlib/sync/thread_pool.cc \
+  whisperlib/url/simple_url.cc
+
+if HAVE_ICU
+EXTRA_whisperlib_libwhisperlib_a_SOURCES = \
   whisperlib/url/google-url/gurl.cc \
   whisperlib/url/google-url/url_canon_etc.cc \
   whisperlib/url/google-url/url_canon_fileurl.cc \
@@ -141,5 +145,96 @@ whisperlib_libwhisperlib_a_SOURCES = \
   whisperlib/url/google-url/url_canon_stdurl.cc \
   whisperlib/url/google-url/url_parse.cc \
   whisperlib/url/google-url/url_parse_file.cc \
-  whisperlib/url/google-url/url_util.cc \
-  whisperlib/url/simple_url.cc
+  whisperlib/url/google-url/url_util.cc
+endif
+
+nobase_include_HEADERS = \
+  whisperlib/base/app.h \
+  whisperlib/base/basictypes.h \
+  whisperlib/base/cache.h \
+  whisperlib/base/callback/callback.h \
+  whisperlib/base/callback/callback1.h \
+  whisperlib/base/callback/callback2.h \
+  whisperlib/base/callback/callback3.h \
+  whisperlib/base/callback/closure.h \
+  whisperlib/base/callback/result_callback1.h \
+  whisperlib/base/callback/result_callback2.h \
+  whisperlib/base/callback/result_callback3.h \
+  whisperlib/base/callback/result_closure.h \
+  whisperlib/base/callback.h \
+  whisperlib/base/date.h \
+  whisperlib/base/errno.h \
+  whisperlib/base/free_list.h \
+  whisperlib/base/gflags.h \
+  whisperlib/base/log.h \
+  whisperlib/base/lru_cache.h \
+  whisperlib/base/port.h \
+  whisperlib/base/re.h \
+  whisperlib/base/ref_counted.h \
+  whisperlib/base/scoped_ptr.h \
+  whisperlib/base/signal_handlers.h \
+  whisperlib/base/stringprintf.h \
+  whisperlib/base/strutil.h \
+  whisperlib/base/strutil_format.h \
+  whisperlib/base/system.h \
+  whisperlib/base/timer.h \
+  whisperlib/base/types.h \
+  whisperlib/base/util.h \
+  whisperlib/http/failsafe_http_client.h \
+  whisperlib/http/http_client_protocol.h \
+  whisperlib/http/http_consts.h \
+  whisperlib/http/http_header.h \
+  whisperlib/http/http_request.h \
+  whisperlib/http/http_server_protocol.h \
+  whisperlib/io/buffer/data_block.h \
+  whisperlib/io/buffer/memory_stream.h \
+  whisperlib/io/buffer/protobuf_stream.h \
+  whisperlib/io/checkpoint/checkpointing.h \
+  whisperlib/io/checkpoint/state_keeper.h \
+  whisperlib/io/file/aio_file.h \
+  whisperlib/io/file/buffer_manager.h \
+  whisperlib/io/file/fd.h \
+  whisperlib/io/file/fd_input_stream.h \
+  whisperlib/io/file/file.h \
+  whisperlib/io/file/file_input_stream.h \
+  whisperlib/io/file/file_output_stream.h \
+  whisperlib/io/input_stream.h \
+  whisperlib/io/iomarker.h \
+  whisperlib/io/ioutil.h \
+  whisperlib/io/logio/logio.h \
+  whisperlib/io/logio/recordio.h \
+  whisperlib/io/num_streaming.h \
+  whisperlib/io/output_stream.h \
+  whisperlib/io/seeker.h \
+  whisperlib/io/stream_base.h \
+  whisperlib/io/util/base64.h \
+  whisperlib/io/util/sha256.h \
+  whisperlib/io/zlib/zlibwrapper.h \
+  whisperlib/net/address.h \
+  whisperlib/net/alarm.h \
+  whisperlib/net/connection.h \
+  whisperlib/net/dns_resolver.h \
+  whisperlib/net/ipclassifier.h \
+  whisperlib/net/selectable.h \
+  whisperlib/net/selectable_filereader.h \
+  whisperlib/net/selector.h \
+  whisperlib/net/selector_base.h \
+  whisperlib/net/timeouter.h \
+  whisperlib/net/udp_connection.h \
+  whisperlib/net/user_authenticator.h \
+  whisperlib/rpc/codec/rpc_decode_result.h \
+  whisperlib/rpc/codec/rpc_decoder.h \
+  whisperlib/rpc/codec/rpc_encoder.h \
+  whisperlib/rpc/codec/rpc_json_decoder.h \
+  whisperlib/rpc/codec/rpc_json_encoder.h \
+  whisperlib/rpc/rpc_consts.h \
+  whisperlib/rpc/rpc_controller.h \
+  whisperlib/rpc/rpc_http_client.h \
+  whisperlib/rpc/rpc_http_server.h \
+  whisperlib/sync/event.h \
+  whisperlib/sync/mutex.h \
+  whisperlib/sync/producer_consumer_queue.h \
+  whisperlib/sync/thread.h \
+  whisperlib/sync/thread_pool.h \
+  whisperlib/url/simple_url.h \
+  whisperlib/url/url.h
