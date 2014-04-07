@@ -3,6 +3,8 @@
 #define __WHISPERLIB_BASE_TYPES_H
 #pragma once
 
+#include <config.h>
+
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
@@ -19,9 +21,9 @@
 #include <limits.h>         // So we can set the bounds of our types
 #include <stddef.h>         // For size_t
 #include <string.h>         // for memcpy
-#include <stdint.h>
 
 #ifdef HAVE_STDINT_H
+#include <stdint.h>
 
 // for PRId64 , PRIu64 , ...
 #ifndef __STDC_FORMAT_MACROS
@@ -547,20 +549,17 @@ using namespace __gnu_cxx;
 #if defined(HAVE_UNORDERED_MAP)
 #  define WHISPER_HASH_MAP_HEADER <unordered_map>
 #  define hash_map unordered_map
-#  define WHISPER_HASH_FUN_HEADER <functional_hash.h>
 #  define WHISPER_HASH_FUN_NAMESPACE_BEGIN namespace std {
 #  define WHISPER_HASH_FUN_NAMESPACE_END }
 #  define WHISPER_HASH_FUN_NAMESPACE std
 #elif defined(HAVE_TR1_UNORDERED_MAP)
 #  define WHISPER_HASH_MAP_HEADER <tr1/unordered_map>
 #  define hash_map tr1::unordered_map
-#  define WHISPER_HASH_FUN_HEADER <tr1/functional_hash.h>
 #  define WHISPER_HASH_FUN_NAMESPACE_BEGIN namespace std { namespace tr1 {
 #  define WHISPER_HASH_FUN_NAMESPACE_END } }
 #  define WHISPER_HASH_FUN_NAMESPACE std::tr1
 #elif defined(HAVE_EXT_HASH_MAP)
 #  define WHISPER_HASH_MAP_HEADER <ext/hash_map>
-#  define WHISPER_HASH_FUN_HEADER <ext/hash_fun.h>
 #  define WHISPER_HASH_FUN_NAMESPACE_BEGIN namespace __gnu_cxx {
 #  define WHISPER_HASH_FUN_NAMESPACE_END }
 #  define WHISPER_HASH_FUN_NAMESPACE __gnu_cxx
