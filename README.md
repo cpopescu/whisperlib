@@ -1,4 +1,4 @@
-Date: 2014-04-07 17:43:41
+Date: 2014-04-07 20:17:20
 
 whisperlib
 ==========
@@ -97,5 +97,9 @@ the --prefix argument.
 
 The autoconf build does not support cross compilation for now, so you
 cannot yet build for iOS or Android.
+
+If you need to generate the configure script, you need at least
+automake-14.1 and autoconf-2.69 installed on your machine. Older
+versions of these programs will not work.
 
 Enjoy
