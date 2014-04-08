@@ -561,10 +561,10 @@ int main(int argc, char* argv[]) {
   CHECK(!strutil::i18n::IsAlnum(L'('));
   // CHECK(!strutil::i18n::IsAlnum(L'\u037B'));
 
-  CHECK(strutil::i18n::IsSpace(L'\u0020'));
-  CHECK(strutil::i18n::IsSpace(L'\u0009'));
-  CHECK(strutil::i18n::IsSpace(L'\u000A'));
-  CHECK(strutil::i18n::IsSpace(L'\u000D'));
+  CHECK(strutil::i18n::IsSpace(L' '));
+  CHECK(strutil::i18n::IsSpace(L'\t'));
+  CHECK(strutil::i18n::IsSpace(L'\r'));
+  CHECK(strutil::i18n::IsSpace(L'\n'));
   CHECK(strutil::i18n::IsSpace(L'\u2000'));
   CHECK(strutil::i18n::IsSpace(L'\u2004'));
   CHECK(strutil::i18n::IsSpace(L'\u2005'));

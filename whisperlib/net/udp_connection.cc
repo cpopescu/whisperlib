@@ -30,7 +30,7 @@
 // Authors: Cosmin Tudorache
 //
 
-#include <config.h>
+#include <whisperlib/base/core_config.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>

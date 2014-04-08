@@ -1,5 +1,9 @@
-/* whisperlib/base/config.h.in.  Generated from configure.ac by autoheader.  */
+/* whisperlib/base/core_config.h.in.  Generated from configure.ac by autoheader.  */
+/* Section coming from acconfig.h */
+
+#undef HAVE_GLOG
 #undef HAVE_GFLAGS
+#undef HAVE_PROTOBUF
 
 #undef HAVE_UNORDERED_SET
 #undef HAVE_TR1_UNORDERED_SET
@@ -55,14 +59,17 @@
 
 #undef HAVE_ICU
 
-#undef HAVE_GLOG
-
 #if HAVE_GLOG
 # define USE_GLOG_LOGGING 1
 #endif
 
+/* End of section coming from acconfig.h */
+
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
+
+/* Namespace used by the gflags library */
+#undef GFLAGS_NAMESPACE
 
 /* Define to 1 if you have the `alarm' function. */
 #undef HAVE_ALARM
@@ -106,6 +113,9 @@
 
 /* Define to 1 if you have the `ftruncate' function. */
 #undef HAVE_FTRUNCATE
+
+/* Define to 1 if you have the <functional> header file. */
+#undef HAVE_FUNCTIONAL
 
 /* Define to 1 if you have the <functional_hash.h> header file. */
 #undef HAVE_FUNCTIONAL_HASH_H

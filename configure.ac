@@ -3,7 +3,7 @@ AC_INIT([whisperlib], [1.0])
 AM_INIT_AUTOMAKE([foreign color-tests dist-bzip2 parallel-tests subdir-objects])
 
 AC_CONFIG_FILES([Makefile])
-AC_CONFIG_HEADERS([whisperlib/base/config.h])
+AC_CONFIG_HEADERS([whisperlib/base/core_config.h])
 
 AC_PROG_CC
 AC_PROG_CXX
@@ -59,18 +59,29 @@ AX_CHECK_GFLAGS(
   [have_gflags=no])
 AM_CONDITIONAL([HAVE_GFLAGS], [test "$have_gflags" = "yes"])
 
+# Determine the name of namespace used by the gflags library
+AX_GFLAGS_NAMESPACE(GFLAGS_NAMESPACE)
+AC_DEFINE_UNQUOTED(
+  [GFLAGS_NAMESPACE],[$GFLAGS_NAMESPACE],[Namespace used by the gflags library])
+
 if test "$have_glog" = "yes" -a "$have_gflags" = "no"; then
    AC_MSG_ERROR([
 You have the glog library installed.
 You must also install the gflags library!])
 fi
 
+AX_CHECK_PROTOBUF(
+  [AC_DEFINE(HAVE_PROTOBUF)
+   have_protobuf=yes],
+  [have_protobuf=no])
+AM_CONDITIONAL([HAVE_PROTOBUF], [test "$have_protobuf" = "yes"])
+
 AC_C_BIGENDIAN
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h float.h inttypes.h limits.h memory.h netdb.h netinet/in.h stddef.h stdint.h stdlib.h string.h strings.h sys/param.h sys/socket.h sys/stat.h sys/time.h unistd.h nameser8_compat.h endian.h sys/epoll.h sys/poll.h poll.h])
 
-AC_CHECK_HEADERS([unordered_set tr1/unordered_set ext/hash_set unordered_map tr1/unordered_map ext/hash_map functional_hash.h tr1/functional_hash.h ext/hash_fun.h])
+AC_CHECK_HEADERS([unordered_set tr1/unordered_set ext/hash_set unordered_map tr1/unordered_map ext/hash_map functional functional_hash.h tr1/functional_hash.h ext/hash_fun.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_CHECK_HEADER_STDBOOL

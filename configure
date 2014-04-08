@@ -626,6 +626,8 @@ LTLIBOBJS
 POW_LIB
 LIBOBJS
 CXXCPP
+HAVE_PROTOBUF_FALSE
+HAVE_PROTOBUF_TRUE
 HAVE_GFLAGS_FALSE
 HAVE_GFLAGS_TRUE
 HAVE_GLOG_FALSE
@@ -3383,7 +3385,7 @@ fi
 
 ac_config_files="$ac_config_files Makefile"
 
-ac_config_headers="$ac_config_headers whisperlib/base/config.h"
+ac_config_headers="$ac_config_headers whisperlib/base/core_config.h"
 
 
 ac_ext=c
@@ -6309,8 +6311,8 @@ fi
   ax_save_LIBS="$LIBS"
   LIBS="-lglog"
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for usable glog library" >&5
-$as_echo_n "checking for usable glog library... " >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for glog library" >&5
+$as_echo_n "checking for glog library... " >&6; }
   ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -6435,11 +6437,159 @@ else
 fi
 
 
+# Determine the name of namespace used by the gflags library
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for gflags namespace" >&5
+$as_echo_n "checking for gflags namespace... " >&6; }
+  ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <gflags/gflags.h>
+int main(int argc, char** argv) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+}
+/* override the definition of main, since we do not want to interfere with
+   ours */
+#define main test
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  GFLAGS_NAMESPACE=gflags
+       found=yes
+
+else
+  found=no
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+  if test "$found" = no; then
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <gflags/gflags.h>
+int main(int argc, char** argv) {
+  google::ParseCommandLineFlags(&argc, &argv, true);
+}
+/* override the definition of main, since we do not want to interfere with
+   ours */
+#define main test
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  GFLAGS_NAMESPACE=google
+         found=yes
+
+else
+  found=no
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+  fi
+  ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $GFLAGS_NAMESPACE" >&5
+$as_echo "$GFLAGS_NAMESPACE" >&6; }
+
+
+cat >>confdefs.h <<_ACEOF
+#define GFLAGS_NAMESPACE $GFLAGS_NAMESPACE
+_ACEOF
+
+
 if test "$have_glog" = "yes" -a "$have_gflags" = "no"; then
    as_fn_error $? "
 You have the glog library installed.
 You must also install the gflags library!" "$LINENO" 5
 fi
+
+
+  ax_save_LIBS="$LIBS"
+  LIBS="-lprotobuf"
+
+  ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for protobuf library" >&5
+$as_echo_n "checking for protobuf library... " >&6; }
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <google/protobuf/compiler/parser.h>
+google::protobuf::compiler::Parser parser;
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  have_protobuf=yes
+
+else
+  have_protobuf=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_protobuf" >&5
+$as_echo "$have_protobuf" >&6; }
+  ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+
+  if test "$have_protobuf" = "no"; then
+    LIBS=$ax_save_LIBS
+    have_protobuf=no
+  else
+    LIBS="-lprotobuf $ax_save_LIBS"
+    $as_echo "#define HAVE_PROTOBUF 1" >>confdefs.h
+
+   have_protobuf=yes
+  fi
+
+ if test "$have_protobuf" = "yes"; then
+  HAVE_PROTOBUF_TRUE=
+  HAVE_PROTOBUF_FALSE='#'
+else
+  HAVE_PROTOBUF_TRUE='#'
+  HAVE_PROTOBUF_FALSE=
+fi
+
 
  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether byte ordering is bigendian" >&5
 $as_echo_n "checking whether byte ordering is bigendian... " >&6; }
@@ -6815,7 +6965,7 @@ fi
 done
 
 
-for ac_header in unordered_set tr1/unordered_set ext/hash_set unordered_map tr1/unordered_map ext/hash_map functional_hash.h tr1/functional_hash.h ext/hash_fun.h
+for ac_header in unordered_set tr1/unordered_set ext/hash_set unordered_map tr1/unordered_map ext/hash_map functional functional_hash.h tr1/functional_hash.h ext/hash_fun.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 ac_fn_cxx_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
@@ -8425,6 +8575,10 @@ if test -z "${HAVE_GFLAGS_TRUE}" && test -z "${HAVE_GFLAGS_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_GFLAGS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${HAVE_PROTOBUF_TRUE}" && test -z "${HAVE_PROTOBUF_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_PROTOBUF\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 
 
 : "${CONFIG_STATUS=./config.status}"
@@ -9019,7 +9173,7 @@ for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
-    "whisperlib/base/config.h") CONFIG_HEADERS="$CONFIG_HEADERS whisperlib/base/config.h" ;;
+    "whisperlib/base/core_config.h") CONFIG_HEADERS="$CONFIG_HEADERS whisperlib/base/core_config.h" ;;
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;

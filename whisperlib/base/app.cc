@@ -29,7 +29,8 @@
 //
 // Author: Cosmin Tudorache
 
-#include <config.h>
+#include <whisperlib/base/core_config.h>
+
 #if HAVE_UNISTD_H
 # include <unistd.h>
 #endif

@@ -2,38 +2,9 @@ dist_doc_DATA = README.md
 
 AM_DEFAULT_SOURCE_EXT = .cc
 
-lib_LIBRARIES = google/protobuf/libprotobuf.a whisperlib/libwhisperlib.a
+lib_LIBRARIES = whisperlib/libwhisperlib.a
 
-google_protobuf_libprotobuf_a_SOURCES = \
-  google/protobuf/descriptor.cc \
-  google/protobuf/descriptor.pb.cc \
-  google/protobuf/descriptor_database.cc \
-  google/protobuf/dynamic_message.cc \
-  google/protobuf/extension_set.cc \
-  google/protobuf/extension_set_heavy.cc \
-  google/protobuf/generated_message_reflection.cc \
-  google/protobuf/generated_message_util.cc \
-  google/protobuf/message.cc \
-  google/protobuf/message_lite.cc \
-  google/protobuf/reflection_ops.cc \
-  google/protobuf/repeated_field.cc \
-  google/protobuf/service.cc \
-  google/protobuf/text_format.cc \
-  google/protobuf/unknown_field_set.cc \
-  google/protobuf/wire_format.cc \
-  google/protobuf/wire_format_lite.cc \
-  google/protobuf/io/coded_stream.cc \
-  google/protobuf/io/gzip_stream.cc \
-  google/protobuf/io/printer.cc \
-  google/protobuf/io/tokenizer.cc \
-  google/protobuf/io/zero_copy_stream.cc \
-  google/protobuf/io/zero_copy_stream_impl.cc \
-  google/protobuf/io/zero_copy_stream_impl_lite.cc \
-  google/protobuf/stubs/common.cc \
-  google/protobuf/stubs/once.cc \
-  google/protobuf/stubs/structurally_valid.cc \
-  google/protobuf/stubs/strutil.cc \
-  google/protobuf/stubs/substitute.cc
+LDADD = whisperlib/libwhisperlib.a $(ICU_LIBS)
 
 if HAVE_ICU
 EXTRA_whisperlib_libwhisperlib_a_SOURCES = \
@@ -67,9 +38,24 @@ extra_whisperlib_libwhisperlib_a_headers = \
 
 endif
 
+if HAVE_PROTOBUF
+rpc_protobuf_sources = \
+  whisperlib/rpc/rpc_http_client.cc \
+  whisperlib/rpc/rpc_http_server.cc \
+  whisperlib/rpc/rpc_controller.cc
+
+rpc_protobuf_headers = \
+  whisperlib/rpc/rpc_consts.h \
+  whisperlib/rpc/rpc_controller.h \
+  whisperlib/rpc/rpc_http_client.h \
+  whisperlib/rpc/rpc_http_server.h
+
+endif
+
 
 whisperlib_libwhisperlib_a_SOURCES = \
   $(EXTRA_whisperlib_libwhisperlib_a_SOURCES) \
+  $(rpc_protobuf_sources) \
   whisperlib/base/app.cc \
   whisperlib/base/date.cc \
   whisperlib/base/errno.cc \
@@ -121,16 +107,13 @@ whisperlib_libwhisperlib_a_SOURCES = \
   whisperlib/net/udp_connection.cc \
   whisperlib/rpc/codec/rpc_json_decoder.cc \
   whisperlib/rpc/codec/rpc_json_encoder.cc \
-  whisperlib/rpc/rpc_controller.cc \
-  whisperlib/rpc/rpc_http_client.cc \
-  whisperlib/rpc/rpc_http_server.cc \
   whisperlib/sync/event.cc \
   whisperlib/sync/thread.cc \
   whisperlib/sync/thread_pool.cc \
   whisperlib/url/simple_url.cc
 
 nobase_include_HEADERS = \
-  whisperlib/base/config.h \
+  whisperlib/base/core_config.h \
   whisperlib/base/app.h \
   whisperlib/base/basictypes.h \
   whisperlib/base/cache.h \
@@ -209,10 +192,6 @@ nobase_include_HEADERS = \
   whisperlib/rpc/codec/rpc_encoder.h \
   whisperlib/rpc/codec/rpc_json_decoder.h \
   whisperlib/rpc/codec/rpc_json_encoder.h \
-  whisperlib/rpc/rpc_consts.h \
-  whisperlib/rpc/rpc_controller.h \
-  whisperlib/rpc/rpc_http_client.h \
-  whisperlib/rpc/rpc_http_server.h \
   whisperlib/sync/event.h \
   whisperlib/sync/mutex.h \
   whisperlib/sync/producer_consumer_queue.h \
@@ -220,7 +199,8 @@ nobase_include_HEADERS = \
   whisperlib/sync/thread_pool.h \
   whisperlib/url/simple_url.h \
   whisperlib/url/url.h \
-  $(extra_whisperlib_libwhisperlib_a_headers)
+  $(extra_whisperlib_libwhisperlib_a_headers) \
+  $(rpc_protobuf_headers)
 
 if HAVE_GLOG
 glog_check_programs = \
@@ -232,6 +212,18 @@ glog_icu_check_programs = \
   whisperlib/url/test/url_test
 endif
 
+if HAVE_PROTOBUF
+rpc_test_programs = \
+  whisperlib/rpc/test/rpc_test_client \
+  whisperlib/rpc/test/rpc_test_server
+endif
+
+whisperlib_rpc_test_rpc_test_client_LDADD = whisperlib/rpc/test/rpc_test_proto.pb.o $(LDADD)
+whisperlib_rpc_test_rpc_test_server_LDADD = whisperlib/rpc/test/rpc_test_proto.pb.o $(LDADD)
+
+whisperlib/rpc/test/rpc_test_proto.cc: whisperlib/rpc/test/rpc_test_proto.proto
+	protoc $< --cpp_out=.
+
 endif
 
 TEST_EXTENSIONS = .sh
@@ -240,6 +232,7 @@ standalone_test_programs = \
   whisperlib/base/test/lru_cache_test \
   whisperlib/base/test/strutil_test \
   whisperlib/http/test/http_header_test \
+  whisperlib/http/test/http_server_test \
   whisperlib/io/buffer/test/data_block_test \
   whisperlib/io/buffer/test/memory_stream_test \
   whisperlib/io/checkpoint/test/checkpointing_test \
@@ -261,11 +254,9 @@ driver_test_scripts = \
   whisperlib/http/test/http_request_test.sh \
   whisperlib/net/test/selectable_filereader_test.sh
 
-
 check_PROGRAMS = \
   $(standalone_test_programs) \
-  $(driver_check_programs)
-
-LDADD = whisperlib/libwhisperlib.a $(ICU_LIBS)
+  $(driver_check_programs) \
+  $(rpc_test_programs)
 
 TESTS = $(standalone_test_programs) $(driver_test_scripts)

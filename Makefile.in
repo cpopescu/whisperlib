@@ -80,12 +80,12 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-check_PROGRAMS = $(am__EXEEXT_3) $(am__EXEEXT_4)
+check_PROGRAMS = $(am__EXEEXT_3) $(am__EXEEXT_4) $(am__EXEEXT_5)
 TESTS = $(am__EXEEXT_3) $(driver_test_scripts)
 subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) acconfig.h \
-	$(top_srcdir)/whisperlib/base/config.h.in depcomp \
+	$(top_srcdir)/whisperlib/base/core_config.h.in depcomp \
 	$(dist_doc_DATA) $(am__nobase_include_HEADERS_DIST) \
 	test-driver ar-lib compile config.guess config.sub install-sh \
 	missing
@@ -93,6 +93,7 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_check_gflags.m4 \
 	$(top_srcdir)/m4/ax_check_glog.m4 \
 	$(top_srcdir)/m4/ax_check_icu.m4 \
+	$(top_srcdir)/m4/ax_check_protobuf.m4 \
 	$(top_srcdir)/m4/ax_check_zlib.m4 \
 	$(top_srcdir)/m4/ax_pthread.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -100,7 +101,7 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
-CONFIG_HEADER = $(top_builddir)/whisperlib/base/config.h
+CONFIG_HEADER = $(top_builddir)/whisperlib/base/core_config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
@@ -139,41 +140,6 @@ AM_V_AR = $(am__v_AR_@AM_V@)
 am__v_AR_ = $(am__v_AR_@AM_DEFAULT_V@)
 am__v_AR_0 = @echo "  AR      " $@;
 am__v_AR_1 = 
-google_protobuf_libprotobuf_a_AR = $(AR) $(ARFLAGS)
-google_protobuf_libprotobuf_a_LIBADD =
-am__dirstamp = $(am__leading_dot)dirstamp
-am_google_protobuf_libprotobuf_a_OBJECTS =  \
-	google/protobuf/descriptor.$(OBJEXT) \
-	google/protobuf/descriptor.pb.$(OBJEXT) \
-	google/protobuf/descriptor_database.$(OBJEXT) \
-	google/protobuf/dynamic_message.$(OBJEXT) \
-	google/protobuf/extension_set.$(OBJEXT) \
-	google/protobuf/extension_set_heavy.$(OBJEXT) \
-	google/protobuf/generated_message_reflection.$(OBJEXT) \
-	google/protobuf/generated_message_util.$(OBJEXT) \
-	google/protobuf/message.$(OBJEXT) \
-	google/protobuf/message_lite.$(OBJEXT) \
-	google/protobuf/reflection_ops.$(OBJEXT) \
-	google/protobuf/repeated_field.$(OBJEXT) \
-	google/protobuf/service.$(OBJEXT) \
-	google/protobuf/text_format.$(OBJEXT) \
-	google/protobuf/unknown_field_set.$(OBJEXT) \
-	google/protobuf/wire_format.$(OBJEXT) \
-	google/protobuf/wire_format_lite.$(OBJEXT) \
-	google/protobuf/io/coded_stream.$(OBJEXT) \
-	google/protobuf/io/gzip_stream.$(OBJEXT) \
-	google/protobuf/io/printer.$(OBJEXT) \
-	google/protobuf/io/tokenizer.$(OBJEXT) \
-	google/protobuf/io/zero_copy_stream.$(OBJEXT) \
-	google/protobuf/io/zero_copy_stream_impl.$(OBJEXT) \
-	google/protobuf/io/zero_copy_stream_impl_lite.$(OBJEXT) \
-	google/protobuf/stubs/common.$(OBJEXT) \
-	google/protobuf/stubs/once.$(OBJEXT) \
-	google/protobuf/stubs/structurally_valid.$(OBJEXT) \
-	google/protobuf/stubs/strutil.$(OBJEXT) \
-	google/protobuf/stubs/substitute.$(OBJEXT)
-google_protobuf_libprotobuf_a_OBJECTS =  \
-	$(am_google_protobuf_libprotobuf_a_OBJECTS)
 whisperlib_libwhisperlib_a_AR = $(AR) $(ARFLAGS)
 whisperlib_libwhisperlib_a_LIBADD =
 am__whisperlib_libwhisperlib_a_SOURCES_DIST =  \
@@ -191,7 +157,10 @@ am__whisperlib_libwhisperlib_a_SOURCES_DIST =  \
 	whisperlib/url/google-url/url_canon_stdurl.cc \
 	whisperlib/url/google-url/url_parse.cc \
 	whisperlib/url/google-url/url_parse_file.cc \
-	whisperlib/url/google-url/url_util.cc whisperlib/base/app.cc \
+	whisperlib/url/google-url/url_util.cc \
+	whisperlib/rpc/rpc_http_client.cc \
+	whisperlib/rpc/rpc_http_server.cc \
+	whisperlib/rpc/rpc_controller.cc whisperlib/base/app.cc \
 	whisperlib/base/date.cc whisperlib/base/errno.cc \
 	whisperlib/base/re.cc whisperlib/base/signal_handlers.cc \
 	whisperlib/base/stringprintf.cc whisperlib/base/strutil.cc \
@@ -226,11 +195,9 @@ am__whisperlib_libwhisperlib_a_SOURCES_DIST =  \
 	whisperlib/net/timeouter.cc whisperlib/net/udp_connection.cc \
 	whisperlib/rpc/codec/rpc_json_decoder.cc \
 	whisperlib/rpc/codec/rpc_json_encoder.cc \
-	whisperlib/rpc/rpc_controller.cc \
-	whisperlib/rpc/rpc_http_client.cc \
-	whisperlib/rpc/rpc_http_server.cc whisperlib/sync/event.cc \
-	whisperlib/sync/thread.cc whisperlib/sync/thread_pool.cc \
-	whisperlib/url/simple_url.cc
+	whisperlib/sync/event.cc whisperlib/sync/thread.cc \
+	whisperlib/sync/thread_pool.cc whisperlib/url/simple_url.cc
+am__dirstamp = $(am__leading_dot)dirstamp
 @HAVE_ICU_TRUE@am__objects_1 =  \
 @HAVE_ICU_TRUE@	whisperlib/url/google-url/gurl.$(OBJEXT) \
 @HAVE_ICU_TRUE@	whisperlib/url/google-url/url_canon_etc.$(OBJEXT) \
@@ -247,9 +214,14 @@ am__whisperlib_libwhisperlib_a_SOURCES_DIST =  \
 @HAVE_ICU_TRUE@	whisperlib/url/google-url/url_parse.$(OBJEXT) \
 @HAVE_ICU_TRUE@	whisperlib/url/google-url/url_parse_file.$(OBJEXT) \
 @HAVE_ICU_TRUE@	whisperlib/url/google-url/url_util.$(OBJEXT)
+@HAVE_PROTOBUF_TRUE@am__objects_2 =  \
+@HAVE_PROTOBUF_TRUE@	whisperlib/rpc/rpc_http_client.$(OBJEXT) \
+@HAVE_PROTOBUF_TRUE@	whisperlib/rpc/rpc_http_server.$(OBJEXT) \
+@HAVE_PROTOBUF_TRUE@	whisperlib/rpc/rpc_controller.$(OBJEXT)
 am_whisperlib_libwhisperlib_a_OBJECTS = $(am__objects_1) \
-	whisperlib/base/app.$(OBJEXT) whisperlib/base/date.$(OBJEXT) \
-	whisperlib/base/errno.$(OBJEXT) whisperlib/base/re.$(OBJEXT) \
+	$(am__objects_2) whisperlib/base/app.$(OBJEXT) \
+	whisperlib/base/date.$(OBJEXT) whisperlib/base/errno.$(OBJEXT) \
+	whisperlib/base/re.$(OBJEXT) \
 	whisperlib/base/signal_handlers.$(OBJEXT) \
 	whisperlib/base/stringprintf.$(OBJEXT) \
 	whisperlib/base/strutil.$(OBJEXT) \
@@ -296,9 +268,6 @@ am_whisperlib_libwhisperlib_a_OBJECTS = $(am__objects_1) \
 	whisperlib/net/udp_connection.$(OBJEXT) \
 	whisperlib/rpc/codec/rpc_json_decoder.$(OBJEXT) \
 	whisperlib/rpc/codec/rpc_json_encoder.$(OBJEXT) \
-	whisperlib/rpc/rpc_controller.$(OBJEXT) \
-	whisperlib/rpc/rpc_http_client.$(OBJEXT) \
-	whisperlib/rpc/rpc_http_server.$(OBJEXT) \
 	whisperlib/sync/event.$(OBJEXT) \
 	whisperlib/sync/thread.$(OBJEXT) \
 	whisperlib/sync/thread_pool.$(OBJEXT) \
@@ -328,6 +297,7 @@ whisperlib_libwhisperlib_a_OBJECTS =  \
 am__EXEEXT_3 = whisperlib/base/test/lru_cache_test$(EXEEXT) \
 	whisperlib/base/test/strutil_test$(EXEEXT) \
 	whisperlib/http/test/http_header_test$(EXEEXT) \
+	whisperlib/http/test/http_server_test$(EXEEXT) \
 	whisperlib/io/buffer/test/data_block_test$(EXEEXT) \
 	whisperlib/io/buffer/test/memory_stream_test$(EXEEXT) \
 	whisperlib/io/checkpoint/test/checkpointing_test$(EXEEXT) \
@@ -340,6 +310,8 @@ am__EXEEXT_3 = whisperlib/base/test/lru_cache_test$(EXEEXT) \
 am__EXEEXT_4 = whisperlib/http/test/failsafe_test$(EXEEXT) \
 	whisperlib/http/test/http_request_test$(EXEEXT) \
 	whisperlib/net/test/selectable_filereader_test$(EXEEXT)
+@HAVE_GLOG_TRUE@@HAVE_PROTOBUF_TRUE@am__EXEEXT_5 = whisperlib/rpc/test/rpc_test_client$(EXEEXT) \
+@HAVE_GLOG_TRUE@@HAVE_PROTOBUF_TRUE@	whisperlib/rpc/test/rpc_test_server$(EXEEXT)
 whisperlib_base_test_lru_cache_test_SOURCES =  \
 	whisperlib/base/test/lru_cache_test.cc
 whisperlib_base_test_lru_cache_test_OBJECTS =  \
@@ -375,6 +347,13 @@ whisperlib_http_test_http_request_test_OBJECTS =  \
 	whisperlib/http/test/http_request_test.$(OBJEXT)
 whisperlib_http_test_http_request_test_LDADD = $(LDADD)
 whisperlib_http_test_http_request_test_DEPENDENCIES =  \
+	whisperlib/libwhisperlib.a $(am__DEPENDENCIES_1)
+whisperlib_http_test_http_server_test_SOURCES =  \
+	whisperlib/http/test/http_server_test.cc
+whisperlib_http_test_http_server_test_OBJECTS =  \
+	whisperlib/http/test/http_server_test.$(OBJEXT)
+whisperlib_http_test_http_server_test_LDADD = $(LDADD)
+whisperlib_http_test_http_server_test_DEPENDENCIES =  \
 	whisperlib/libwhisperlib.a $(am__DEPENDENCIES_1)
 whisperlib_io_buffer_test_data_block_test_SOURCES =  \
 	whisperlib/io/buffer/test/data_block_test.cc
@@ -453,6 +432,21 @@ whisperlib_net_test_udp_connection_test_OBJECTS =  \
 whisperlib_net_test_udp_connection_test_LDADD = $(LDADD)
 whisperlib_net_test_udp_connection_test_DEPENDENCIES =  \
 	whisperlib/libwhisperlib.a $(am__DEPENDENCIES_1)
+whisperlib_rpc_test_rpc_test_client_SOURCES =  \
+	whisperlib/rpc/test/rpc_test_client.cc
+whisperlib_rpc_test_rpc_test_client_OBJECTS =  \
+	whisperlib/rpc/test/rpc_test_client.$(OBJEXT)
+am__DEPENDENCIES_2 = whisperlib/libwhisperlib.a $(am__DEPENDENCIES_1)
+@HAVE_GLOG_TRUE@whisperlib_rpc_test_rpc_test_client_DEPENDENCIES =  \
+@HAVE_GLOG_TRUE@	whisperlib/rpc/test/rpc_test_proto.pb.o \
+@HAVE_GLOG_TRUE@	$(am__DEPENDENCIES_2)
+whisperlib_rpc_test_rpc_test_server_SOURCES =  \
+	whisperlib/rpc/test/rpc_test_server.cc
+whisperlib_rpc_test_rpc_test_server_OBJECTS =  \
+	whisperlib/rpc/test/rpc_test_server.$(OBJEXT)
+@HAVE_GLOG_TRUE@whisperlib_rpc_test_rpc_test_server_DEPENDENCIES =  \
+@HAVE_GLOG_TRUE@	whisperlib/rpc/test/rpc_test_proto.pb.o \
+@HAVE_GLOG_TRUE@	$(am__DEPENDENCIES_2)
 whisperlib_url_test_url_test_SOURCES =  \
 	whisperlib/url/test/url_test.cc
 whisperlib_url_test_url_test_OBJECTS =  \
@@ -489,14 +483,14 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
-SOURCES = $(google_protobuf_libprotobuf_a_SOURCES) \
-	$(whisperlib_libwhisperlib_a_SOURCES) \
+SOURCES = $(whisperlib_libwhisperlib_a_SOURCES) \
 	$(EXTRA_whisperlib_libwhisperlib_a_SOURCES) \
 	whisperlib/base/test/lru_cache_test.cc \
 	whisperlib/base/test/strutil_test.cc \
 	whisperlib/http/test/failsafe_test.cc \
 	whisperlib/http/test/http_header_test.cc \
 	whisperlib/http/test/http_request_test.cc \
+	whisperlib/http/test/http_server_test.cc \
 	whisperlib/io/buffer/test/data_block_test.cc \
 	whisperlib/io/buffer/test/memory_stream_test.cc \
 	whisperlib/io/checkpoint/test/checkpointing_test.cc \
@@ -508,15 +502,17 @@ SOURCES = $(google_protobuf_libprotobuf_a_SOURCES) \
 	whisperlib/net/test/selectable_filereader_test.cc \
 	whisperlib/net/test/selector_test.cc \
 	whisperlib/net/test/udp_connection_test.cc \
+	whisperlib/rpc/test/rpc_test_client.cc \
+	whisperlib/rpc/test/rpc_test_server.cc \
 	whisperlib/url/test/url_test.cc
-DIST_SOURCES = $(google_protobuf_libprotobuf_a_SOURCES) \
-	$(am__whisperlib_libwhisperlib_a_SOURCES_DIST) \
+DIST_SOURCES = $(am__whisperlib_libwhisperlib_a_SOURCES_DIST) \
 	$(am__EXTRA_whisperlib_libwhisperlib_a_SOURCES_DIST) \
 	whisperlib/base/test/lru_cache_test.cc \
 	whisperlib/base/test/strutil_test.cc \
 	whisperlib/http/test/failsafe_test.cc \
 	whisperlib/http/test/http_header_test.cc \
 	whisperlib/http/test/http_request_test.cc \
+	whisperlib/http/test/http_server_test.cc \
 	whisperlib/io/buffer/test/data_block_test.cc \
 	whisperlib/io/buffer/test/memory_stream_test.cc \
 	whisperlib/io/checkpoint/test/checkpointing_test.cc \
@@ -528,6 +524,8 @@ DIST_SOURCES = $(google_protobuf_libprotobuf_a_SOURCES) \
 	whisperlib/net/test/selectable_filereader_test.cc \
 	whisperlib/net/test/selector_test.cc \
 	whisperlib/net/test/udp_connection_test.cc \
+	whisperlib/rpc/test/rpc_test_client.cc \
+	whisperlib/rpc/test/rpc_test_server.cc \
 	whisperlib/url/test/url_test.cc
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
@@ -535,7 +533,7 @@ am__can_run_installinfo = \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
 DATA = $(dist_doc_DATA)
-am__nobase_include_HEADERS_DIST = whisperlib/base/config.h \
+am__nobase_include_HEADERS_DIST = whisperlib/base/core_config.h \
 	whisperlib/base/app.h whisperlib/base/basictypes.h \
 	whisperlib/base/cache.h whisperlib/base/callback/callback.h \
 	whisperlib/base/callback/callback1.h \
@@ -588,10 +586,7 @@ am__nobase_include_HEADERS_DIST = whisperlib/base/config.h \
 	whisperlib/rpc/codec/rpc_encoder.h \
 	whisperlib/rpc/codec/rpc_json_decoder.h \
 	whisperlib/rpc/codec/rpc_json_encoder.h \
-	whisperlib/rpc/rpc_consts.h whisperlib/rpc/rpc_controller.h \
-	whisperlib/rpc/rpc_http_client.h \
-	whisperlib/rpc/rpc_http_server.h whisperlib/sync/event.h \
-	whisperlib/sync/mutex.h \
+	whisperlib/sync/event.h whisperlib/sync/mutex.h \
 	whisperlib/sync/producer_consumer_queue.h \
 	whisperlib/sync/thread.h whisperlib/sync/thread_pool.h \
 	whisperlib/url/simple_url.h whisperlib/url/url.h \
@@ -604,7 +599,10 @@ am__nobase_include_HEADERS_DIST = whisperlib/base/config.h \
 	whisperlib/url/google-url/url_file.h \
 	whisperlib/url/google-url/url_parse.h \
 	whisperlib/url/google-url/url_parse_internal.h \
-	whisperlib/url/google-url/url_util.h
+	whisperlib/url/google-url/url_util.h \
+	whisperlib/rpc/rpc_consts.h whisperlib/rpc/rpc_controller.h \
+	whisperlib/rpc/rpc_http_client.h \
+	whisperlib/rpc/rpc_http_server.h
 HEADERS = $(nobase_include_HEADERS)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
@@ -936,38 +934,8 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 dist_doc_DATA = README.md
 AM_DEFAULT_SOURCE_EXT = .cc
-lib_LIBRARIES = google/protobuf/libprotobuf.a whisperlib/libwhisperlib.a
-google_protobuf_libprotobuf_a_SOURCES = \
-  google/protobuf/descriptor.cc \
-  google/protobuf/descriptor.pb.cc \
-  google/protobuf/descriptor_database.cc \
-  google/protobuf/dynamic_message.cc \
-  google/protobuf/extension_set.cc \
-  google/protobuf/extension_set_heavy.cc \
-  google/protobuf/generated_message_reflection.cc \
-  google/protobuf/generated_message_util.cc \
-  google/protobuf/message.cc \
-  google/protobuf/message_lite.cc \
-  google/protobuf/reflection_ops.cc \
-  google/protobuf/repeated_field.cc \
-  google/protobuf/service.cc \
-  google/protobuf/text_format.cc \
-  google/protobuf/unknown_field_set.cc \
-  google/protobuf/wire_format.cc \
-  google/protobuf/wire_format_lite.cc \
-  google/protobuf/io/coded_stream.cc \
-  google/protobuf/io/gzip_stream.cc \
-  google/protobuf/io/printer.cc \
-  google/protobuf/io/tokenizer.cc \
-  google/protobuf/io/zero_copy_stream.cc \
-  google/protobuf/io/zero_copy_stream_impl.cc \
-  google/protobuf/io/zero_copy_stream_impl_lite.cc \
-  google/protobuf/stubs/common.cc \
-  google/protobuf/stubs/once.cc \
-  google/protobuf/stubs/structurally_valid.cc \
-  google/protobuf/stubs/strutil.cc \
-  google/protobuf/stubs/substitute.cc
-
+lib_LIBRARIES = whisperlib/libwhisperlib.a
+LDADD = whisperlib/libwhisperlib.a $(ICU_LIBS)
 @HAVE_ICU_TRUE@EXTRA_whisperlib_libwhisperlib_a_SOURCES = \
 @HAVE_ICU_TRUE@  whisperlib/url/google-url/gurl.cc \
 @HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_etc.cc \
@@ -997,8 +965,20 @@ google_protobuf_libprotobuf_a_SOURCES = \
 @HAVE_ICU_TRUE@  whisperlib/url/google-url/url_parse_internal.h \
 @HAVE_ICU_TRUE@  whisperlib/url/google-url/url_util.h
 
+@HAVE_PROTOBUF_TRUE@rpc_protobuf_sources = \
+@HAVE_PROTOBUF_TRUE@  whisperlib/rpc/rpc_http_client.cc \
+@HAVE_PROTOBUF_TRUE@  whisperlib/rpc/rpc_http_server.cc \
+@HAVE_PROTOBUF_TRUE@  whisperlib/rpc/rpc_controller.cc
+
+@HAVE_PROTOBUF_TRUE@rpc_protobuf_headers = \
+@HAVE_PROTOBUF_TRUE@  whisperlib/rpc/rpc_consts.h \
+@HAVE_PROTOBUF_TRUE@  whisperlib/rpc/rpc_controller.h \
+@HAVE_PROTOBUF_TRUE@  whisperlib/rpc/rpc_http_client.h \
+@HAVE_PROTOBUF_TRUE@  whisperlib/rpc/rpc_http_server.h
+
 whisperlib_libwhisperlib_a_SOURCES = \
   $(EXTRA_whisperlib_libwhisperlib_a_SOURCES) \
+  $(rpc_protobuf_sources) \
   whisperlib/base/app.cc \
   whisperlib/base/date.cc \
   whisperlib/base/errno.cc \
@@ -1050,16 +1030,13 @@ whisperlib_libwhisperlib_a_SOURCES = \
   whisperlib/net/udp_connection.cc \
   whisperlib/rpc/codec/rpc_json_decoder.cc \
   whisperlib/rpc/codec/rpc_json_encoder.cc \
-  whisperlib/rpc/rpc_controller.cc \
-  whisperlib/rpc/rpc_http_client.cc \
-  whisperlib/rpc/rpc_http_server.cc \
   whisperlib/sync/event.cc \
   whisperlib/sync/thread.cc \
   whisperlib/sync/thread_pool.cc \
   whisperlib/url/simple_url.cc
 
 nobase_include_HEADERS = \
-  whisperlib/base/config.h \
+  whisperlib/base/core_config.h \
   whisperlib/base/app.h \
   whisperlib/base/basictypes.h \
   whisperlib/base/cache.h \
@@ -1138,10 +1115,6 @@ nobase_include_HEADERS = \
   whisperlib/rpc/codec/rpc_encoder.h \
   whisperlib/rpc/codec/rpc_json_decoder.h \
   whisperlib/rpc/codec/rpc_json_encoder.h \
-  whisperlib/rpc/rpc_consts.h \
-  whisperlib/rpc/rpc_controller.h \
-  whisperlib/rpc/rpc_http_client.h \
-  whisperlib/rpc/rpc_http_server.h \
   whisperlib/sync/event.h \
   whisperlib/sync/mutex.h \
   whisperlib/sync/producer_consumer_queue.h \
@@ -1149,7 +1122,8 @@ nobase_include_HEADERS = \
   whisperlib/sync/thread_pool.h \
   whisperlib/url/simple_url.h \
   whisperlib/url/url.h \
-  $(extra_whisperlib_libwhisperlib_a_headers)
+  $(extra_whisperlib_libwhisperlib_a_headers) \
+  $(rpc_protobuf_headers)
 
 @HAVE_GLOG_TRUE@glog_check_programs = \
 @HAVE_GLOG_TRUE@  whisperlib/io/logio/test/logio_test \
@@ -1158,11 +1132,18 @@ nobase_include_HEADERS = \
 @HAVE_GLOG_TRUE@@HAVE_ICU_TRUE@glog_icu_check_programs = \
 @HAVE_GLOG_TRUE@@HAVE_ICU_TRUE@  whisperlib/url/test/url_test
 
+@HAVE_GLOG_TRUE@@HAVE_PROTOBUF_TRUE@rpc_test_programs = \
+@HAVE_GLOG_TRUE@@HAVE_PROTOBUF_TRUE@  whisperlib/rpc/test/rpc_test_client \
+@HAVE_GLOG_TRUE@@HAVE_PROTOBUF_TRUE@  whisperlib/rpc/test/rpc_test_server
+
+@HAVE_GLOG_TRUE@whisperlib_rpc_test_rpc_test_client_LDADD = whisperlib/rpc/test/rpc_test_proto.pb.o $(LDADD)
+@HAVE_GLOG_TRUE@whisperlib_rpc_test_rpc_test_server_LDADD = whisperlib/rpc/test/rpc_test_proto.pb.o $(LDADD)
 TEST_EXTENSIONS = .sh
 standalone_test_programs = \
   whisperlib/base/test/lru_cache_test \
   whisperlib/base/test/strutil_test \
   whisperlib/http/test/http_header_test \
+  whisperlib/http/test/http_server_test \
   whisperlib/io/buffer/test/data_block_test \
   whisperlib/io/buffer/test/memory_stream_test \
   whisperlib/io/checkpoint/test/checkpointing_test \
@@ -1184,7 +1165,6 @@ driver_test_scripts = \
   whisperlib/http/test/http_request_test.sh \
   whisperlib/net/test/selectable_filereader_test.sh
 
-LDADD = whisperlib/libwhisperlib.a $(ICU_LIBS)
 all: all-am
 
 .SUFFIXES:
@@ -1224,20 +1204,20 @@ $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	$(am__cd) $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
 $(am__aclocal_m4_deps):
 
-whisperlib/base/config.h: whisperlib/base/stamp-h1
+whisperlib/base/core_config.h: whisperlib/base/stamp-h1
 	@test -f $@ || rm -f whisperlib/base/stamp-h1
 	@test -f $@ || $(MAKE) $(AM_MAKEFLAGS) whisperlib/base/stamp-h1
 
-whisperlib/base/stamp-h1: $(top_srcdir)/whisperlib/base/config.h.in $(top_builddir)/config.status
+whisperlib/base/stamp-h1: $(top_srcdir)/whisperlib/base/core_config.h.in $(top_builddir)/config.status
 	@rm -f whisperlib/base/stamp-h1
-	cd $(top_builddir) && $(SHELL) ./config.status whisperlib/base/config.h
-$(top_srcdir)/whisperlib/base/config.h.in:  $(am__configure_deps) $(top_srcdir)/acconfig.h
+	cd $(top_builddir) && $(SHELL) ./config.status whisperlib/base/core_config.h
+$(top_srcdir)/whisperlib/base/core_config.h.in:  $(am__configure_deps) $(top_srcdir)/acconfig.h
 	($(am__cd) $(top_srcdir) && $(AUTOHEADER))
 	rm -f whisperlib/base/stamp-h1
 	touch $@
 
 distclean-hdr:
-	-rm -f whisperlib/base/config.h whisperlib/base/stamp-h1
+	-rm -f whisperlib/base/core_config.h whisperlib/base/stamp-h1
 install-libLIBRARIES: $(lib_LIBRARIES)
 	@$(NORMAL_INSTALL)
 	@list='$(lib_LIBRARIES)'; test -n "$(libdir)" || list=; \
@@ -1269,113 +1249,6 @@ uninstall-libLIBRARIES:
 
 clean-libLIBRARIES:
 	-test -z "$(lib_LIBRARIES)" || rm -f $(lib_LIBRARIES)
-google/protobuf/$(am__dirstamp):
-	@$(MKDIR_P) google/protobuf
-	@: > google/protobuf/$(am__dirstamp)
-google/protobuf/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) google/protobuf/$(DEPDIR)
-	@: > google/protobuf/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/descriptor.$(OBJEXT): google/protobuf/$(am__dirstamp) \
-	google/protobuf/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/descriptor.pb.$(OBJEXT):  \
-	google/protobuf/$(am__dirstamp) \
-	google/protobuf/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/descriptor_database.$(OBJEXT):  \
-	google/protobuf/$(am__dirstamp) \
-	google/protobuf/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/dynamic_message.$(OBJEXT):  \
-	google/protobuf/$(am__dirstamp) \
-	google/protobuf/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/extension_set.$(OBJEXT):  \
-	google/protobuf/$(am__dirstamp) \
-	google/protobuf/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/extension_set_heavy.$(OBJEXT):  \
-	google/protobuf/$(am__dirstamp) \
-	google/protobuf/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/generated_message_reflection.$(OBJEXT):  \
-	google/protobuf/$(am__dirstamp) \
-	google/protobuf/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/generated_message_util.$(OBJEXT):  \
-	google/protobuf/$(am__dirstamp) \
-	google/protobuf/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/message.$(OBJEXT): google/protobuf/$(am__dirstamp) \
-	google/protobuf/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/message_lite.$(OBJEXT):  \
-	google/protobuf/$(am__dirstamp) \
-	google/protobuf/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/reflection_ops.$(OBJEXT):  \
-	google/protobuf/$(am__dirstamp) \
-	google/protobuf/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/repeated_field.$(OBJEXT):  \
-	google/protobuf/$(am__dirstamp) \
-	google/protobuf/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/service.$(OBJEXT): google/protobuf/$(am__dirstamp) \
-	google/protobuf/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/text_format.$(OBJEXT):  \
-	google/protobuf/$(am__dirstamp) \
-	google/protobuf/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/unknown_field_set.$(OBJEXT):  \
-	google/protobuf/$(am__dirstamp) \
-	google/protobuf/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/wire_format.$(OBJEXT):  \
-	google/protobuf/$(am__dirstamp) \
-	google/protobuf/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/wire_format_lite.$(OBJEXT):  \
-	google/protobuf/$(am__dirstamp) \
-	google/protobuf/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/io/$(am__dirstamp):
-	@$(MKDIR_P) google/protobuf/io
-	@: > google/protobuf/io/$(am__dirstamp)
-google/protobuf/io/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) google/protobuf/io/$(DEPDIR)
-	@: > google/protobuf/io/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/io/coded_stream.$(OBJEXT):  \
-	google/protobuf/io/$(am__dirstamp) \
-	google/protobuf/io/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/io/gzip_stream.$(OBJEXT):  \
-	google/protobuf/io/$(am__dirstamp) \
-	google/protobuf/io/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/io/printer.$(OBJEXT):  \
-	google/protobuf/io/$(am__dirstamp) \
-	google/protobuf/io/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/io/tokenizer.$(OBJEXT):  \
-	google/protobuf/io/$(am__dirstamp) \
-	google/protobuf/io/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/io/zero_copy_stream.$(OBJEXT):  \
-	google/protobuf/io/$(am__dirstamp) \
-	google/protobuf/io/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/io/zero_copy_stream_impl.$(OBJEXT):  \
-	google/protobuf/io/$(am__dirstamp) \
-	google/protobuf/io/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/io/zero_copy_stream_impl_lite.$(OBJEXT):  \
-	google/protobuf/io/$(am__dirstamp) \
-	google/protobuf/io/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/stubs/$(am__dirstamp):
-	@$(MKDIR_P) google/protobuf/stubs
-	@: > google/protobuf/stubs/$(am__dirstamp)
-google/protobuf/stubs/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) google/protobuf/stubs/$(DEPDIR)
-	@: > google/protobuf/stubs/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/stubs/common.$(OBJEXT):  \
-	google/protobuf/stubs/$(am__dirstamp) \
-	google/protobuf/stubs/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/stubs/once.$(OBJEXT):  \
-	google/protobuf/stubs/$(am__dirstamp) \
-	google/protobuf/stubs/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/stubs/structurally_valid.$(OBJEXT):  \
-	google/protobuf/stubs/$(am__dirstamp) \
-	google/protobuf/stubs/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/stubs/strutil.$(OBJEXT):  \
-	google/protobuf/stubs/$(am__dirstamp) \
-	google/protobuf/stubs/$(DEPDIR)/$(am__dirstamp)
-google/protobuf/stubs/substitute.$(OBJEXT):  \
-	google/protobuf/stubs/$(am__dirstamp) \
-	google/protobuf/stubs/$(DEPDIR)/$(am__dirstamp)
-
-google/protobuf/libprotobuf.a: $(google_protobuf_libprotobuf_a_OBJECTS) $(google_protobuf_libprotobuf_a_DEPENDENCIES) $(EXTRA_google_protobuf_libprotobuf_a_DEPENDENCIES) google/protobuf/$(am__dirstamp)
-	$(AM_V_at)-rm -f google/protobuf/libprotobuf.a
-	$(AM_V_AR)$(google_protobuf_libprotobuf_a_AR) google/protobuf/libprotobuf.a $(google_protobuf_libprotobuf_a_OBJECTS) $(google_protobuf_libprotobuf_a_LIBADD)
-	$(AM_V_at)$(RANLIB) google/protobuf/libprotobuf.a
 whisperlib/url/google-url/$(am__dirstamp):
 	@$(MKDIR_P) whisperlib/url/google-url
 	@: > whisperlib/url/google-url/$(am__dirstamp)
@@ -1427,6 +1300,21 @@ whisperlib/url/google-url/url_parse_file.$(OBJEXT):  \
 whisperlib/url/google-url/url_util.$(OBJEXT):  \
 	whisperlib/url/google-url/$(am__dirstamp) \
 	whisperlib/url/google-url/$(DEPDIR)/$(am__dirstamp)
+whisperlib/rpc/$(am__dirstamp):
+	@$(MKDIR_P) whisperlib/rpc
+	@: > whisperlib/rpc/$(am__dirstamp)
+whisperlib/rpc/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) whisperlib/rpc/$(DEPDIR)
+	@: > whisperlib/rpc/$(DEPDIR)/$(am__dirstamp)
+whisperlib/rpc/rpc_http_client.$(OBJEXT):  \
+	whisperlib/rpc/$(am__dirstamp) \
+	whisperlib/rpc/$(DEPDIR)/$(am__dirstamp)
+whisperlib/rpc/rpc_http_server.$(OBJEXT):  \
+	whisperlib/rpc/$(am__dirstamp) \
+	whisperlib/rpc/$(DEPDIR)/$(am__dirstamp)
+whisperlib/rpc/rpc_controller.$(OBJEXT):  \
+	whisperlib/rpc/$(am__dirstamp) \
+	whisperlib/rpc/$(DEPDIR)/$(am__dirstamp)
 whisperlib/base/$(am__dirstamp):
 	@$(MKDIR_P) whisperlib/base
 	@: > whisperlib/base/$(am__dirstamp)
@@ -1625,21 +1513,6 @@ whisperlib/rpc/codec/rpc_json_decoder.$(OBJEXT):  \
 whisperlib/rpc/codec/rpc_json_encoder.$(OBJEXT):  \
 	whisperlib/rpc/codec/$(am__dirstamp) \
 	whisperlib/rpc/codec/$(DEPDIR)/$(am__dirstamp)
-whisperlib/rpc/$(am__dirstamp):
-	@$(MKDIR_P) whisperlib/rpc
-	@: > whisperlib/rpc/$(am__dirstamp)
-whisperlib/rpc/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) whisperlib/rpc/$(DEPDIR)
-	@: > whisperlib/rpc/$(DEPDIR)/$(am__dirstamp)
-whisperlib/rpc/rpc_controller.$(OBJEXT):  \
-	whisperlib/rpc/$(am__dirstamp) \
-	whisperlib/rpc/$(DEPDIR)/$(am__dirstamp)
-whisperlib/rpc/rpc_http_client.$(OBJEXT):  \
-	whisperlib/rpc/$(am__dirstamp) \
-	whisperlib/rpc/$(DEPDIR)/$(am__dirstamp)
-whisperlib/rpc/rpc_http_server.$(OBJEXT):  \
-	whisperlib/rpc/$(am__dirstamp) \
-	whisperlib/rpc/$(DEPDIR)/$(am__dirstamp)
 whisperlib/sync/$(am__dirstamp):
 	@$(MKDIR_P) whisperlib/sync
 	@: > whisperlib/sync/$(am__dirstamp)
@@ -1719,6 +1592,13 @@ whisperlib/http/test/http_request_test.$(OBJEXT):  \
 whisperlib/http/test/http_request_test$(EXEEXT): $(whisperlib_http_test_http_request_test_OBJECTS) $(whisperlib_http_test_http_request_test_DEPENDENCIES) $(EXTRA_whisperlib_http_test_http_request_test_DEPENDENCIES) whisperlib/http/test/$(am__dirstamp)
 	@rm -f whisperlib/http/test/http_request_test$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(whisperlib_http_test_http_request_test_OBJECTS) $(whisperlib_http_test_http_request_test_LDADD) $(LIBS)
+whisperlib/http/test/http_server_test.$(OBJEXT):  \
+	whisperlib/http/test/$(am__dirstamp) \
+	whisperlib/http/test/$(DEPDIR)/$(am__dirstamp)
+
+whisperlib/http/test/http_server_test$(EXEEXT): $(whisperlib_http_test_http_server_test_OBJECTS) $(whisperlib_http_test_http_server_test_DEPENDENCIES) $(EXTRA_whisperlib_http_test_http_server_test_DEPENDENCIES) whisperlib/http/test/$(am__dirstamp)
+	@rm -f whisperlib/http/test/http_server_test$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(whisperlib_http_test_http_server_test_OBJECTS) $(whisperlib_http_test_http_server_test_LDADD) $(LIBS)
 whisperlib/io/buffer/test/$(am__dirstamp):
 	@$(MKDIR_P) whisperlib/io/buffer/test
 	@: > whisperlib/io/buffer/test/$(am__dirstamp)
@@ -1820,6 +1700,26 @@ whisperlib/net/test/udp_connection_test.$(OBJEXT):  \
 whisperlib/net/test/udp_connection_test$(EXEEXT): $(whisperlib_net_test_udp_connection_test_OBJECTS) $(whisperlib_net_test_udp_connection_test_DEPENDENCIES) $(EXTRA_whisperlib_net_test_udp_connection_test_DEPENDENCIES) whisperlib/net/test/$(am__dirstamp)
 	@rm -f whisperlib/net/test/udp_connection_test$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(whisperlib_net_test_udp_connection_test_OBJECTS) $(whisperlib_net_test_udp_connection_test_LDADD) $(LIBS)
+whisperlib/rpc/test/$(am__dirstamp):
+	@$(MKDIR_P) whisperlib/rpc/test
+	@: > whisperlib/rpc/test/$(am__dirstamp)
+whisperlib/rpc/test/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) whisperlib/rpc/test/$(DEPDIR)
+	@: > whisperlib/rpc/test/$(DEPDIR)/$(am__dirstamp)
+whisperlib/rpc/test/rpc_test_client.$(OBJEXT):  \
+	whisperlib/rpc/test/$(am__dirstamp) \
+	whisperlib/rpc/test/$(DEPDIR)/$(am__dirstamp)
+
+whisperlib/rpc/test/rpc_test_client$(EXEEXT): $(whisperlib_rpc_test_rpc_test_client_OBJECTS) $(whisperlib_rpc_test_rpc_test_client_DEPENDENCIES) $(EXTRA_whisperlib_rpc_test_rpc_test_client_DEPENDENCIES) whisperlib/rpc/test/$(am__dirstamp)
+	@rm -f whisperlib/rpc/test/rpc_test_client$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(whisperlib_rpc_test_rpc_test_client_OBJECTS) $(whisperlib_rpc_test_rpc_test_client_LDADD) $(LIBS)
+whisperlib/rpc/test/rpc_test_server.$(OBJEXT):  \
+	whisperlib/rpc/test/$(am__dirstamp) \
+	whisperlib/rpc/test/$(DEPDIR)/$(am__dirstamp)
+
+whisperlib/rpc/test/rpc_test_server$(EXEEXT): $(whisperlib_rpc_test_rpc_test_server_OBJECTS) $(whisperlib_rpc_test_rpc_test_server_DEPENDENCIES) $(EXTRA_whisperlib_rpc_test_rpc_test_server_DEPENDENCIES) whisperlib/rpc/test/$(am__dirstamp)
+	@rm -f whisperlib/rpc/test/rpc_test_server$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(whisperlib_rpc_test_rpc_test_server_OBJECTS) $(whisperlib_rpc_test_rpc_test_server_LDADD) $(LIBS)
 whisperlib/url/test/$(am__dirstamp):
 	@$(MKDIR_P) whisperlib/url/test
 	@: > whisperlib/url/test/$(am__dirstamp)
@@ -1836,9 +1736,6 @@ whisperlib/url/test/url_test$(EXEEXT): $(whisperlib_url_test_url_test_OBJECTS) $
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
-	-rm -f google/protobuf/*.$(OBJEXT)
-	-rm -f google/protobuf/io/*.$(OBJEXT)
-	-rm -f google/protobuf/stubs/*.$(OBJEXT)
 	-rm -f whisperlib/base/*.$(OBJEXT)
 	-rm -f whisperlib/base/test/*.$(OBJEXT)
 	-rm -f whisperlib/http/*.$(OBJEXT)
@@ -1857,6 +1754,7 @@ mostlyclean-compile:
 	-rm -f whisperlib/net/test/*.$(OBJEXT)
 	-rm -f whisperlib/rpc/*.$(OBJEXT)
 	-rm -f whisperlib/rpc/codec/*.$(OBJEXT)
+	-rm -f whisperlib/rpc/test/*.$(OBJEXT)
 	-rm -f whisperlib/sync/*.$(OBJEXT)
 	-rm -f whisperlib/url/*.$(OBJEXT)
 	-rm -f whisperlib/url/google-url/*.$(OBJEXT)
@@ -1865,35 +1763,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/$(DEPDIR)/descriptor.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/$(DEPDIR)/descriptor.pb.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/$(DEPDIR)/descriptor_database.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/$(DEPDIR)/dynamic_message.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/$(DEPDIR)/extension_set.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/$(DEPDIR)/extension_set_heavy.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/$(DEPDIR)/generated_message_reflection.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/$(DEPDIR)/generated_message_util.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/$(DEPDIR)/message.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/$(DEPDIR)/message_lite.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/$(DEPDIR)/reflection_ops.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/$(DEPDIR)/repeated_field.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/$(DEPDIR)/service.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/$(DEPDIR)/text_format.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/$(DEPDIR)/unknown_field_set.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/$(DEPDIR)/wire_format.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/$(DEPDIR)/wire_format_lite.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/io/$(DEPDIR)/coded_stream.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/io/$(DEPDIR)/gzip_stream.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/io/$(DEPDIR)/printer.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/io/$(DEPDIR)/tokenizer.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/io/$(DEPDIR)/zero_copy_stream.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/io/$(DEPDIR)/zero_copy_stream_impl.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/io/$(DEPDIR)/zero_copy_stream_impl_lite.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/stubs/$(DEPDIR)/common.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/stubs/$(DEPDIR)/once.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/stubs/$(DEPDIR)/structurally_valid.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/stubs/$(DEPDIR)/strutil.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@google/protobuf/stubs/$(DEPDIR)/substitute.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/base/$(DEPDIR)/app.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/base/$(DEPDIR)/date.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/base/$(DEPDIR)/errno.Po@am__quote@
@@ -1916,6 +1785,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/http/test/$(DEPDIR)/failsafe_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/http/test/$(DEPDIR)/http_header_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/http/test/$(DEPDIR)/http_request_test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@whisperlib/http/test/$(DEPDIR)/http_server_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/io/$(DEPDIR)/ioutil.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/io/$(DEPDIR)/output_stream.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/io/$(DEPDIR)/stream_base.Po@am__quote@
@@ -1964,6 +1834,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/rpc/$(DEPDIR)/rpc_http_server.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/rpc/codec/$(DEPDIR)/rpc_json_decoder.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/rpc/codec/$(DEPDIR)/rpc_json_encoder.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@whisperlib/rpc/test/$(DEPDIR)/rpc_test_client.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@whisperlib/rpc/test/$(DEPDIR)/rpc_test_server.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/sync/$(DEPDIR)/event.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/sync/$(DEPDIR)/thread.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/sync/$(DEPDIR)/thread_pool.Po@am__quote@
@@ -2267,6 +2139,13 @@ whisperlib/http/test/http_header_test.log: whisperlib/http/test/http_header_test
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+whisperlib/http/test/http_server_test.log: whisperlib/http/test/http_server_test$(EXEEXT)
+	@p='whisperlib/http/test/http_server_test$(EXEEXT)'; \
+	b='whisperlib/http/test/http_server_test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 whisperlib/io/buffer/test/data_block_test.log: whisperlib/io/buffer/test/data_block_test$(EXEEXT)
 	@p='whisperlib/io/buffer/test/data_block_test$(EXEEXT)'; \
 	b='whisperlib/io/buffer/test/data_block_test'; \
@@ -2559,12 +2438,6 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
-	-rm -f google/protobuf/$(DEPDIR)/$(am__dirstamp)
-	-rm -f google/protobuf/$(am__dirstamp)
-	-rm -f google/protobuf/io/$(DEPDIR)/$(am__dirstamp)
-	-rm -f google/protobuf/io/$(am__dirstamp)
-	-rm -f google/protobuf/stubs/$(DEPDIR)/$(am__dirstamp)
-	-rm -f google/protobuf/stubs/$(am__dirstamp)
 	-rm -f whisperlib/$(am__dirstamp)
 	-rm -f whisperlib/base/$(DEPDIR)/$(am__dirstamp)
 	-rm -f whisperlib/base/$(am__dirstamp)
@@ -2602,6 +2475,8 @@ distclean-generic:
 	-rm -f whisperlib/rpc/$(am__dirstamp)
 	-rm -f whisperlib/rpc/codec/$(DEPDIR)/$(am__dirstamp)
 	-rm -f whisperlib/rpc/codec/$(am__dirstamp)
+	-rm -f whisperlib/rpc/test/$(DEPDIR)/$(am__dirstamp)
+	-rm -f whisperlib/rpc/test/$(am__dirstamp)
 	-rm -f whisperlib/sync/$(DEPDIR)/$(am__dirstamp)
 	-rm -f whisperlib/sync/$(am__dirstamp)
 	-rm -f whisperlib/url/$(DEPDIR)/$(am__dirstamp)
@@ -2621,7 +2496,7 @@ clean-am: clean-checkPROGRAMS clean-generic clean-libLIBRARIES \
 
 distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
-	-rm -rf google/protobuf/$(DEPDIR) google/protobuf/io/$(DEPDIR) google/protobuf/stubs/$(DEPDIR) whisperlib/base/$(DEPDIR) whisperlib/base/test/$(DEPDIR) whisperlib/http/$(DEPDIR) whisperlib/http/test/$(DEPDIR) whisperlib/io/$(DEPDIR) whisperlib/io/buffer/$(DEPDIR) whisperlib/io/buffer/test/$(DEPDIR) whisperlib/io/checkpoint/$(DEPDIR) whisperlib/io/checkpoint/test/$(DEPDIR) whisperlib/io/file/$(DEPDIR) whisperlib/io/logio/$(DEPDIR) whisperlib/io/logio/test/$(DEPDIR) whisperlib/io/util/$(DEPDIR) whisperlib/io/zlib/$(DEPDIR) whisperlib/net/$(DEPDIR) whisperlib/net/test/$(DEPDIR) whisperlib/rpc/$(DEPDIR) whisperlib/rpc/codec/$(DEPDIR) whisperlib/sync/$(DEPDIR) whisperlib/url/$(DEPDIR) whisperlib/url/google-url/$(DEPDIR) whisperlib/url/test/$(DEPDIR)
+	-rm -rf whisperlib/base/$(DEPDIR) whisperlib/base/test/$(DEPDIR) whisperlib/http/$(DEPDIR) whisperlib/http/test/$(DEPDIR) whisperlib/io/$(DEPDIR) whisperlib/io/buffer/$(DEPDIR) whisperlib/io/buffer/test/$(DEPDIR) whisperlib/io/checkpoint/$(DEPDIR) whisperlib/io/checkpoint/test/$(DEPDIR) whisperlib/io/file/$(DEPDIR) whisperlib/io/logio/$(DEPDIR) whisperlib/io/logio/test/$(DEPDIR) whisperlib/io/util/$(DEPDIR) whisperlib/io/zlib/$(DEPDIR) whisperlib/net/$(DEPDIR) whisperlib/net/test/$(DEPDIR) whisperlib/rpc/$(DEPDIR) whisperlib/rpc/codec/$(DEPDIR) whisperlib/rpc/test/$(DEPDIR) whisperlib/sync/$(DEPDIR) whisperlib/url/$(DEPDIR) whisperlib/url/google-url/$(DEPDIR) whisperlib/url/test/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-tags
@@ -2669,7 +2544,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
-	-rm -rf google/protobuf/$(DEPDIR) google/protobuf/io/$(DEPDIR) google/protobuf/stubs/$(DEPDIR) whisperlib/base/$(DEPDIR) whisperlib/base/test/$(DEPDIR) whisperlib/http/$(DEPDIR) whisperlib/http/test/$(DEPDIR) whisperlib/io/$(DEPDIR) whisperlib/io/buffer/$(DEPDIR) whisperlib/io/buffer/test/$(DEPDIR) whisperlib/io/checkpoint/$(DEPDIR) whisperlib/io/checkpoint/test/$(DEPDIR) whisperlib/io/file/$(DEPDIR) whisperlib/io/logio/$(DEPDIR) whisperlib/io/logio/test/$(DEPDIR) whisperlib/io/util/$(DEPDIR) whisperlib/io/zlib/$(DEPDIR) whisperlib/net/$(DEPDIR) whisperlib/net/test/$(DEPDIR) whisperlib/rpc/$(DEPDIR) whisperlib/rpc/codec/$(DEPDIR) whisperlib/sync/$(DEPDIR) whisperlib/url/$(DEPDIR) whisperlib/url/google-url/$(DEPDIR) whisperlib/url/test/$(DEPDIR)
+	-rm -rf whisperlib/base/$(DEPDIR) whisperlib/base/test/$(DEPDIR) whisperlib/http/$(DEPDIR) whisperlib/http/test/$(DEPDIR) whisperlib/io/$(DEPDIR) whisperlib/io/buffer/$(DEPDIR) whisperlib/io/buffer/test/$(DEPDIR) whisperlib/io/checkpoint/$(DEPDIR) whisperlib/io/checkpoint/test/$(DEPDIR) whisperlib/io/file/$(DEPDIR) whisperlib/io/logio/$(DEPDIR) whisperlib/io/logio/test/$(DEPDIR) whisperlib/io/util/$(DEPDIR) whisperlib/io/zlib/$(DEPDIR) whisperlib/net/$(DEPDIR) whisperlib/net/test/$(DEPDIR) whisperlib/rpc/$(DEPDIR) whisperlib/rpc/codec/$(DEPDIR) whisperlib/rpc/test/$(DEPDIR) whisperlib/sync/$(DEPDIR) whisperlib/url/$(DEPDIR) whisperlib/url/google-url/$(DEPDIR) whisperlib/url/test/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -2709,6 +2584,9 @@ uninstall-am: uninstall-dist_docDATA uninstall-libLIBRARIES \
 	uninstall uninstall-am uninstall-dist_docDATA \
 	uninstall-libLIBRARIES uninstall-nobase_includeHEADERS
 
+
+@HAVE_GLOG_TRUE@whisperlib/rpc/test/rpc_test_proto.cc: whisperlib/rpc/test/rpc_test_proto.proto
+@HAVE_GLOG_TRUE@	protoc $< --cpp_out=.
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

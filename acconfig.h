@@ -1,4 +1,8 @@
+/* Section coming from acconfig.h */
+
+#undef HAVE_GLOG
 #undef HAVE_GFLAGS
+#undef HAVE_PROTOBUF
 
 #undef HAVE_UNORDERED_SET
 #undef HAVE_TR1_UNORDERED_SET
@@ -54,8 +58,8 @@
 
 #undef HAVE_ICU
 
-#undef HAVE_GLOG
-
 #if HAVE_GLOG
 # define USE_GLOG_LOGGING 1
 #endif
+
+/* End of section coming from acconfig.h */

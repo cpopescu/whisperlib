@@ -41,13 +41,18 @@
 #ifndef __COMMON_IO_LOGIO_LOGIO_H__
 #define __COMMON_IO_LOGIO_LOGIO_H__
 
+#include <whisperlib/base/core_config.h>
+
 #include <string>
 #include <whisperlib/base/types.h>
 #include <whisperlib/base/re.h>
 #include <whisperlib/io/file/file.h>
 #include <whisperlib/io/buffer/memory_stream.h>
 #include <whisperlib/io/logio/recordio.h>
+
+#if HAVE_PROTOBUF
 #include <google/protobuf/message_lite.h>
+#endif
 
 namespace io {
 
@@ -150,6 +155,7 @@ class LogWriter {
 
   bool WriteRecord(io::MemoryStream* in);
   bool WriteRecord(const char* buffer, int32 size);
+#if HAVE_PROTOBUF
   bool WriteRecord(const google::protobuf::MessageLite* message) {
       string output;
       if (!message->SerializeToString(&output)) {
@@ -157,6 +163,7 @@ class LogWriter {
       }
       return WriteRecord(output.data(), output.size());
   }
+#endif
 
   // Flush internal buffer to file.
   bool Flush();

@@ -33,18 +33,18 @@
 // special :)
 
 
-#include "common/base/types.h"
-#include "common/base/log.h"
-#include "common/base/system.h"
-#include "common/base/gflags.h"
-#include "common/io/file/file.h"
-#include "common/io/file/file_input_stream.h"
-#include "common/io/ioutil.h"
-#include "common/sync/event.h"
-#include "common/sync/mutex.h"
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/system.h"
+#include "whisperlib/base/gflags.h"
+#include "whisperlib/io/file/file.h"
+#include "whisperlib/io/file/file_input_stream.h"
+#include "whisperlib/io/ioutil.h"
+#include "whisperlib/sync/event.h"
+#include "whisperlib/sync/mutex.h"
 
-#include "net/http/http_server_protocol.h"
-#include "net/base/selector.h"
+#include "whisperlib/http/http_server_protocol.h"
+#include "whisperlib/net/selector.h"
 
 //////////////////////////////////////////////////////////////////////
 

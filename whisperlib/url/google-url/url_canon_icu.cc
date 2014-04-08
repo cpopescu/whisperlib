@@ -29,7 +29,7 @@
 
 // ICU integration functions.
 
-#include <config.h>
+#include <whisperlib/base/core_config.h>
 
 #include <stdlib.h>
 #include <string.h>
