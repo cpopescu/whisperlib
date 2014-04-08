@@ -250,21 +250,6 @@ check_PROGRAMS = \
   $(standalone_test_programs) \
   $(driver_check_programs)
 
-whisperlib_http_test_test_failsafe_sh_SOURCES = \
-	whisperlib/http/test/failsafe_test.cc
-
-
-#  whisperlib/http/test/failsafe_test.sh
-#  whisperlib/http/test/http_request_test.sh
-#  whisperlib/net/test/selectable_filereader_test.sh
-
-
-# whisperlib_http_test_http_request_test_sh_SOURCES = \
-# 	whisperlib/http/test/http_request_test.cc
-
-# whisperlib_net_test_selectable_filereader_test_sh_SOURCES = \
-#   whisperlib/net/test/selectable_filereader_test.cc
-
 LDADD = whisperlib/libwhisperlib.a $(ICU_LIBS)
 
 TESTS = $(standalone_test_programs) $(driver_test_scripts)
