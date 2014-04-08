@@ -5,6 +5,7 @@
 #ifndef __WHISPERLIB_BASE_GFLAGS_H
 #define __WHISPERLIB_BASE_GFLAGS_H
 
+#include <config.h>
 
 #if defined(HAVE_GFLAGS) || defined(HAVE_GFLAGS_GFLAGS_H)
 // We have real flags
