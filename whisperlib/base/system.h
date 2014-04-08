@@ -32,6 +32,7 @@
 #ifndef __WHISPERLIB_BASE_SYSTEM_H__
 #define __WHISPERLIB_BASE_SYSTEM_H__
 
+#include <config.h>
 #include <string>
 #include <stdarg.h>
 

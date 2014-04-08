@@ -5,14 +5,15 @@
 #ifndef __WHISPERLIB_BASE_GFLAGS_H
 #define __WHISPERLIB_BASE_GFLAGS_H
 
+#include <config.h>
 
-#if defined(HAVE_GFLAGS)
+#if defined(HAVE_GFLAGS) || defined(HAVE_GFLAGS_GFLAGS_H)
 // We have real flags
 #include <gflags/gflags.h>
 
 #else
 
-#if defined(HAVE_GLOG) && defined(USE_GLOG_LOGGING)
+#if (defined(HAVE_GLOG) || defined(HAVE_GLOG_LOGGING_H)) && defined(USE_GLOG_LOGGING)
 #error "If you enable glog, you cannot disable gflags."
 #endif
 
@@ -76,5 +77,5 @@ namespace fLS {                                 \
 }                                               \
 using fLS::FLAGS_##name
 
-#endif  // HAVE_GFLAGS
+#endif  // HAVE_GFLAGS || HAVE_GFLAGS_GFLAGS_H
 #endif  // __WHISPERLIB_BASE_GFLAGS_H

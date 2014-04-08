@@ -16,6 +16,8 @@
 #ifndef _WHISPERLIB_BASE_LOG_H
 #define _WHISPERLIB_BASE_LOG_H
 
+#include <stdio.h>
+
 #ifdef ANDROID
 #include <android/log.h>
 #include <sstream>

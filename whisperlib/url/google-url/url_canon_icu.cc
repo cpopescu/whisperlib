@@ -29,11 +29,16 @@
 
 // ICU integration functions.
 
+#include <config.h>
+
 #include <stdlib.h>
 #include <string.h>
+
+#if HAVE_ICU
 #include <unicode/ucnv.h>
 #include <unicode/ucnv_cb.h>
 #include <unicode/uidna.h>
+#endif
 
 #include "whisperlib/url/google-url/url_canon_icu.h"
 #include "whisperlib/url/google-url/url_canon_internal.h"  // for _itoa_s

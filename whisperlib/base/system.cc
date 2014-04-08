@@ -89,7 +89,7 @@ void Init(int argc, char* argv[]) {
   google::InstallFailureSignalHandler();
 #endif
 #if defined(HAVE_GFLAGS)
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
 #endif
   net::DnsInit();
 

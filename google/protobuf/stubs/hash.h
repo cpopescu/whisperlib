@@ -40,7 +40,7 @@
 #include <whisperlib/base/types.h>
 #include WHISPER_HASH_SET_HEADER
 #include WHISPER_HASH_MAP_HEADER
-#include WHISPER_HASH_FUN_HEADER
+// #include WHISPER_HASH_FUN_HEADER
 
 namespace google {
 namespace protobuf {

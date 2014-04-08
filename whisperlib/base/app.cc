@@ -29,6 +29,11 @@
 //
 // Author: Cosmin Tudorache
 
+#include <config.h>
+#if HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+
 #include <signal.h>
 
 #include <whisperlib/base/app.h>

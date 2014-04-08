@@ -1,13 +1,35 @@
+Date: 2014-04-07 20:17:20
+
 whisperlib
 ==========
 
 Multi platform general use library (base logging / networking / http / rpc etc)
 
-To build you need waf:
-http://code.google.com/p/waf/
+Prerequisites
+=============
 
-You may also better have glog / gflags / google perftools for your 
-desktop/server build. You also need a c++ compiler, bison, flex, make, zlib.
+This library depends on the following additional libraries:
+
+- glog (https://code.google.com/p/google-glog/)
+- gflags (https://code.google.com/p/gflags/)
+
+Optional libraries:
+
+- ICU (http://site.icu-project.org/)
+
+You might find useful the gperftools (https://code.google.com/p/gperftools/).
+
+You also need a C++ compiler, bison, flex, make, zlib.
+
+Building
+========
+
+You can build in two ways.
+
+Building using waf
+-----------------
+
+http://code.google.com/p/waf/
 
 To build on your local machine run:
 
@@ -42,6 +64,42 @@ waf install -v --arch=ios-armv7s --install_root=$MY_IOS_PROJECT_DIR/libs/whisper
 You may also want to build for all ios architectures then run a lipo to combine
 all libraries into a combined one and copy it manually (with another script).
 
+Building using the autoconf utilities
+-------------------------------------
+
+Run
+
+$ ./configure
+$ make
+$ make check
+
+If you want to keep the source directory clean, without any .o files,
+you can do the following:
+
+$ mkdir build
+$ cd build
+$ ../configure
+$ make
+$ make check
+
+If your build machine has a multi-core CPU with lots of RAM, try
+passing the -j option to make, to speed up the build:
+
+$ make -j24
+
+To install the library, run:
+
+$ sudo make install
+
+By default this installs the header files and statically built library
+in /usr/local. To change the installation location, run configure with
+the --prefix argument.
+
+The autoconf build does not support cross compilation for now, so you
+cannot yet build for iOS or Android.
+
+If you need to generate the configure script, you need at least
+automake-14.1 and autoconf-2.69 installed on your machine. Older
+versions of these programs will not work.
+
 Enjoy
-
-

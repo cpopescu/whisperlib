@@ -35,8 +35,12 @@
 #ifndef GOOGLEURL_SRC_URL_CANON_INTERNAL_H__
 #define GOOGLEURL_SRC_URL_CANON_INTERNAL_H__
 
+#include <config.h>
 #include <stdlib.h>
-#include <unicode/utf.h>
+
+#if HAVE_ICU
+# include <unicode/utf.h>
+#endif
 
 #include <whisperlib/url/google-url/url_canon.h>
 

@@ -29,14 +29,20 @@
 //
 // Author: Cosmin Tudorache
 
+#include <config.h>
+
+#if HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+
 #include <string.h>
-#include <unistd.h>
 #include <signal.h>
 #include <execinfo.h>
-#ifdef HAVE_GOOGLE_PERFTOOLS
 
+#ifdef HAVE_GOOGLE_PERFTOOLS
 #include <google/heap-profiler.h>
 #endif
+
 #include <whisperlib/base/log.h>
 #include <whisperlib/base/errno.h>
 #include <whisperlib/base/system.h>

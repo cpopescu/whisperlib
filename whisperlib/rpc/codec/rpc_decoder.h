@@ -33,6 +33,7 @@
 #define __NET_RPC_LIB_CODEC_RPC_DECODER_H__
 
 #include <list>
+#include <vector>
 
 #include <whisperlib/base/types.h>
 #include <whisperlib/io/buffer/memory_stream.h>
@@ -188,7 +189,7 @@ class Decoder {
   //  the internal state may be mangled.
   virtual void Reset() = 0;
 
-  DECODE_RESULT Decode(std::_Bit_reference out) {
+  DECODE_RESULT Decode(bool& out) {
     bool b = false;
     DECODE_RESULT res = DecodeBody(b);
     out = b;
