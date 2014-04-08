@@ -3,7 +3,7 @@
 #define __WHISPERLIB_BASE_TYPES_H
 #pragma once
 
-#include <config.h>
+#include <whisperlib/base/config.h>
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>

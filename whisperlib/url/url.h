@@ -30,7 +30,7 @@
 //
 // Author: Catalin Popescu
 
-#include <config.h>
+#include <whisperlib/base/config.h>
 
 #ifdef HAVE_ICU
 #include "whisperlib/url/google-url/gurl.h"

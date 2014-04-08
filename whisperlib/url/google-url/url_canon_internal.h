@@ -35,7 +35,7 @@
 #ifndef GOOGLEURL_SRC_URL_CANON_INTERNAL_H__
 #define GOOGLEURL_SRC_URL_CANON_INTERNAL_H__
 
-#include <config.h>
+#include <whisperlib/base/config.h>
 #include <stdlib.h>
 
 #if HAVE_ICU
