@@ -54,7 +54,7 @@
 //              client should receive. There are two modes of operation from
 //              server's point of view: streaming data and normal data. For
 //              the streaming data, the response data is produced in multiple
-//              chuncks that are sent over a longer period of time. For normal
+//              chunks that are sent over a longer period of time. For normal
 //              data, the entire response is produced at once.
 //
 // Please check http_server_test.cc for an example of how to use it. Also
