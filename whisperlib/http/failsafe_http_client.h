@@ -110,7 +110,7 @@ class FailSafeClient {
   // Force reopening of all connections
   void Reset();
 
-  // Forces a close of all pending request - call this if you want 
+  // Forces a close of all pending request - call this if you want
   // to cleanup your caller before this failsafe client gets deleted
   void ForceCloseAll();
 
@@ -164,7 +164,7 @@ class FailSafeClient {
   typedef hash_map<ClientRequest*, PendingStruct*> PendingMap;
   PendingMap* pending_map_;
 
-  deque<pair<int64, string>> completion_events_;
+  deque<pair<int64, string> > completion_events_;
 
   bool closing_;
   Closure* requeue_pending_callback_;
