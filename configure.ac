@@ -19,9 +19,17 @@ AC_PROG_CXX
 AC_PROG_CC
 
 # Require the GNU stl
-AX_CXX_COMPILE_STDCXX_11([ext],[mandatory])
+dnl AX_CXX_COMPILE_STDCXX_11([ext],[mandatory])
 
-CXX_FLAG_CHECK([-stdlib=libc++])
+dnl CXX_FLAG_CHECK([-stdlib=libc++])
+
+AX_PTHREAD([
+  LIBS="$PTHREAD_LIBS $LIBS"
+  CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+  CXXFLAGS="$CXXFLAGS $PTHREAD_CFLAGS"
+  CC="$PTHREAD_CC"
+])
+
 
 # Add check for ICU. Let the user disable the use of ICU if it's
 # present on the system by passing --without-icu to configure.
