@@ -53,6 +53,7 @@ AC_DEFUN([AX_CHECK_GFLAGS], [
   ax_save_LIBS="$LIBS"
   LIBS="-lgflags"
 
+  AC_LANG_PUSH([C++])
   AC_MSG_CHECKING([for usable gflags library])
 AC_TRY_LINK([
 #include <gflags/gflags.h>
@@ -67,6 +68,7 @@ DEFINE_bool(test, false, "help string");
    ],
   [have_gflags=no])
   AC_MSG_RESULT($have_gflags)
+  AC_LANG_POP([C++])
 
   if test "$have_gflags" = "no"; then
     LIBS=$ax_save_LIBS
