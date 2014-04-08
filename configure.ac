@@ -14,15 +14,6 @@ AC_PROG_RANLIB
 
 AC_LANG(C++)
 
-# Checks for programs.
-AC_PROG_CXX
-AC_PROG_CC
-
-# Require the GNU stl
-dnl AX_CXX_COMPILE_STDCXX_11([ext],[mandatory])
-
-dnl CXX_FLAG_CHECK([-stdlib=libc++])
-
 AX_PTHREAD([
   LIBS="$PTHREAD_LIBS $LIBS"
   CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
