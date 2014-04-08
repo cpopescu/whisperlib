@@ -1,5 +1,5 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
-#undef HAVE_GFLAGS_GLAGS_H
+#undef HAVE_GFLAGS
 
 #undef HAVE_UNORDERED_SET
 #undef HAVE_TR1_UNORDERED_SET
@@ -54,6 +54,12 @@
 #undef HAVE_SYS_STAT_H
 
 #undef HAVE_ICU
+
+#undef HAVE_GLOG
+
+#if HAVE_GLOG
+# define USE_GLOG_LOGGING 1
+#endif
 
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
@@ -119,14 +125,11 @@
 /* Define to 1 if you have the `gettimeofday' function. */
 #undef HAVE_GETTIMEOFDAY
 
-/* Define to 1 if you have the <gflags/gflags.h> header file. */
-#undef HAVE_GFLAGS_GFLAGS_H
-
-/* Define to 1 if you have the <glog/logging.h> header file. */
-#undef HAVE_GLOG_LOGGING_H
-
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have `z' library (-lz) */
+#undef HAVE_LIBZ
 
 /* Define to 1 if you have the <limits.h> header file. */
 #undef HAVE_LIMITS_H

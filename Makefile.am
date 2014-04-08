@@ -1,5 +1,7 @@
 dist_doc_DATA = README.md
 
+AM_DEFAULT_SOURCE_EXT = .cc
+
 lib_LIBRARIES = google/protobuf/libprotobuf.a whisperlib/libwhisperlib.a
 
 google_protobuf_libprotobuf_a_SOURCES = \
@@ -203,3 +205,66 @@ nobase_include_HEADERS = \
   whisperlib/sync/thread_pool.h \
   whisperlib/url/simple_url.h \
   whisperlib/url/url.h
+
+if HAVE_GLOG
+glog_check_programs = \
+  whisperlib/io/logio/test/logio_test \
+  whisperlib/io/logio/test/recordio_test
+
+if HAVE_ICU
+glog_icu_check_programs = \
+  whisperlib/url/test/url_test
+endif
+
+endif
+
+TEST_EXTENSIONS = .sh
+
+standalone_test_programs = \
+  whisperlib/base/test/lru_cache_test \
+  whisperlib/base/test/strutil_test \
+  whisperlib/http/test/http_header_test \
+  whisperlib/io/buffer/test/data_block_test \
+  whisperlib/io/buffer/test/memory_stream_test \
+  whisperlib/io/checkpoint/test/checkpointing_test \
+  whisperlib/io/checkpoint/test/state_keeper_test \
+  whisperlib/net/test/address_test \
+  whisperlib/net/test/dns_resolver_test \
+  whisperlib/net/test/selector_test \
+  whisperlib/net/test/udp_connection_test \
+  $(glog_check_programs) \
+  $(glog_icu_check_programs)
+
+driver_check_programs = \
+  whisperlib/http/test/failsafe_test \
+  whisperlib/http/test/http_request_test \
+  whisperlib/net/test/selectable_filereader_test
+
+driver_test_scripts = \
+  whisperlib/http/test/test_failsafe.sh \
+  whisperlib/http/test/http_request_test.sh \
+  whisperlib/net/test/selectable_filereader_test.sh
+
+
+check_PROGRAMS = \
+  $(standalone_test_programs) \
+  $(driver_check_programs)
+
+whisperlib_http_test_test_failsafe_sh_SOURCES = \
+	whisperlib/http/test/failsafe_test.cc
+
+
+#  whisperlib/http/test/failsafe_test.sh
+#  whisperlib/http/test/http_request_test.sh
+#  whisperlib/net/test/selectable_filereader_test.sh
+
+
+# whisperlib_http_test_http_request_test_sh_SOURCES = \
+# 	whisperlib/http/test/http_request_test.cc
+
+# whisperlib_net_test_selectable_filereader_test_sh_SOURCES = \
+#   whisperlib/net/test/selectable_filereader_test.cc
+
+LDADD = whisperlib/libwhisperlib.a $(ICU_LIBS)
+
+TESTS = $(standalone_test_programs) $(driver_test_scripts)

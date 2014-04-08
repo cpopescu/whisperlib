@@ -1,4 +1,4 @@
-#undef HAVE_GFLAGS_GLAGS_H
+#undef HAVE_GFLAGS
 
 #undef HAVE_UNORDERED_SET
 #undef HAVE_TR1_UNORDERED_SET
@@ -53,3 +53,9 @@
 #undef HAVE_SYS_STAT_H
 
 #undef HAVE_ICU
+
+#undef HAVE_GLOG
+
+#if HAVE_GLOG
+# define USE_GLOG_LOGGING 1
+#endif

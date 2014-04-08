@@ -45,10 +45,31 @@ AS_IF([test "x$have_icu" = "xyes"],
     [AC_MSG_ERROR([ICU library requested but not found])])
     ])
 
+AX_CHECK_ZLIB([],
+    [AC_MSG_ERROR([Zlib was not found])])
+
+AX_CHECK_GLOG(
+  [AC_DEFINE(HAVE_GLOG)
+   have_glog=yes],
+  [have_glog=no])
+AM_CONDITIONAL([HAVE_GLOG], [test "$have_glog" = "yes"])
+
+AX_CHECK_GFLAGS(
+  [AC_DEFINE(HAVE_GFLAGS)
+   have_gflags=yes],
+  [have_gflags=no])
+AM_CONDITIONAL([HAVE_GFLAGS], [test "$have_gflags" = "yes"])
+
+if test "$have_glog" = "yes" -a "$have_gflags" = "no"; then
+   AC_MSG_ERROR([
+You have the glog library installed.
+You must also install the gflags library!])
+fi
+
 AC_C_BIGENDIAN
 
 # Checks for header files.
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h float.h inttypes.h limits.h memory.h netdb.h netinet/in.h stddef.h stdint.h stdlib.h string.h strings.h sys/param.h sys/socket.h sys/stat.h sys/time.h unistd.h gflags/gflags.h glog/logging.h nameser8_compat.h endian.h sys/epoll.h sys/poll.h poll.h])
+AC_CHECK_HEADERS([arpa/inet.h fcntl.h float.h inttypes.h limits.h memory.h netdb.h netinet/in.h stddef.h stdint.h stdlib.h string.h strings.h sys/param.h sys/socket.h sys/stat.h sys/time.h unistd.h nameser8_compat.h endian.h sys/epoll.h sys/poll.h poll.h])
 
 AC_CHECK_HEADERS([unordered_set tr1/unordered_set ext/hash_set unordered_map tr1/unordered_map ext/hash_map functional_hash.h tr1/functional_hash.h ext/hash_fun.h])
 
