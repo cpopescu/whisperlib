@@ -39,6 +39,8 @@
 #include <nameser8_compat.h>
 #elif defined(HAVE_ENDIAN_H)
 #include <endian.h>
+#elif defined(HAVE_MACHINE_ENDIAN_H)
+#include <machine/endian.h>
 #endif
 
 #include <whisperlib/base/types.h>
@@ -51,7 +53,7 @@ namespace common {
 //   -- set signal handlers
 //   -- process flags
 //   -- writes some stuff in the log
-void Init(int argv, char* argc[]);
+void Init(int& argv, char**& argc);
 int Exit(int error, bool forced = false);
 
 // considering int value 0x01020304

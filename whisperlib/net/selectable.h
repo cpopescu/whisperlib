@@ -34,6 +34,7 @@
 
 #include <whisperlib/io/buffer/memory_stream.h>
 #include <whisperlib/net/selector.h>
+#include <whisperlib/net/selector_event_data.h>
 
 namespace net {
 

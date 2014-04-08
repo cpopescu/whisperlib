@@ -42,6 +42,7 @@ class Mutex {
   pthread_mutex_t mutex_;
   pthread_mutexattr_t attr_;
   bool initialized_;
+  size_t is_held_count_;
 public:
   Mutex(bool is_reentrant = false);
   explicit Mutex(const pthread_mutex_t& mutex);
@@ -49,8 +50,11 @@ public:
 
   void Lock() {
     CHECK_SYS_FUN(pthread_mutex_lock(&mutex_), 0);
+    ++is_held_count_;
   }
   void Unlock() {
+    DCHECK_GT(is_held_count_, 0);
+    --is_held_count_;
     CHECK_SYS_FUN(pthread_mutex_unlock(&mutex_), 0);
   }
 
@@ -59,7 +63,12 @@ public:
   // Classic named Unlock
   void V() {  Unlock(); }
 
- private:
+  // Use this for assertions and such, only,
+  bool IsHeld() const {
+      return is_held_count_ > 0;
+  }
+
+private:
   DISALLOW_EVIL_CONSTRUCTORS(Mutex);
 };
 
@@ -77,6 +86,9 @@ class MutexPool {
     // 'p' can have any value!
     // e.g. 0xffffffff when cast to int => -1
     return GetMutex(reinterpret_cast<size_t>(p));
+  }
+  size_t num() const {
+    return num_;
   }
  private:
   Mutex** mutex_;

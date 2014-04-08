@@ -206,7 +206,9 @@ bool Date::Set(int year, int month, int day,
       return false;
     }
 
+#ifndef NACL
     tt += asLocalTime.tm_gmtoff;
+#endif
   }
   const int64 milis_since_epoch =
       (static_cast<int64>(tt)) * static_cast<int64>(1000) + milisecond;

@@ -192,7 +192,7 @@ std::string Uint64ToString(uint64 value) {
       IntToString(value);
 }
 
-inline void StringAppendV(std::string* dst, const char* format, va_list ap) {
+void StringAppendV(std::string* dst, const char* format, va_list ap) {
   StringAppendVT<char>(dst, format, ap);
 }
 

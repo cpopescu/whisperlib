@@ -36,7 +36,7 @@
 
 namespace synch {
 
-Mutex::Mutex(bool is_reentrant) : initialized_(true) {
+Mutex::Mutex(bool is_reentrant) : initialized_(true), is_held_count_(0) {
   pthread_mutexattr_init(&attr_);
   if ( is_reentrant ) {
     CHECK_SYS_FUN(pthread_mutexattr_settype(&attr_, PTHREAD_MUTEX_RECURSIVE), 0);
@@ -47,8 +47,7 @@ Mutex::Mutex(bool is_reentrant) : initialized_(true) {
 }
 
 Mutex::Mutex(const pthread_mutex_t& mutex)
-    : initialized_(false),
-      mutex_(mutex) {
+    : mutex_(mutex), initialized_(false), is_held_count_(0) {
 }
 
 Mutex::~Mutex() {

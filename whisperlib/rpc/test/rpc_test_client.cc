@@ -111,11 +111,9 @@ int main(int argc, char* argv[]) {
   net::Selector selector;
   net::NetFactory net_factory(&selector);
   http::ClientParams params;
-  ResultClosure<http::BaseClientConnection*>* rcl =
-      NewPermanentCallback(&CreateConnection, &selector,
-                           &net_factory, net::PROTOCOL_TCP);
   http::FailSafeClient* fsc = new http::FailSafeClient(&selector, &params, servers,
-                                                       rcl, 4, 400000, 5000, "");
+          NewPermanentCallback(&CreateConnection, &selector, &net_factory, net::PROTOCOL_TCP),
+          true, 4, 400000, 5000, "");
 
   num_requests_to_send = FLAGS_num_requests;
   num_requests_to_receive = FLAGS_num_requests;

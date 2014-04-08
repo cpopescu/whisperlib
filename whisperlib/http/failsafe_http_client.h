@@ -55,6 +55,8 @@ namespace http {
 // This is not thread-safe - all call should be (and are) synchronized
 // through the provided selector thread.
 //
+// auto_delete_connection_factory: if true, we take care of 'connection_factory' deletion
+//
 class FailSafeClient {
  public:
   FailSafeClient(
@@ -62,6 +64,7 @@ class FailSafeClient {
       const ClientParams* client_params,
       const vector<net::HostPort>& servers,
       ResultClosure<BaseClientConnection*>* connection_factory,
+      bool auto_delete_connection_factory,
       int num_retries,
       int32 request_timeout_ms,
       int32 reopen_connection_interval_ms,
@@ -110,13 +113,14 @@ class FailSafeClient {
   // Force reopening of all connections
   void Reset();
 
-  // Forces a close of all pending request - call this if you want 
+  // Forces a close of all pending request - call this if you want
   // to cleanup your caller before this failsafe client gets deleted
   void ForceCloseAll();
 
  private:
   void WriteStatusLog() const;
   void StatusString(string* s) const;
+  void ClearClient(ClientProtocol* client);
 
   struct PendingStruct {
     int64 start_time_;
@@ -141,7 +145,7 @@ class FailSafeClient {
   void RequeuePendingAlarm();
   void RequeuePending();
   bool InternalStartRequest(PendingStruct* ps);
-  void CompletionCallback(PendingStruct* ps);
+  void CompletionCallback(PendingStruct* ps, int client_id);
   void DeleteCanceledPendingStruct(PendingStruct* ps);
   void CompleteWithError(PendingStruct* ps, http::ClientError error);
 
@@ -151,6 +155,7 @@ class FailSafeClient {
   const ClientParams* client_params_;
   vector<net::HostPort> servers_;
   ResultClosure<BaseClientConnection*>* connection_factory_;
+  bool auto_delete_connection_factory_;
   const int num_retries_;
   const int64 request_timeout_ms_;
   const int64 reopen_connection_interval_ms_;
@@ -164,7 +169,7 @@ class FailSafeClient {
   typedef hash_map<ClientRequest*, PendingStruct*> PendingMap;
   PendingMap* pending_map_;
 
-  deque<pair<int64, string>> completion_events_;
+  deque< pair<int64, string> > completion_events_;
 
   bool closing_;
   Closure* requeue_pending_callback_;

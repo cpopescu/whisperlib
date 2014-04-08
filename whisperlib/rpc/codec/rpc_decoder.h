@@ -187,13 +187,14 @@ class Decoder {
   //  If a previous try to Decode failed for insufficient data,
   //  the internal state may be mangled.
   virtual void Reset() = 0;
-
+/*
   DECODE_RESULT Decode(std::_Bit_reference out) {
     bool b = false;
     DECODE_RESULT res = DecodeBody(b);
     out = b;
     return res;
   }
+*/
   //  Decode generic rpc::Object.
   // Returns:
   //   DEODE_RESULT_SUCCESS: if the object was successfully read.
@@ -293,7 +294,6 @@ protected:
 #define DECODE_BEGIN_OB_ARRAY(dec, name)                 \
     do {                                              \
     bool more_elements;                               \
-    uint32 __count;                                   \
     DECODE_VERIFY((dec)->DecodeStructAttribStart());  \
     DECODE_EXPECTED_FIELD(dec, name);                 \
     DECODE_VERIFY((dec)->DecodeStructAttribMiddle()); \
@@ -311,7 +311,6 @@ protected:
 #define DECODE_BEGIN_ARRAY(dec, name)                 \
     do {                                              \
       bool more_elements;                               \
-      uint32 __count;                                   \
       DECODE_VERIFY((dec)->DecodeStructAttribStart());  \
       DECODE_EXPECTED_FIELD(dec, name);                 \
       DECODE_VERIFY((dec)->DecodeStructAttribMiddle()); \

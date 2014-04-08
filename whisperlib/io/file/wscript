@@ -8,7 +8,7 @@ def build(ctx):
         'file_input_stream.cc',
         'file_output_stream.cc',
     ]
-    if not ctx.env.IOS and not ctx.env.ANDROID:
+    if not ctx.env.IOS and not ctx.env.ANDROID and not ctx.env.NACL:
         sources.extend([
             'aio_file.cc',
             'buffer_manager.cc',

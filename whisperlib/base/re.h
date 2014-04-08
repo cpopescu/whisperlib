@@ -35,9 +35,9 @@
 #ifndef __WHISPERLIB_BASE_RE_H__
 #define __WHISPERLIB_BASE_RE_H__
 
-#include <regex.h>
-#include <string>
 #include <whisperlib/base/types.h>
+#include <string>
+#include <regex.h>
 
 namespace re {
 

@@ -1,5 +1,6 @@
-// Copyright (c) 2009, Whispersoft s.r.l.
+// Copyright: 1618labs, Inc. 2013 onwards.
 // All rights reserved.
+// cp@1618labs.com
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -27,47 +28,39 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Author: Catalin Popescu
+//
 
-#ifndef __WHISPERLIB_SYNC_THREAD_POOL_H__
-#define __WHISPERLIB_SYNC_THREAD_POOL_H__
+#ifndef __WHISPERLIB_IO_FILE_READER_H__
+#define __WHISPERLIB_IO_FILE_READER_H__
 
-#include <vector>
-#include <whisperlib/sync/thread.h>
-#include <whisperlib/sync/producer_consumer_queue.h>
+#include <whisperlib/base/types.h>
+#include <whisperlib/base/strutil.h>
+#include <whisperlib/io/file/file_input_stream.h>
 
-namespace thread {
+namespace io {
+class FileReader {
+public:
+    FileReader() {
+    }
+    virtual ~FileReader() {
+    }
+    virtual bool ReadToString(const string& path, string* s) const = 0;
+};
 
-class ThreadPool {
- public:
-  // Constructs a thread pool w/ pool_size threads and a queue of
-  // backlog_size (condition: backlog_size > pool_size).
-  ThreadPool(uint32 pool_size, uint32 backlog_size, bool low_priority=false);
-  // Stops all threads (as soon as they are idle).
-  ~ThreadPool();
-
-  // Use this accessors to add jobs to the pool (in a blocking on non
-  // blocking way).
-  // Example:
-  //   thread_pool->jobs()->Put(NewCallback(this, &Worker::DoWork, work_data));
-  synch::ProducerConsumerQueue<Closure*>* jobs() {
-    return &jobs_;
-  }
-
-  // Finalizes the threads - possibly waiting for their work to be done.
-  // The destructor would try to flush the jobs queue, use this first to
-  // have the work finished
-  void FinishWork();
-
- private:
-  void ThreadRun(uint32 thread_index);
-  synch::ProducerConsumerQueue<Closure*> jobs_;
-  vector<Thread*> threads_;
-  // the count of jobs processed by each thread
-  vector<uint32> count_completed_;
-
-  DISALLOW_EVIL_CONSTRUCTORS(ThreadPool);
+class SimpleFileReader : public FileReader {
+public:
+    SimpleFileReader(const string& dir)
+    : dir_(dir) {
+    }
+    virtual ~SimpleFileReader() {
+    }
+    virtual bool ReadToString(const string& path, string* s) const {
+        const string filename(strutil::JoinPaths(dir_, path));
+        return io::FileInputStream::TryReadFile(filename, s);
+    }
+private:
+    const string dir_;
 };
 }
 
-#endif  // __COMMON_SYNC_THREAD_POOL_H__
+#endif

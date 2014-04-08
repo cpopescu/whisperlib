@@ -1,5 +1,6 @@
-// Copyright (c) 2009, Whispersoft s.r.l.
+// Copyright: 1618labs, Inc. 2013 onwards.
 // All rights reserved.
+// cp@1618labs.com
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -27,47 +28,52 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Author: Catalin Popescu
+//
 
-#ifndef __WHISPERLIB_SYNC_THREAD_POOL_H__
-#define __WHISPERLIB_SYNC_THREAD_POOL_H__
+#ifndef __WHISPERLIB_RPC_CLIENT_NET_H__
+#define __WHISPERLIB_RPC_CLIENT_NET_H__
+#include <whisperlib/base/types.h>
 
-#include <vector>
-#include <whisperlib/sync/thread.h>
-#include <whisperlib/sync/producer_consumer_queue.h>
+#include <whisperlib/net/selector.h>
+#include <whisperlib/net/address.h>
+#include <whisperlib/net/connection.h>
 
-namespace thread {
+namespace http {
 
-class ThreadPool {
- public:
-  // Constructs a thread pool w/ pool_size threads and a queue of
-  // backlog_size (condition: backlog_size > pool_size).
-  ThreadPool(uint32 pool_size, uint32 backlog_size, bool low_priority=false);
-  // Stops all threads (as soon as they are idle).
-  ~ThreadPool();
-
-  // Use this accessors to add jobs to the pool (in a blocking on non
-  // blocking way).
-  // Example:
-  //   thread_pool->jobs()->Put(NewCallback(this, &Worker::DoWork, work_data));
-  synch::ProducerConsumerQueue<Closure*>* jobs() {
-    return &jobs_;
-  }
-
-  // Finalizes the threads - possibly waiting for their work to be done.
-  // The destructor would try to flush the jobs queue, use this first to
-  // have the work finished
-  void FinishWork();
-
- private:
-  void ThreadRun(uint32 thread_index);
-  synch::ProducerConsumerQueue<Closure*> jobs_;
-  vector<Thread*> threads_;
-  // the count of jobs processed by each thread
-  vector<uint32> count_completed_;
-
-  DISALLOW_EVIL_CONSTRUCTORS(ThreadPool);
-};
+struct ClientParams;
+class FailSafeClient;
+class BaseClientConnection;
 }
 
-#endif  // __COMMON_SYNC_THREAD_POOL_H__
+namespace rpc {
+
+/** Class that wraps the common network stuff for creating
+ * an rpc client for general purpose
+ */
+class ClientNet {
+public:
+    ClientNet(net::Selector* selector,
+              const http::ClientParams* params,
+              const vector<net::HostPort>& servers);
+    ClientNet(net::Selector* selector,
+              const http::ClientParams* params,
+              const string& server_name, int num_connections = 1,
+              const char* host_header = NULL);
+    ~ClientNet();
+
+    http::FailSafeClient* fsc() const {
+        return fsc_;
+    }
+
+    static vector<net::HostPort> ToServerArray(const string& server_name,
+                                               int num_connections);
+
+private:
+    net::Selector* const selector_;
+    net::NetFactory net_factory_;
+    http::FailSafeClient* const fsc_;
+};
+
+}
+
+#endif  // __WHISPERLIB_RPC_CLIENT_NET_H__

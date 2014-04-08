@@ -326,7 +326,8 @@ RecordReader::ReadResult RecordReader::ReadRecord(io::MemoryStream* in,
       record_content_.Clear();
       return READ_CRC_CORRUPTED; // chose error, no reason
     }
-    if ( record_content_.IsEmpty() &&
+    if ( out != NULL &&
+         record_content_.IsEmpty() &&
          (flags & RecordWriter::IS_FIRST) == 0 ) {
       // this piece does not start with IS_FIRST. It must be the continuation
       // of a previous record. (happens if a record is split part in block A,
@@ -338,7 +339,12 @@ RecordReader::ReadResult RecordReader::ReadRecord(io::MemoryStream* in,
       }
       continue;
     }
-    record_content_.AppendStream(&content_, len);
+    // Test that 'out' is valid before appending. Serious performance boost when skipping records.
+    if ( out != NULL ) {
+      record_content_.AppendStream(&content_, len);
+    } else {
+      content_.Skip(len);
+    }
 
     if ( (flags & RecordWriter::HAS_CONT) != 0 ) {
       continue;

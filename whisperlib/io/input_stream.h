@@ -64,8 +64,9 @@ class InputStream : public StreamBase {
   // If len == -1 read to the end of input, else read len bytes. Returns
   // anyway the number of read bytes
   inline int32 ReadString(string* s, int32 len = -1) {
-    if ( len == -1 )
-      len = Readable();
+    if ( len == -1 ) {
+      len = int32(Readable());
+    }
     string tmp;
     tmp.reserve(len);
     const int32 cb = Read(&tmp[0], len);
@@ -142,17 +143,13 @@ class InputStream : public StreamBase {
     in.MarkerRestore();
     DCHECK_EQ(in.Readable(), size);
 
-    return (strutil::StringPrintf("InputStream [#%" PRId64 " bytes]:\n", size) +
+    return (strutil::StringPrintf("InputStream [#%lld bytes]:\n", (long long int) size) +
             strutil::PrintableDataBuffer(buffer.data(), buffer.size()));
 #else
-    return (strutil::StringPrintf("InputStream [#%" PRId64 " bytes]:\n",
-                                  Readable()));
+    return (strutil::StringPrintf("InputStream [#%lld bytes]:\n",
+                                  (long long int)Readable()));
 #endif
 
-#ifdef __INTERNAL_PRId64_DEFINED
-#undef __INTERNAL_PRId64_DEFINED
-#undef PRId64
-#endif
   }
   virtual string PeekString() const {
     string s;

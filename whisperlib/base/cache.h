@@ -150,13 +150,11 @@ public:
   const char* algorithm_name() const {
     return AlgorithmName(algorithm());
   }
-
-  uint64 NextUse() {
-    return next_use_++;
-  }
-
   uint32 Size() const {
     return items_.size();
+  }
+  uint32 Capacity() const {
+    return max_size_;
   }
 
   void Add(K key, V value) {
@@ -166,6 +164,9 @@ public:
     }
     if ( items_.size() >= max_size_ ) {
       DelByAlgorithm();
+      if ( items_.size() >= max_size_ ) {
+        return;
+      }
     }
     uint64 use = NextUse();
     Item* item = new Item(value, destructor_, use,
@@ -175,6 +176,10 @@ public:
     items_by_exp_.push_back(item);
     item->set_items_by_exp_it(--items_by_exp_.end());
     items_by_use_[use] = item;
+  }
+  // Test if the given key is in cache.
+  bool Has(K key) const {
+      return Find(key) != NULL;
   }
   V Get(K key) {
     ExpireSomeCache();
@@ -212,7 +217,7 @@ public:
       return null_value_;
     }
     V v = item->value();
-    item->set_data(null_value_);
+    item->set_value(null_value_);
     Del(item);
     return v;
   }
@@ -250,6 +255,13 @@ public:
   }
 
 private:
+  uint64 NextUse() {
+    return next_use_++;
+  }
+  const Item* Find(K key) const {
+    typename ItemMap::const_iterator it = items_.find(key);
+    return it == items_.end() ? NULL : it->second;
+  }
   Item* Find(K key) {
     typename ItemMap::iterator it = items_.find(key);
     return it == items_.end() ? NULL : it->second;

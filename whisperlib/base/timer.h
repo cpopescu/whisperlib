@@ -54,6 +54,9 @@ inline int64 TicksMsec() {
   return TicksNsec() / 1000000LL;
 }
 
+// returns: nanoseconds in CPU time. Uses CLOCK_PROCESS_CPUTIME_ID
+int64 CpuNsec();
+
 // Make the calling thread Sleep for "miliseconds" miliseconds.
 // This call ignores signals.
 void SleepMsec(int32 miliseconds);

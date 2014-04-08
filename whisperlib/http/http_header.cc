@@ -468,7 +468,7 @@ bool Header::ReadHeaderFields(io::MemoryStream* io) {
 
 // Acceptable HTTP date formats
 //
-static const char kHttpDateFormats[][128] = {
+static const char* kHttpDateFormats[] = {
   //    Sun, 06 Nov 1994 08:49:37 GMT  ; RFC 822, updated by RFC 1123
   "%a, %d %b %Y %H:%M:%S %Z",
   //    Sunday, 06-Nov-94 08:49:37 GMT ; RFC 850, obsoleted by RFC 1036
@@ -476,6 +476,19 @@ static const char kHttpDateFormats[][128] = {
   //    Sun Nov  6 08:49:37 1994       ; ANSI C's asctime() format
   "%a %b %d %H:%M:%S %Y",
 };
+
+#ifdef MACOSX
+// On macosx - no %z - so we assume gmt, and parse nothing
+static const char* kHttpDateFormatsGetOsX[] = {
+  //    Sun, 06 Nov 1994 08:49:37 GMT  ; RFC 822, updated by RFC 1123
+  "%a, %d %b %Y %H:%M:%S",
+  //    Sunday, 06-Nov-94 08:49:37 GMT ; RFC 850, obsoleted by RFC 1036
+  "%A, %d-%b-%y %H:%M:%S",
+  //    Sun Nov  6 08:49:37 1994       ; ANSI C's asctime() format
+  "%a %b %d %H:%M:%S %Y",
+};
+#endif
+
 
 time_t Header::GetDateField(const char* field_name) {
   int32 len;
@@ -485,12 +498,25 @@ time_t Header::GetDateField(const char* field_name) {
   }
   if ( *(s+len) != '\0' )
     return time_t(0);
+#ifdef MACOSX
+  for ( int32 i = 0; i < NUMBEROF(kHttpDateFormats); ++i ) {
+      struct tm t;
+      if ( strptime(s, kHttpDateFormatsGetOsX[i], &t) != NULL ) {
+          time_t orig_time = mktime(&t);
+          struct tm t_converted;
+          time_t orig_time_copy = orig_time;  // need a copy as gmtime_r modifies arguments
+          gmtime_r(&orig_time_copy, &t_converted);
+          return orig_time + (orig_time - mktime(&t_converted));
+      }
+  }
+#else
   for ( int32 i = 0; i < NUMBEROF(kHttpDateFormats); ++i ) {
     struct tm t;
     if ( strptime(s, kHttpDateFormats[i], &t) != NULL ) {
       return mktime(&t);
     }
   }
+#endif
   return time_t(0);
 }
 

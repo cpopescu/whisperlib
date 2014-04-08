@@ -43,7 +43,8 @@ namespace thread {
 class Thread {
  public:
   // Create a thread that will run the given function
-  explicit Thread(Closure* thread_function);
+  explicit Thread(Closure* thread_function,
+                  bool low_priority = false);
   ~Thread();
 
   // Actually spawns the thread

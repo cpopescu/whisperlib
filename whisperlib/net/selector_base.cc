@@ -37,6 +37,7 @@
 #include <whisperlib/net/selector_base.h>
 #include <whisperlib/net/selector.h>
 #include <unistd.h>
+#include <algorithm>
 
 namespace net {
 

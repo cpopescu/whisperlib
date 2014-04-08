@@ -9,10 +9,11 @@ def build(ctx):
               're.cc',
               'timer.cc',
               'util.cc',
+              'log.cc',
               ]
     if 'HAVE_REGEX_H' in ctx.env.DEFINES:
         source.append('re.cc')
-    if not ctx.env.ANDROID and not ctx.env.IOS:
+    if not ctx.env.ANDROID and not ctx.env.IOS and not ctx.env.NACL and not ctx.env.TIZEN:
         source.append('app.cc')
     if not ctx.env.ANDROID:
         source.append('signal_handlers.cc')
@@ -21,7 +22,9 @@ def build(ctx):
         toplib = 'whisperlib',
         name = 'whisperlib.base',
         target = 'whisperlib',
-        source = source)
+        source = source,
+	use = ['core_config.h'])
+
     ctx.install_all_includes(ctx)
 
     ctx.add_whisper_tests(ctx, [

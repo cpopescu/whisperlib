@@ -58,6 +58,11 @@
 #ifndef O_LARGEFILE
 #define O_LARGEFILE 0;
 #endif
+#ifndef O_NOCTTY
+#define O_NOCTTY 0
+#endif
+
+static const int  kReadForWritevSize = 16384;
 
 namespace io {
 
@@ -129,6 +134,7 @@ File* File::TryCreateFile(const char* filename) {
   }
   return f;
 }
+
 
 bool File::Open(const string& filename,  Access acc, CreationDisposition cd) {
   CHECK(!is_open());
@@ -277,7 +283,7 @@ int32 File::Read(io::MemoryStream* out, int32 len) {
 }
 
 int32 File::Write(const void* buf, int32 len) {
-  CHECK(is_open()) << filename_;
+  DCHECK(is_open()) << filename_;
   const int32 cb = ::write(fd_, buf, len);
   if ( cb < 0 ) {
     LOG_ERROR << "::write() failed for file: [" << filename_
@@ -295,12 +301,77 @@ int32 File::Write(const string& s) {
 }
 
 int32 File::Write(io::MemoryStream* ms, int32 len) {
+#if defined(HAVE_SYS_UIO_H)
+  int32 scratch = 0;
+  int32 cb = 0;
+  while ( !ms->IsEmpty() && (len < 0 || cb < len) ) {
+    ms->MarkerSet();
+    struct ::iovec* iov = NULL;
+    int iovcnt = 0;
+    scratch = ms->ReadForWritev(&iov, &iovcnt,
+                                (len < 0) ? kReadForWritevSize :
+                                min(len - cb, kReadForWritevSize));
+    if ( iovcnt > 0 ) {
+      const ssize_t crt_cb = ::writev(fd_, iov, iovcnt);
+      delete [] iov;
+      if ( crt_cb < 0 ) {
+        ms->MarkerRestore();
+        UpdatePosition();  // don't know where the file pointer ended-up
+        size_ = max(size_, position_);
+        return crt_cb;
+      }
+      if ( crt_cb < scratch ) {
+        // Written something but not all - we need to return and mark
+        // the right amount in the buffer
+        ms->MarkerRestore();
+        ms->Skip(crt_cb);
+      } else {
+        // Everything written - no need for the marker
+        ms->MarkerClear();
+      }
+      cb += crt_cb;
+      if ( crt_cb < scratch ) {
+        break;
+      }
+    }
+  }
+  position_ += cb;
+  size_ = max(size_, position_);
+  return cb;
+#else
+  // Much slower version w/o writeev
   CHECK(is_open()) << filename_;
   if ( len == -1 ) {
     len = ms->Size();
   }
   const char* buf = NULL;
-  int32 size;
+  int32 size = 0;
+  int32 written = 0;
+
+  while( len > 0 && ms->ReadNext(&buf, &size) ) {
+    const int32 cb_to_write = min(len, size);
+    const int32 cb_written = Write(buf, cb_to_write);
+    if ( cb_written < 0 ) {
+      return cb_written;  // hard error
+    }
+    written += cb_written;
+    if ( cb_written != cb_to_write ) {
+      return written;     // whatever..
+    }
+    len -= cb_written;
+  }
+  return written;
+#endif
+}
+
+/*
+int32 File::Write(io::MemoryStream* ms, int32 len) {
+  CHECK(is_open()) << filename_;
+  if ( len == -1 ) {
+    len = ms->Size();
+  }
+  const char* buf = NULL;
+  int32 size = 0;
   int32 written = 0;
 
   while( len > 0 && ms->ReadNext(&buf, &size) ) {
@@ -317,6 +388,7 @@ int32 File::Write(io::MemoryStream* ms, int32 len) {
   }
   return written;
 }
+*/
 
 void File::Flush() {
   CHECK(is_open()) << filename_;

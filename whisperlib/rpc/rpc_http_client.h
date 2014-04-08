@@ -46,6 +46,7 @@
 #include <whisperlib/base/types.h>
 #include <whisperlib/sync/mutex.h>
 #include <google/protobuf/service.h>
+#include WHISPER_HASH_SET_HEADER
 
 namespace http {
 class FailSafeClient;
@@ -177,6 +178,7 @@ class HttpClient : public google::protobuf::RpcChannel {
 
   // Cancels an RPC from the selector thread
   void CancelRequest(int64 xid);
+  bool CancelRequestVerified(int64 xid);
 
 
   // Called by the selector after a http request receives full response
@@ -197,6 +199,7 @@ class HttpClient : public google::protobuf::RpcChannel {
   synch::Mutex mutex_;
   int64 xid_;      // next request id
   bool closing_;   // set to true after StartClose
+  hash_set<int64> to_wait_cancel_;
 
   typedef map<int64, QueryStruct*> QueryMap;
   QueryMap queries_;

@@ -19,7 +19,12 @@
 #ifdef ANDROID
 #include <android/log.h>
 #include <sstream>
+#include <unistd.h>
+#else
+#include <pthread.h>
 #endif
+
+#include <whisperlib/base/gflags.h>
 
 #if defined(_LOGGING_H_) || defined(HAVE_GLOG)
 
@@ -31,12 +36,29 @@
 #define LOG_FATAL LOG(FATAL)
 #define LG LOG(INFO)
 
-#else  // not HAVE_GLOT
+
+#else  // not HAVE_GLOG
 
 #include <assert.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <iostream>  // NOLINT
 
+#ifndef GLOG_NAMESPACE
+#define GLOG_NAMESPACE google
+#endif
+
+namespace GLOG_NAMESPACE {
+  void InitGoogleLogging(const char* arg0);
+  void InstallFailureSignalHandler();
+}
+
+/// These flags are declared to match GLOG library, however have not much effect
+// We should leave these here ase the glog defines this in the h file - do not remove
+DECLARE_int32(v);    // Allow .cc filw to use VLOG without DECLARE_int32(v)
+DECLARE_int32(log_level);
+DECLARE_bool(logtostderr);
+DECLARE_bool(alsologtostderr);
 
 namespace ext_base {
 
@@ -58,7 +80,13 @@ class LogMessage {
 #else
         std::cerr
 #endif
-            << prefix << " [" << pretty_date_.HumanDate() << "] "
+            << prefix << " [" << pretty_date_.HumanDate() << "] " << std::dec
+#ifdef ANDROID
+            << "[pid:" << getpid() << " / "
+            << "tid:" << gettid() << "]"
+#else
+            << "[tid:" << pthread_self() << "]"
+#endif
                   << file << ":" << line << ": ";
     }
     ~LogMessage() {
@@ -119,19 +147,32 @@ class LogMessage {
 
 }  // namespace ext_base
 
-#define LOG_INFO ext_base::LogMessage(__FILE__, __LINE__, LOG_PREFIX_INFO).stream()
+enum LogLevel {
+    LogLevel_FATAL = 0,
+    LogLevel_ERROR = 1,
+    LogLevel_WARNING = 2,
+    LogLevel_INFO = 3,
+    LogLevel_DEBUG = 4,
+};
+
+inline void SetGlobalLogLevel(int level) {
+    FLAGS_log_level = level;
+}
+
+#define LOG_INFO if (FLAGS_log_level >= LogLevel_INFO) ext_base::LogMessage(__FILE__, __LINE__, LOG_PREFIX_INFO).stream()
 #define LG LOG_INFO
-#define LOG_ERROR ext_base::LogMessage(__FILE__, __LINE__, LOG_PREFIX_ERROR).stream()
-#define LOG_WARNING ext_base::LogMessage(__FILE__, __LINE__, LOG_PREFIX_WARNING).stream()
-#define LOG_FATAL ext_base::LogMessage(__FILE__, __LINE__, LOG_PREFIX_FATAL).stream()
+#define LOG_ERROR if (FLAGS_log_level >= LogLevel_ERROR) ext_base::LogMessage(__FILE__, __LINE__, LOG_PREFIX_ERROR).stream()
+#define LOG_WARNING if (FLAGS_log_level >= LogLevel_WARNING) ext_base::LogMessage(__FILE__, __LINE__, LOG_PREFIX_WARNING).stream()
+#define LOG_FATAL if (FLAGS_log_level >= LogLevel_FATAL) ext_base::LogMessage(__FILE__, __LINE__, LOG_PREFIX_FATAL).stream()
 #define LOG_QFATAL LOG_FATAL
 
 #ifndef VLOG
-#define LOG(severity) LOG_ ## severity.stream()
-#define VLOG(x) if ((x) <= 0) LOG_INFO
+#define LOG(severity) LOG_ ## severity
+#define LOG_EVERY_N(severity, n) LOG_ ## severity
+#define VLOG(x) if ((x) <= FLAGS_v) LOG_INFO
+#define VLOG_IS_ON(x) (0)
 #endif  // VLOG
 
-#define InitGoogleLogging(argv0)
 
 //////////////////////////////////////////////////////////////////////
 // Conditional macros - a little better then ASSERTs
@@ -217,7 +258,7 @@ inline char* const LogMessage::DateLogger::HumanDate() {
 }
 }  // namespace ext_base
 
-#endif  // HAVE_GLOG
+#endif  // not HAVE_GLOG
 
 
 // Extra definitions outside of glog
@@ -226,15 +267,24 @@ inline char* const LogMessage::DateLogger::HumanDate() {
 #define DLOG_INFO  if (false) LOG_INFO
 #define DLOG_ERROR  if (false) LOG_ERROR
 #define DLOG_WARNING  if (false) LOG_WARNING
-#else
+#ifndef DVLOG
+  #define DVLOG(x) if (false) LOG_INFO
+#endif
+
+#else  // debug
 #define LOG_DFATAL LOG_FATAL
 #define DLOG_INFO LOG_INFO
 #define DLOG_ERROR LOG_ERROR
 #define DLOG_WARNING LOG_WARNING
+#ifndef DVLOG
+  #define DVLOG(x) if ((x) <= FLAGS_v) LOG_INFO
 #endif
+#endif
+
 
 #define LOG_FATAL_IF(cond) if ( cond ) LOG_FATAL
 #define LOG_ERROR_IF(cond) if ( cond ) LOG_ERROR
+#define LOG_WARNING_IF(cond) if ( cond ) LOG_WARNING
 #define LOG_INFO_IF(cond) if ( cond ) LOG_INFO
 
 #define CHECK_SYS_FUN(a, b)                                             \

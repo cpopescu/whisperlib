@@ -65,13 +65,26 @@ DEFINE_int32(debug_check_long_callbacks_ms,
 
 //////////////////////////////////////////////////////////////////////
 
+namespace {
+void StopSignal() {
+}
+Closure* glb_stop_signal = NewPermanentCallback(&StopSignal);
+static const int kCallbackQueueSize = 10000;
+}
+
 namespace net {
 
 Selector::Selector()
   : tid_(0),
     should_end_(false),
+#ifdef __USE_LEAN_SELECTOR__
+    to_run_(kCallbackQueueSize),
+#else
+    base_(NULL),
+#endif //   __USE_LEAN_SELECTOR__
     now_(timer::TicksMsec()),
     call_on_close_(NULL) {
+#ifndef  __USE_LEAN_SELECTOR__
 #ifdef HAVE_EVENTFD_H
   event_fd_ = eventfd(0, 0);
   CHECK(event_fd_ >= 0)
@@ -92,17 +105,20 @@ Selector::Selector()
 #endif
   base_ = new SelectorBase(event_fd_,
                            FLAGS_selector_events_to_read_per_poll);
+#endif   //  __USE_LEAN_SELECTOR__
 }
 
 Selector::~Selector() {
   CHECK(tid_ == 0);
   CHECK(registered_.empty());
+#ifndef __USE_LEAN_SELECTOR__
 #ifdef HAVE_EVENTFD_H
   close(event_fd_);
 #else
   close(signal_pipe_[0]);
   close(signal_pipe_[1]);
 #endif
+#endif   // __USE_LEAN_SELECTOR__
 }
 
 void Selector::Loop() {
@@ -122,6 +138,18 @@ void Selector::Loop() {
         to_sleep_ms = alarms_.begin()->first - now_;
       }
     }
+
+    int run_count = 0;
+#ifdef __USE_LEAN_SELECTOR__
+    Closure* next_to_run = to_run_.Get(to_sleep_ms);
+    if (glb_stop_signal == next_to_run) {
+        should_end_ = true;
+    } else if (next_to_run) {
+        now_ = timer::TicksMsec();
+        next_to_run->Run();
+        ++run_count;
+    }
+#else          // __USE_LEAN_SELECTOR__
     if ( !to_run_.empty() ) {
       to_sleep_ms = 0;
     }
@@ -179,7 +207,6 @@ void Selector::Loop() {
     if ( FLAGS_selector_high_alarm_precission ) {
       now_ = timer::TicksMsec();
     }
-    int run_count = 0;
     while ( run_count < FLAGS_selector_num_closures_per_event ) {
       int n = RunClosures(FLAGS_selector_num_closures_per_event);
       if ( n == 0 ) {
@@ -187,6 +214,7 @@ void Selector::Loop() {
       }
       run_count += n;
     }
+#endif     //  __USE_LEAN_SELECTOR__
 
     // Run the alarms
     if ( FLAGS_selector_high_alarm_precission ) {
@@ -225,7 +253,6 @@ void Selector::Loop() {
     }
   }
 
-
   LOG_INFO << "Closing all the active connections in the selector...";
   CleanAndCloseAll();
   CHECK(registered_.empty());
@@ -241,7 +268,9 @@ void Selector::Loop() {
     run_count += n;
     LOG_INFO << "Running closures on shutdown, count: " << run_count;
   }
+#ifndef __USE_LEAN_SELECTOR__
   CHECK(to_run_.empty());
+#endif
 
   // Run remaining alarms
   while ( !alarms_.empty() ) {
@@ -264,8 +293,11 @@ void Selector::Loop() {
               << " ms, due in: " << (it->first - now_) << " ms";
   }
 
+#ifndef __USE_LEAN_SELECTOR__
   delete base_;
   base_ = NULL;
+#endif
+
   if ( call_on_close_ != NULL ) {
     call_on_close_->Run();
     call_on_close_ = NULL;
@@ -275,7 +307,11 @@ void Selector::Loop() {
 
 void Selector::MakeLoopExit() {
   CHECK(IsInSelectThread());
+#ifdef __USE_LEAN_SELECTOR__
+  to_run_.Put(glb_stop_signal);
+#else
   should_end_ = true;
+#endif
 }
 
 void Selector::RunInSelectLoop(Closure* callback) {
@@ -284,12 +320,17 @@ void Selector::RunInSelectLoop(Closure* callback) {
   #ifdef _DEBUG
   callback->set_selector_registered(true);
   #endif
+
+#ifdef __USE_LEAN_SELECTOR__
+  to_run_.Put(callback);
+#else
   mutex_.Lock();
   to_run_.push_back(callback);
   mutex_.Unlock();
   if ( !IsInSelectThread() ) {
     SendWakeSignal();
   }
+#endif
 }
 void Selector::RegisterAlarm(Closure* callback, int64 timeout_in_ms) {
   DCHECK(tid_ != 0 || !should_end_) << "Selector already stopped";
@@ -340,6 +381,23 @@ void Selector::CleanAndCloseAll() {
 }
 
 int Selector::RunClosures(int num_closures) {
+#ifdef __USE_LEAN_SELECTOR__
+    int run_count = 0;
+    while (run_count < num_closures) {
+        Closure* next_to_run = to_run_.Get(0);
+        if (glb_stop_signal != next_to_run && next_to_run) {
+#ifdef _DEBUG
+            closure->set_selector_registered(false);
+#endif
+            ++run_count;
+        } else {
+            return run_count;
+        }
+    }
+    return run_count;
+
+
+#else  // __USE_LEAN_SELECTOR__
 #ifdef HAVE_EVENTFD_H
   char buffer[1024];
 #else
@@ -381,10 +439,12 @@ int Selector::RunClosures(int num_closures) {
     }
 #endif
   }
+#endif  // __USE_LEAN_SELECTOR__
   return run_count;
 }
 
 void Selector::SendWakeSignal() {
+#ifndef  __USE_LEAN_SELECTOR__
 #ifdef HAVE_EVENTFD_H
   uint64 value = 1ULL;
   if ( sizeof(value) != ::write(event_fd_, &value, sizeof(value)) ) {
@@ -396,11 +456,16 @@ void Selector::SendWakeSignal() {
     LOG_ERROR << "Error writing a wake-up byte in selector signal pipe";
   }
 #endif
+#endif  // __USE_LEAN_SELECTOR__
 }
 
 //////////////////////////////////////////////////////////////////////
 
 bool Selector::Register(Selectable* s) {
+#ifdef __USE_LEAN_SELECTOR__
+  CHECK(false) << " Cannot use selectables in this mode";
+  return false;
+#else
   DCHECK(IsInSelectThread() || tid_ == 0);
   CHECK(s->selector() == this);
   const int fd = s->GetFd();
@@ -415,9 +480,13 @@ bool Selector::Register(Selectable* s) {
   registered_.insert(s);
 
   return base_->Add(fd, s, s->desire_);
+#endif   //  __USE_LEAN_SELECTOR__
 }
 
 void Selector::Unregister(Selectable* s) {
+#ifdef __USE_LEAN_SELECTOR__
+  CHECK(false) << " Cannot use selectables in this mode";
+#else
   DCHECK(IsInSelectThread() || tid_ == 0);
   CHECK(s->selector() == this);
   const int fd = s->GetFd();
@@ -428,6 +497,7 @@ void Selector::Unregister(Selectable* s) {
   base_->Delete(fd);
   registered_.erase(it);
   s->set_selector(NULL);
+#endif   //  __USE_LEAN_SELECTOR__
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -443,7 +513,9 @@ void Selector::UpdateDesire(Selectable* s, bool enable, int32 desire) {
   } else {
     s->desire_ &= ~desire;
   }
+#ifndef __USE_LEAN_SELECTOR__
   base_->Update(s->GetFd(), s, s->desire_);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////

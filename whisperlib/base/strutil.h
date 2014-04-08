@@ -50,6 +50,8 @@
 #include WHISPER_HASH_SET_HEADER
 #include <whisperlib/base/log.h>
 #include <whisperlib/base/strutil_format.h>
+#include <stddef.h>
+#include <wchar.h>
 
 namespace strutil {
 
@@ -59,6 +61,8 @@ string ToHex(const string& str);
 
 // Test string equality.
 bool StrEql(const char* str1, const char* str2);
+bool StrEql(const char* p, const string& s);
+bool StrEql(const string& s, const char* p);
 bool StrEql(const string& str1, const string& str2);
 
 // Test string equality. Ignore case.
@@ -134,21 +138,21 @@ void SplitString(const string& s,
 
 // Splits the string on any separator char in separator.
 void SplitStringOnAny(const char* text, int size,
-                     const char* separators,
-                     vector<string>* output,
-                     bool skip_empty);
+                      const char* separators,
+                      vector<string>* output,
+                      bool skip_empty);
 
 inline void SplitStringOnAny(const string& s,
                              const char* separators,
                              vector<string>* output,
                              bool skip_empty) {
-  SplitStringOnAny(s.c_str(), s.length(), separators, output, skip_empty);
+  SplitStringOnAny(s.c_str(), int(s.length()), separators, output, skip_empty);
 }
 
 inline void SplitStringOnAny(const string& s,
                              const char* separators,
                              vector<string>* output) {
-  SplitStringOnAny(s.c_str(), s.length(), separators, output, true);
+  SplitStringOnAny(s.c_str(), int(s.length()), separators, output, true);
 }
 
 
@@ -190,7 +194,7 @@ inline pair<string, string> SplitLast(const string& s,
 // Splits a string that contains a list of pairs of elements:
 // <elem1_1>sep2<elem1_2>sep1<elem2_1>sep2<elem2_2>sep1...
 //   ...sep1<elemN_1>sep2<elemN_2>
-//
+// If the second element in a pair is missing, the pair(s, '') is used.
 void SplitPairs(const string& s,
                 const string& elements_separator,  // sep1
                 const string& pair_separator,      // sep2
@@ -249,19 +253,25 @@ inline string NormalizePath(const string& path) {
   return NormalizePath(path, PATH_SEPARATOR);
 }
 
-// Joins system paths together, canonically
-inline string JoinPaths(const string& path1, const string& path2,
-                        char sep) {
-  if ( path1.empty() ) return NormalizePath(path2, sep);
-  if ( path2.empty() ) return NormalizePath(path1, sep);
+// Joins system paths together, canonically.
+// NOTE: The input paths should be correct, don't abuse NormalizePath().
+inline string JoinPaths(const string& path1, const string& path2, char sep) {
+  if ( path1.empty() ) return path2;
+  if ( path2.empty() ) return path1;
   if ( path1.size() == 1 && path1[0] == sep ) {
-    return NormalizePath(path1 + path2, sep);
+    return path1 + path2;
   }
-  return NormalizePath(path1 + sep + path2);
+  if ( path1[path1.size()-1] == sep || path2[0] == sep ) {
+      return path1 + path2;
+  }
+  return path1 + sep + path2;
 }
 
 inline string JoinPaths(const string& path1, const string& path2) {
   return JoinPaths(path1, path2, PATH_SEPARATOR);
+}
+inline string JoinPaths(const string& path1, const string& path2, const string& path3) {
+  return JoinPaths(path1, JoinPaths(path2, path3, PATH_SEPARATOR), PATH_SEPARATOR);
 }
 
 // Joins media paths together, canonically.
@@ -281,6 +291,8 @@ string PrintableDataBuffer(const void* buffer, size_t size);
 string PrintableDataBufferHexa(const void* buffer, size_t size);
 // prints all bytes in hexa, on a single line
 string PrintableDataBufferInline(const void* buffer, size_t size);
+// prints all bytes in hexa, on a single line
+string PrintableEscapedDataBuffer(const void* buffer, size_t size);
 
 // Some useful functions for formatted printing in a string ..
 string StringPrintf(const char* format, ...);
@@ -338,7 +350,7 @@ string StringOf(T object) {
 // e.g. ToString(const vector< pair<int64, int64> >& );
 template<typename A, typename B>
 ostream& operator<<(ostream& os, const pair<A,B>& p) {
-  return os << "{" << p.first << ", " << p.second << "}";
+  return os << "(" << p.first << ", " << p.second << ")";
 }
 
 namespace strutil {
@@ -357,7 +369,7 @@ string ToString(const map<K, V>& m) {
   for ( typename map<K, V>::const_iterator it = m.begin(); it != m.end(); ) {
     const K& k = it->first;
     const V& v = it->second;
-    oss << "[" << k << ", " << v << "]";
+    oss << k << ": " << v;
     ++it;
     if ( it != m.end() ) {
       oss << ", ";
@@ -374,7 +386,7 @@ string ToString(const hash_map<K, V>& m) {
         it != m.end(); ) {
     const K& k = it->first;
     const V& v = it->second;
-    oss << "[" << k << ", " << v << "]";
+    oss << k << ": " << v;
     ++it;
     if ( it != m.end() ) {
       oss << ", ";
@@ -384,48 +396,71 @@ string ToString(const hash_map<K, V>& m) {
   return oss.str();
 }
 template <typename T>
-string ToString(const set<T>& v) {
+string ToString(const set<T>& v, uint32 limit = kMaxUInt32) {
   ostringstream oss;
   oss << "set #" << v.size() << "{";
-  for ( typename set<T>::const_iterator it = v.begin(); it != v.end(); ) {
+  uint32 i = 0;
+  for (typename set<T>::const_iterator it = v.begin(); it != v.end() && i < limit; ++it, ++i) {
     const T& t = *it;
-    oss << t;
-    ++it;
-    if ( it != v.end() ) {
+    if (it != v.begin()) {
       oss << ", ";
     }
+    oss << t;
+  }
+  if (i < v.size()) {
+      oss << ", ... #" << (v.size() - i) << " items omitted";
   }
   oss << "}";
   return oss.str();
 }
 template <typename T>
-string ToString(const hash_set<T>& v) {
+string ToString(const hash_set<T>& v, uint32 limit = kMaxUInt32) {
   ostringstream oss;
   oss << "set #" << v.size() << "{";
-  for ( typename hash_set<T>::const_iterator it = v.begin(); it != v.end(); ) {
+  uint32 i = 0;
+  for (typename hash_set<T>::const_iterator it = v.begin(); it != v.end() && i < limit; ++it, ++i) {
     const T& t = *it;
-    oss << t;
-    ++it;
-    if ( it != v.end() ) {
+    if (it != v.begin()) {
       oss << ", ";
     }
+    oss << t;
+  }
+  if (i < v.size()) {
+      oss << ", ... #" << (v.size() - i) << " items omitted";
   }
   oss << "}";
   return oss.str();
 }
 template <typename T>
-string ToString(const vector<T>& v) {
+string ToString(const vector<T>& v, uint32 limit = kMaxUInt32) {
   ostringstream oss;
   oss << "vector #" << v.size() << "{";
-  for ( typename vector<T>::const_iterator it = v.begin(); it != v.end(); ) {
+  uint32 i = 0;
+  for (typename vector<T>::const_iterator it = v.begin(); it != v.end() && i < limit; ++it, ++i) {
     const T& t = *it;
+    if (it != v.begin()) {
+        oss << ", ";
+    }
     oss << t;
+  }
+  if (i < v.size()) {
+      oss << ", ... #" << (v.size() - i) << " items omitted";
+  }
+  oss << "}";
+  return oss.str();
+}
+template <typename P1, typename P2>
+string ToString(const vector< pair<P1, P2> >& v) {
+  ostringstream oss;
+  oss << "vector #" << v.size() << "[";
+  for ( typename vector< pair<P1, P2> >::const_iterator it = v.begin(); it != v.end(); ) {
+    oss << *it;
     ++it;
     if ( it != v.end() ) {
       oss << ", ";
     }
   }
-  oss << "}";
+  oss << "]";
   return oss.str();
 }
 template <typename K, typename V>
@@ -435,7 +470,7 @@ string ToStringP(const map<K, V*>& m) {
   for ( typename map<K, V*>::const_iterator it = m.begin(); it != m.end(); ) {
     const K& k = it->first;
     const V& v = *it->second;
-    oss << "[" << k << ", " << v << "]";
+    oss << k << ": " << v;
     ++it;
     if ( it != m.end() ) {
       oss << ", ";
@@ -477,7 +512,7 @@ string ToStringP(const hash_set<T*>& v) {
 template <typename T>
 string ToStringP(const vector<T*>& v) {
   ostringstream oss;
-  oss << "vector #" << v.size() << "{";
+  oss << "vector #" << v.size() << "[";
   for ( typename vector<T*>::const_iterator it = v.begin(); it != v.end(); ) {
     const T& t = **it;
     oss << t;
@@ -486,7 +521,7 @@ string ToStringP(const vector<T*>& v) {
       oss << ", ";
     }
   }
-  oss << "}";
+  oss << "]";
   return oss.str();
 }
 template <typename K, typename V>
@@ -529,6 +564,38 @@ string ToBinary(T x) {
   }
   return string(buf, buf_size);
 }
+
+// e.g. enum Flag { FLAG_A, FLAG_B, FLAG_C };
+//      const string& FlagName(Flag f) {..};
+//      uint32 v = FLAG_A | FLAG_C;
+//
+//      //Prints: {FLAG_A, FLAG_C}
+//      LOG_INFO << StrBitFlagsName(v, &FlagName);
+//
+// T: must be an integer type. It holds the bit flags
+// FLAG_TYPE: is the flags type (usually an enum).
+// get_flag_name: must return the name of the given flag
+// returns: human readable array of flag names
+template <typename T, typename FLAG_TYPE>
+string StrBitFlagsName(T value, const char* (*get_flag_name)(FLAG_TYPE) ) {
+    if (value == (T)(-1)) {
+        return "{ALL}";
+    }
+    ostringstream oss;
+    oss << "{";
+    bool first = true;
+    for (uint32 i = 0; i < sizeof(value)*8; i++) {
+        const T flag = (T(1) << i);
+        if (value & flag) {
+            if (!first) oss << ", ";
+            oss << get_flag_name(FLAG_TYPE(flag));
+            first = false;
+        }
+    }
+    oss << "}";
+    return oss.str();
+}
+
 // return a string s such that:
 //      s > prefix
 //  and
@@ -604,6 +671,9 @@ inline string JsonStrUnescape(const string& text) {
   return JsonStrUnescape(text.c_str(), text.length());
 }
 
+// Escape a string for XML encoding
+string XmlStrEscape(const string& text);
+
 // Returns true if the string is a valid identifier (a..z A..Z 0..9 and _)
 bool IsValidIdentifier(const char* s);
 
@@ -627,9 +697,96 @@ string StrMapFormat(const char* s,
                     const char* arg_end = "}",
                     char escape_char = '\\');
 
+// returns a human readable string describing the given 'duration_ms'
+// e.g. 83057 -> "1m23.057s"
+string StrHumanDuration(int64 duration_ms);
 
+// returns a human readable string describing the given byte size
+// e.g. 83057 -> "83KB"
+string StrHumanBytes(uint64 bytes);
 
-int Utf8Strlen(const char *s);
+////////////////////////////////////////////////////////////////////////////////
+
+//  i18n stuff
+
+namespace i18n {
+
+// Returns the length of the given UTF-8 encoded string
+size_t Utf8Strlen(const char *s);
+
+// Copies the current codepoint (at most 4 bytes) at s to codepoint,
+// returning the next codepoint pointer
+const char* Utf8ToCodePoint(const char* start, const char* end, wint_t* codepoint);
+// Appends the utf8 encoded value of codepoint to s
+size_t CodePointToUtf8(wint_t codepoint, string* s);
+
+// Converts from utf8 to wchar into a newly allocated string (of the right size).
+wchar_t* Utf8ToWchar(const char* s, size_t size_bytes);
+inline wchar_t* Utf8ToWchar(const string& s) {
+    return Utf8ToWchar(s.c_str(), s.length());
+}
+
+// Converts from wchar_t* to a string.
+inline void WcharToUtf8StringSet(const wchar_t* s, string* result) {
+  while (*s) {
+    CodePointToUtf8(*s++, result);
+  }
+}
+inline void WcharToUtf8StringSetWithLen(const wchar_t* s, size_t len,
+                                        string* result) {
+  const wchar_t* p = s + len;
+  while (*s && (s < p)) {
+    CodePointToUtf8(*s++, result);
+  }
+}
+inline string WcharToUtf8String(const wchar_t* s) {
+    string result;
+    WcharToUtf8StringSet(s, &result);
+    return result;
+}
+
+/** Returns true if a utf string is valid */
+bool IsUtf8Valid(const string& s);
+
+/** Return the first N chars in utf8 string s */
+string Utf8StrPrefix(const string& s, size_t prefix_size);
+
+/** Trims the utf8 s by removing whitespaces at the beginning and the end */
+string Utf8StrTrim(const string& s);
+
+/** Splits and trims on whitespaces. In terms will end up only non empty
+ * substrings */
+void Utf8SplitOnWhitespace(const string& s, vector<string>* terms);
+
+/** Split a string on the first encouter of split  */
+pair<string, string> Utf8SplitPairs(const string& s, wchar_t split);
+
+/** Splits and trims on whitespaces. In terms will end up only non empty
+ * substrings */
+void Utf8SplitOnWChars(const string& s, const wchar_t* splits, vector<string>* terms);
+
+/** The size that needs to be allocated for a utf8 size. */
+size_t WcharToUtf8Size(const wchar_t* s);
+
+// Checking stuff
+bool IsSpace(const wint_t c);
+bool IsAlnum(const wint_t c);
+
+wint_t ToUpper(wint_t c);
+wint_t ToLower(wint_t c);
+
+// I18n relevant ToUpper
+string ToUpperStr(const string& s);
+string ToLowerStr(const string& s);
+
+// This will transform a text from unicode text to equivalent
+// ascii (e.g. Zürich -> Zurich).
+// If they would be the same we return null, else we return
+// a freshly allocated string
+wchar_t* UmlautTransform(const wchar_t* s);
+// Same as above, but we deal w/ utf8 strings
+bool UmlautTransformUtf8(const string& s, string* result);
+}
 
 }
 

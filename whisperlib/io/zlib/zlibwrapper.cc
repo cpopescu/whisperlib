@@ -33,6 +33,12 @@
 
 namespace io {
 
+#define ZLOG_ERROR(fname, err, strm) {\
+    const char* str_err = zError(err);\
+    LOG_ERROR << "ZLIB " << fname << "() failed, err: " << (str_err ? str_err : "NULL")\
+              << ", msg: " << (strm.msg ? strm.msg : "NULL");\
+}
+
 //////////////////////////////////////////////////////////////////////
 //
 // ZlibDeflateWrapper
@@ -164,7 +170,6 @@ void ZlibInflateWrapper::Clear() {
   initialized_ = false;
 }
 
-
 int ZlibInflateWrapper::InflateSize(io::MemoryStream* in,
                                     io::MemoryStream* out,
                                     int32* size) {
@@ -173,6 +178,7 @@ int ZlibInflateWrapper::InflateSize(io::MemoryStream* in,
     Clear();
     zlib_err = inflateInit2(&strm_, -MAX_WBITS);
     if ( Z_OK != zlib_err ) {
+      ZLOG_ERROR("inflateInit2", zlib_err, strm_);
       return zlib_err;
     }
     initialized_ = true;
@@ -182,21 +188,24 @@ int ZlibInflateWrapper::InflateSize(io::MemoryStream* in,
     const char* crt_buf = NULL;
     in->MarkerSet();
     if ( !in->ReadNext(&crt_buf, &crt_size) ) {
+      in->MarkerClear();
       return zlib_err;   // no error actually ..
     }
     strm_.avail_in = crt_size;
-    strm_.next_in =
-      reinterpret_cast<Bytef*>(const_cast<char*>(crt_buf));
+    strm_.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(crt_buf));
     do {
       int32 out_size = 0;
-      void* const pout = &strm_.next_out;
-      out->GetScratchSpace(reinterpret_cast<char**>(pout), &out_size);
+      char* pout = NULL;
+      out->GetScratchSpace(&pout, &out_size);
       strm_.avail_out = out_size;
+      strm_.next_out = reinterpret_cast<Bytef*>(pout);
       zlib_err = inflate(&strm_, Z_NO_FLUSH);
       DCHECK_NE(zlib_err, Z_STREAM_ERROR);   // state not clobbered
       if ( zlib_err == Z_NEED_DICT ||
            zlib_err == Z_DATA_ERROR ||
            zlib_err == Z_MEM_ERROR ) {
+        ZLOG_ERROR("inflate", zlib_err, strm_);
+        in->MarkerRestore();
         out->ConfirmScratch(0);
         Clear();
         return zlib_err;
@@ -373,11 +382,15 @@ int ZlibGzipDecodeWrapper::Decode(io::MemoryStream* in,
     CHECK_EQ(in->Read(header, sizeof(header)), sizeof(header));
     if ( header[0] != kGzipHeader[0] || header[1] != kGzipHeader[1] ) {
       // ERROR - invalid magic:
+      LOG_ERROR << "ZLIB invalid header, expected: "
+                << strutil::StringPrintf("[0x%02x,0x%02x]", kGzipHeader[0], kGzipHeader[1])
+                << ", got: "
+                << strutil::StringPrintf("[0x%02x,0x%02x]", header[0], header[1]);
       return Z_DATA_ERROR;
     }
     if ( (header[3] & 0xfe) != 0 ) {
       // ERROR - we don't know these things
-      LOG_ERROR << " Error - we don't know to decode complicated gzip headers";
+      LOG_ERROR << "ZLIB we don't know to decode complicated gzip headers";
       return Z_VERSION_ERROR;
     }
     state_ = DECODING;
@@ -405,6 +418,8 @@ int ZlibGzipDecodeWrapper::Decode(io::MemoryStream* in,
       if ( zlib_err == Z_NEED_DICT ||
            zlib_err == Z_DATA_ERROR ||
            zlib_err == Z_MEM_ERROR ) {
+        ZLOG_ERROR("inflate", zlib_err, strm_);
+        in->MarkerRestore();
         out->ConfirmScratch(0);
         state_ = FINALIZED;
         return zlib_err;

@@ -16,4 +16,6 @@ def build(ctx):
                  ])
 
 def add_whisper_tests(ctx, files, prefix='test/', extra_use = [], extra_lib = []):
-    ctx.simple_binary(ctx, files, prefix=prefix, extra_use=extra_use, extra_lib=extra_lib)
+    print "======================> ", files
+    for f in ctx.make_iterable(files):
+        ctx.simple_binary(ctx, [f], prefix=prefix, extra_use=extra_use, extra_lib=extra_lib)

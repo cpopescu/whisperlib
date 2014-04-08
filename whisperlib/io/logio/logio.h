@@ -139,6 +139,9 @@ class LogWriter {
             bool deflate = false);
   ~LogWriter();
 
+  const string& log_dir() const { return log_dir_; }
+  const string& file_base() const { return file_base_; }
+
   // true: success, the log_dir and file_base are marked as locked
   // false: failure, a lock file already exists
   bool Initialize();
@@ -211,6 +214,7 @@ class LogReader {
             int32 blocks_per_file = kDefaultBlocksPerFile);
   ~LogReader();
 
+  // out: If not NULL, filled with next record data.
   // returns: true: success, there's a new record in 'out'
   //          false: no more data.
   // Corrupted records are automatically skipped.
@@ -279,11 +283,17 @@ class LogReader {
 //
 // We return how many files we have deleted.
 uint32 CleanLog(const string& log_dir, const string& file_base,
-                LogPos first_pos, int32 block_size);
+                LogPos first_pos = LogPos(kMaxInt32, 0, 0),
+                int32 block_size = kDefaultRecordBlockSize);
 
 // Autodetect logio settings
 bool DetectLogSettings(const string& log_dir, string* out_file_base,
     int32* out_block_size, int32* out_blocks_per_file);
+
+// Test if a log file exists.
+bool LogExists(const string& dir, const string& file_base, int32 block_size, int32 file_num);
+int64 LogFileTime(const string& dir, const string& file_base, int32 block_size, int32 file_num);
+
 }
 
 #endif  // __COMMON_IO_LOGIO_LOGIO_H__

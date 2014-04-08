@@ -32,7 +32,9 @@
 #ifndef __WHISPERLIB_IO_BUFFER_MEMORY_STREAM_H__
 #define __WHISPERLIB_IO_BUFFER_MEMORY_STREAM_H__
 
+#if defined(HAVE_SYS_UIO_H)
 #include <sys/uio.h>
+#endif
 
 #include <utility>
 #include <string>
@@ -82,7 +84,9 @@ class MemoryStream {
   bool ReadNext(const char** buffer, int32* size);
 
   // Reads all the internal buffers for a writev operation
+#if defined(HAVE_SYS_UIO_H)
   int32 ReadForWritev(struct ::iovec** iov, int* iovcnt, int32 max_size);
+#endif
 
   // Returns a piece of buffer already allocated and ready to be written to
   // (it is reserved and considered written). Use ConfirmScratch to confirm

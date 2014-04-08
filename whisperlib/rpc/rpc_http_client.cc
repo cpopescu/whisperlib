@@ -78,6 +78,7 @@ HttpClient::HttpClient(http::FailSafeClient* failsafe_client,
 }
 
 HttpClient::~HttpClient() {
+  LOG_INFO << " Deleting rpc http client " << this;
   // CHECK(queries_.empty());
 }
 
@@ -87,7 +88,7 @@ void HttpClient::StartClose() {
     return;
   }
 
-  LOG_INFO << "Starting to close http client: " << ToString();
+  LOG_INFO << "Starting to close http client: " << this << " / " << ToString();
 
   vector<int64> to_cancel;
   mutex_.Lock();
@@ -95,14 +96,24 @@ void HttpClient::StartClose() {
   for (QueryMap::const_iterator it = queries_.begin(); it != queries_.end(); ++it) {
     to_cancel.push_back(it->first);
   }
+  to_wait_cancel_.clear();
   mutex_.Unlock();
 
   for (int i = 0; i < to_cancel.size(); ++i) {
-    CancelRequest(to_cancel[i]);
+    if (!CancelRequestVerified(to_cancel[i])) {
+      to_wait_cancel_.insert(to_cancel[i]);
+    }
   }
   failsafe_client_->ForceCloseAll();
 
-  selector_->DeleteInSelectLoop(this);
+  if (to_wait_cancel_.empty()) {
+    LOG_INFO << " Done Http Rpc client - deleting self: " << ToString()
+             << " canceled: " << to_cancel.size() << " self: " << this;
+    selector_->DeleteInSelectLoop(this);
+  } else {
+    LOG_INFO << " Done start close http client (deleting later): " << ToString()
+             << " canceled: " << to_cancel.size() << " self: " << this;
+  }
 }
 
 string HttpClient::ToString() const {
@@ -201,6 +212,7 @@ void HttpClient::StartRequest(HttpClient::QueryStruct* qs) {
       mutex_.Unlock();
       done->Run();
     } else {
+      qs->started_ = true;
       Closure* const req_done_callback = ::NewCallback(
         this, &rpc::HttpClient::CallbackRequestDone, qs);
       selector_->RunInSelectLoop(::NewCallback(failsafe_client_,
@@ -226,19 +238,19 @@ HttpClient::QueryStruct::~QueryStruct() {
 }
 
 void HttpClient::CancelRequest(int64 xid) {
+  CancelRequest(xid);
+}
+bool HttpClient::CancelRequestVerified(int64 xid) {
   HttpClient::QueryStruct* qs = NULL;
   mutex_.Lock();
   const QueryMap::const_iterator it = queries_.find(xid);
   if (it != queries_.end()) {
     qs = it->second;
   }
-  bool is_closing = closing_;
   mutex_.Unlock();
   if (qs == NULL) {
-    return;   // nothing left to cancel
+    return true;   // nothing left to cancel
   }
-  LOG_INFO << "Cancelling request: " << xid << " / " << ToString()
-           << qs->cancelled_ << " // " << qs->req_->name();
   DCHECK(selector_->IsInSelectThread());
 
   qs->cancel_callback_ = NULL;
@@ -249,8 +261,11 @@ void HttpClient::CancelRequest(int64 xid) {
     if (failsafe_client_->CancelRequest(qs->req_)) {
       // We'll never get the CallbackRequestDone
       CallbackRequestDone(qs);
+      return true;
     }  // else we will receive a callback
+    return false;
   } // else StartRequest takes care of it
+  return true;
 }
 
 string HttpClient::ToString(const HttpClient::QueryStruct* qs) const {
@@ -263,9 +278,8 @@ string HttpClient::ToString(const HttpClient::QueryStruct* qs) const {
 
 void HttpClient::CallbackRequestDone(HttpClient::QueryStruct* qs) {
   DCHECK(selector_->IsInSelectThread());
-  VLOG(3) << "Callback done request: " << qs->xid_ << " / " << ToString()
+  LOG_INFO << "Callback done request: " << qs->xid_ << " / " << ToString() << " / "
           << qs->cancelled_ << " // " << qs->req_->name();
-
   mutex_.Lock();
   CHECK(queries_.erase(qs->xid_));
   // From this moment the request cannot be canceled
@@ -273,7 +287,7 @@ void HttpClient::CallbackRequestDone(HttpClient::QueryStruct* qs) {
   delete qs->cancel_callback_;
   qs->cancel_callback_ = NULL;
   mutex_.Unlock();
-
+  bool delete_self = false;
   if ( !qs->cancelled_ ) {
     const http::ClientError cli_error = qs->req_->error();
     const http::HttpReturnCode ret_code =
@@ -303,8 +317,17 @@ void HttpClient::CallbackRequestDone(HttpClient::QueryStruct* qs) {
     }
   } else {
     qs->req_->request()->server_data()->Clear();
+    if (!to_wait_cancel_.empty()) {
+      to_wait_cancel_.erase(qs->xid_);
+      delete_self = to_wait_cancel_.empty();
+    }
   }
   qs->done_->Run();
   delete qs;
+
+  if (delete_self) {
+    LOG_INFO << " Done Http Rpc client - deleting self: " << ToString();
+    selector_->DeleteInSelectLoop(this);
+  }
 }
 }

@@ -62,13 +62,14 @@ App::App(int argc, char** argv)
 
   SignalSetup();
 }
+
 App::~App() {
   SignalRestore();
   for ( int i = 0; i < argc_; ++i ) {
     // free(argv_[i]);  //  -- well .. we leak these - whatever, but
     //                  //     they may got mixed..
   }
-  delete argv_;
+  // delete argv_;  // we leak this too..
 
   CHECK_NOT_NULL(g_app);
   g_app = NULL;
@@ -91,6 +92,9 @@ int App::Main() {
 }
 
 void App::SignalSetup() {
+#ifdef NACL
+  LOG_ERROR << " Skipping SignalSetup on native client";
+#else
   struct sigaction action;
   memset(&action, 0, sizeof(action));
   action.sa_handler = &App::SignalHandler;
@@ -99,15 +103,20 @@ void App::SignalSetup() {
   // we ignore PIPE signals
   action.sa_handler = SIG_IGN;
   sigaction(SIGPIPE, &action, NULL);
+#endif
 }
 
 void App::SignalRestore() {
+#ifdef NACL
+  LOG_ERROR << " Skipping SignalRestore on native client";
+#else
   struct sigaction action;
   memset(&action, 0, sizeof(action));
   action.sa_handler = SIG_DFL;
   sigaction(SIGPIPE, &action, NULL);
   sigaction(SIGTERM, &action, NULL);
   sigaction(SIGINT, &action, NULL);
+#endif
 }
 
 void App::SignalHandler(int signal) {

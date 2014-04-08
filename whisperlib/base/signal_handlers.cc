@@ -32,7 +32,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
+#ifdef HAVE_EXECINFO_H
 #include <execinfo.h>
+#endif
 #ifdef HAVE_GOOGLE_PERFTOOLS
 
 #include <google/heap-profiler.h>
@@ -49,6 +51,7 @@ bool g_hang_on_signal_stack_trace = false;
 // true if the application is already hanging
 bool g_application_is_hanging = false;
 
+#ifndef NACL
 void HandleSignal(int signum, siginfo_t* info, void* context) {
   // [COSMIN] Using LOG functions here is unwise. If the initial exception
   //          happened inside a LOG statement, then using LOG here would
@@ -76,7 +79,7 @@ void HandleSignal(int signum, siginfo_t* info, void* context) {
 
   // if you want to continue, do not call default handler
   if ( signum == SIGUSR1 ) {
-#ifdef HAVE_GOOGLE_PERFTOOLS
+#if defined(HAVE_GOOGLE_PERFTOOLS) && defined(USE_GOOGLE_PERFTOOLS)
     HeapProfilerDump("on user command");
 #endif
     return;
@@ -86,8 +89,10 @@ void HandleSignal(int signum, siginfo_t* info, void* context) {
   ::signal(signum, SIG_DFL);
   ::raise(signum);
 }
+#endif
 
 bool InstallDefaultSignalHandlers(bool hang_on_bad_signals) {
+#ifndef NACL
   g_hang_on_signal_stack_trace = hang_on_bad_signals;
 
   // install signal handler routines
@@ -124,6 +129,9 @@ bool InstallDefaultSignalHandlers(bool hang_on_bad_signals) {
   }
 
   return true;
+#else
+  return false;
+#endif
 }
 
 bool IsApplicationHanging() {

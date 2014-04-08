@@ -33,13 +33,8 @@
 #define __NET_RPC_LIB_CODEC_JSON_RPC_JSON_ENCODER_H__
 
 #include <string>
+#include <whisperlib/base/types.h>
 #include <whisperlib/rpc/codec/rpc_encoder.h>
-
-#ifndef PRId64
-#define PRId64 "ld"
-#define PRIu64 "uld"
-#define __INTERNAL_PRId64_DEFINED
-#endif
 
 namespace codec {
 
@@ -113,10 +108,10 @@ class JsonEncoder : public codec::Encoder {
     PrintBody("%u", obj);
   }
   void EncodeBody(const int64& obj) {
-    PrintBody("%" PRId64 "", obj);
+    PrintBody("%lld", (long long int)(obj));
   }
   void EncodeBody(const uint64& obj) {
-    PrintBody("%" PRIu64 "", obj);
+    PrintBody("%llu", (long long unsigned int)(obj));
   }
   void EncodeBody(const double& obj) {
     PrintBody("%.60e", obj);

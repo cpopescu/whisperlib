@@ -39,3 +39,5 @@ def build(ctx):
     ctx.build_top_lib(ctx, 'whisperlib')
 
     ctx.install_files(ctx.env.INSTALL_PYTHONDIR, 'WafUtil.py')
+    ctx.output_config_file(ctx, 'core_config.h')
+

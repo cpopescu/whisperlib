@@ -125,6 +125,9 @@ class File {
   //  (Uses local cached variable: position_)
   int64 Position() const;
 
+  // Remaining bytes to read in file.
+  int64 Remaining() const { return Size() - Position(); }
+
   // Set file pointer position to the given absolute offset (relative
   // to file begin)
   //  Returns the new position

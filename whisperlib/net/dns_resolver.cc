@@ -143,7 +143,9 @@ class DnsResolver {
     if (start_thread) {
         thread::Thread** p = new thread::Thread*;
         *p = new thread::Thread(NewCallback(this, &DnsResolver::Run, query, p));
-        (*p)->SetStackSize(65536);
+        // TODO(mihai): This is not the right way to do it - use a thread pool or something -
+        // arbitrarily limiting the stack on various platforms is not a wise thing to do
+        //(*p)->SetStackSize(65536);
         (*p)->Start();
     }
 
@@ -267,6 +269,7 @@ void DnsExit() {
 ////////////////////////////////////////////////////////////////////////////
 
 scoped_ref<DnsHostInfo> DnsBlockingResolve(const string& hostname) {
+#ifdef HAVE_GETADDRINFO
     //
     // TODO(cp) : lookup through canonical names
     //
@@ -304,6 +307,10 @@ scoped_ref<DnsHostInfo> DnsBlockingResolve(const string& hostname) {
   DnsHostInfo* info = new DnsHostInfo(hostname, ipv4, ipv6, &g_mutex_pool);
   LOG_WARNING << "Resolved: [" << hostname << "] to: " << info->ToString();
   return info;
+#else
+  LOG_ERROR << " DNS resolves not supported for this system";
+  return NULL;
+#endif
 }
 
 }
