@@ -3,7 +3,7 @@ AC_INIT([whisperlib], [1.0])
 AM_INIT_AUTOMAKE([foreign color-tests dist-bzip2 parallel-tests subdir-objects])
 
 AC_CONFIG_FILES([Makefile])
-AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_HEADERS([whisperlib/base/config.h])
 
 AC_PROG_CC
 AC_PROG_CXX
@@ -101,7 +101,5 @@ AC_FUNC_MMAP
 AC_FUNC_REALLOC
 AC_FUNC_STRTOD
 AC_CHECK_FUNCS([atexit bzero clock_gettime ftruncate getcwd gethostbyname gettimeofday localeconv localtime_r memmove memset mkdir regcomp rmdir setlocale socket strcasecmp strchr strdup strerror strncasecmp strpbrk strrchr strtol strtoul strtoull])
-
-AC_OUTPUT
 
 AC_OUTPUT
