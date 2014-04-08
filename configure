@@ -5689,48 +5689,52 @@ fi
 
   fi
 
-  if test "$ICU_CONFIG" != "no" ; then
+  if test "$ICU_CONFIG" = "no" ; then
+    echo "*** The icu-config script could not be found. Make sure it is"
+    echo "*** in your path, and that taglib is properly installed."
+    echo "*** Or see http://ibm.com/software/globalization/icu/"
+  else
     ICU_VERSION=`$ICU_CONFIG --version`
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ICU >= 51" >&5
 $as_echo_n "checking for ICU >= 51... " >&6; }
-    VERSION_CHECK=`expr $ICU_VERSION \>\= 51`
-    if test "$VERSION_CHECK" = "1" ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+        VERSION_CHECK=`expr $ICU_VERSION \>\= 51`
+        if test "$VERSION_CHECK" = "1" ; then
+            { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-        succeeded=yes
+            succeeded=yes
 
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking ICU_CPPFLAGS" >&5
+            { $as_echo "$as_me:${as_lineno-$LINENO}: checking ICU_CPPFLAGS" >&5
 $as_echo_n "checking ICU_CPPFLAGS... " >&6; }
-        ICU_CPPFLAGS=`$ICU_CONFIG --cppflags`
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ICU_CPPFLAGS" >&5
+            ICU_CPPFLAGS=`$ICU_CONFIG --cppflags`
+            { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ICU_CPPFLAGS" >&5
 $as_echo "$ICU_CPPFLAGS" >&6; }
 
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking ICU_CFLAGS" >&5
+            { $as_echo "$as_me:${as_lineno-$LINENO}: checking ICU_CFLAGS" >&5
 $as_echo_n "checking ICU_CFLAGS... " >&6; }
-        ICU_CFLAGS=`$ICU_CONFIG --cflags`
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ICU_CFLAGS" >&5
+            ICU_CFLAGS=`$ICU_CONFIG --cflags`
+            { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ICU_CFLAGS" >&5
 $as_echo "$ICU_CFLAGS" >&6; }
 
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking ICU_CXXFLAGS" >&5
+            { $as_echo "$as_me:${as_lineno-$LINENO}: checking ICU_CXXFLAGS" >&5
 $as_echo_n "checking ICU_CXXFLAGS... " >&6; }
-        ICU_CXXFLAGS=`$ICU_CONFIG --cxxflags`
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ICU_CXXFLAGS" >&5
+            ICU_CXXFLAGS=`$ICU_CONFIG --cxxflags`
+            { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ICU_CXXFLAGS" >&5
 $as_echo "$ICU_CXXFLAGS" >&6; }
 
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking ICU_LIBS" >&5
+            { $as_echo "$as_me:${as_lineno-$LINENO}: checking ICU_LIBS" >&5
 $as_echo_n "checking ICU_LIBS... " >&6; }
-        ICU_LIBS=`$ICU_CONFIG --ldflags`
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ICU_LIBS" >&5
+            ICU_LIBS=`$ICU_CONFIG --ldflags`
+            { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ICU_LIBS" >&5
 $as_echo "$ICU_LIBS" >&6; }
-    else
-        ICU_CPPFLAGS=""
-        ICU_CFLAGS=""
-        ICU_CXXFLAGS=""
-        ICU_LIBS=""
-        ## If we have a custom action on failure, don't print errors, but
-        ## do set a variable so people can do so.
-        echo "can't find ICU >= 51"
-    fi
+        else
+            ICU_CPPFLAGS=""
+            ICU_CFLAGS=""
+            ICU_CXXFLAGS=""
+            ICU_LIBS=""
+            ## If we have a custom action on failure, don't print errors, but
+            ## do set a variable so people can do so.
+            echo "can't find ICU >= 51"
+        fi
 
 
 
@@ -5744,8 +5748,7 @@ $as_echo "$ICU_LIBS" >&6; }
     have_icu=yes
 
   else
-     :
-
+     as_fn_error $? "Library requirements (ICU) not met." "$LINENO" 5
   fi
 
 else

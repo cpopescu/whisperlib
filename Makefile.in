@@ -86,10 +86,15 @@ subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) acconfig.h \
 	$(top_srcdir)/whisperlib/base/config.h.in depcomp \
-	$(dist_doc_DATA) $(nobase_include_HEADERS) test-driver ar-lib \
-	compile config.guess config.sub install-sh missing
+	$(dist_doc_DATA) $(am__nobase_include_HEADERS_DIST) \
+	test-driver ar-lib compile config.guess config.sub install-sh \
+	missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/m4/ax_check_gflags.m4 \
+	$(top_srcdir)/m4/ax_check_glog.m4 \
+	$(top_srcdir)/m4/ax_check_icu.m4 \
+	$(top_srcdir)/m4/ax_check_zlib.m4 \
+	$(top_srcdir)/m4/ax_pthread.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
@@ -530,6 +535,76 @@ am__can_run_installinfo = \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
 DATA = $(dist_doc_DATA)
+am__nobase_include_HEADERS_DIST = whisperlib/base/config.h \
+	whisperlib/base/app.h whisperlib/base/basictypes.h \
+	whisperlib/base/cache.h whisperlib/base/callback/callback.h \
+	whisperlib/base/callback/callback1.h \
+	whisperlib/base/callback/callback2.h \
+	whisperlib/base/callback/callback3.h \
+	whisperlib/base/callback/closure.h \
+	whisperlib/base/callback/result_callback1.h \
+	whisperlib/base/callback/result_callback2.h \
+	whisperlib/base/callback/result_callback3.h \
+	whisperlib/base/callback/result_closure.h \
+	whisperlib/base/callback.h whisperlib/base/date.h \
+	whisperlib/base/errno.h whisperlib/base/free_list.h \
+	whisperlib/base/gflags.h whisperlib/base/log.h \
+	whisperlib/base/lru_cache.h whisperlib/base/port.h \
+	whisperlib/base/re.h whisperlib/base/ref_counted.h \
+	whisperlib/base/scoped_ptr.h whisperlib/base/signal_handlers.h \
+	whisperlib/base/stringprintf.h whisperlib/base/strutil.h \
+	whisperlib/base/strutil_format.h whisperlib/base/system.h \
+	whisperlib/base/timer.h whisperlib/base/types.h \
+	whisperlib/base/util.h whisperlib/http/failsafe_http_client.h \
+	whisperlib/http/http_client_protocol.h \
+	whisperlib/http/http_consts.h whisperlib/http/http_header.h \
+	whisperlib/http/http_request.h \
+	whisperlib/http/http_server_protocol.h \
+	whisperlib/io/buffer/data_block.h \
+	whisperlib/io/buffer/memory_stream.h \
+	whisperlib/io/buffer/protobuf_stream.h \
+	whisperlib/io/checkpoint/checkpointing.h \
+	whisperlib/io/checkpoint/state_keeper.h \
+	whisperlib/io/file/aio_file.h \
+	whisperlib/io/file/buffer_manager.h whisperlib/io/file/fd.h \
+	whisperlib/io/file/fd_input_stream.h whisperlib/io/file/file.h \
+	whisperlib/io/file/file_input_stream.h \
+	whisperlib/io/file/file_output_stream.h \
+	whisperlib/io/input_stream.h whisperlib/io/iomarker.h \
+	whisperlib/io/ioutil.h whisperlib/io/logio/logio.h \
+	whisperlib/io/logio/recordio.h whisperlib/io/num_streaming.h \
+	whisperlib/io/output_stream.h whisperlib/io/seeker.h \
+	whisperlib/io/stream_base.h whisperlib/io/util/base64.h \
+	whisperlib/io/util/sha256.h whisperlib/io/zlib/zlibwrapper.h \
+	whisperlib/net/address.h whisperlib/net/alarm.h \
+	whisperlib/net/connection.h whisperlib/net/dns_resolver.h \
+	whisperlib/net/ipclassifier.h whisperlib/net/selectable.h \
+	whisperlib/net/selectable_filereader.h \
+	whisperlib/net/selector.h whisperlib/net/selector_base.h \
+	whisperlib/net/timeouter.h whisperlib/net/udp_connection.h \
+	whisperlib/net/user_authenticator.h \
+	whisperlib/rpc/codec/rpc_decode_result.h \
+	whisperlib/rpc/codec/rpc_decoder.h \
+	whisperlib/rpc/codec/rpc_encoder.h \
+	whisperlib/rpc/codec/rpc_json_decoder.h \
+	whisperlib/rpc/codec/rpc_json_encoder.h \
+	whisperlib/rpc/rpc_consts.h whisperlib/rpc/rpc_controller.h \
+	whisperlib/rpc/rpc_http_client.h \
+	whisperlib/rpc/rpc_http_server.h whisperlib/sync/event.h \
+	whisperlib/sync/mutex.h \
+	whisperlib/sync/producer_consumer_queue.h \
+	whisperlib/sync/thread.h whisperlib/sync/thread_pool.h \
+	whisperlib/url/simple_url.h whisperlib/url/url.h \
+	whisperlib/url/google-url/gurl.h \
+	whisperlib/url/google-url/url_canon.h \
+	whisperlib/url/google-url/url_canon_icu.h \
+	whisperlib/url/google-url/url_canon_internal.h \
+	whisperlib/url/google-url/url_canon_internal_file.h \
+	whisperlib/url/google-url/url_canon_stdstring.h \
+	whisperlib/url/google-url/url_file.h \
+	whisperlib/url/google-url/url_parse.h \
+	whisperlib/url/google-url/url_parse_internal.h \
+	whisperlib/url/google-url/url_util.h
 HEADERS = $(nobase_include_HEADERS)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
@@ -910,6 +985,18 @@ google_protobuf_libprotobuf_a_SOURCES = \
 @HAVE_ICU_TRUE@  whisperlib/url/google-url/url_parse_file.cc \
 @HAVE_ICU_TRUE@  whisperlib/url/google-url/url_util.cc
 
+@HAVE_ICU_TRUE@extra_whisperlib_libwhisperlib_a_headers = \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/gurl.h \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon.h \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_icu.h \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_internal.h \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_internal_file.h \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_stdstring.h \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_file.h \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_parse.h \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_parse_internal.h \
+@HAVE_ICU_TRUE@  whisperlib/url/google-url/url_util.h
+
 whisperlib_libwhisperlib_a_SOURCES = \
   $(EXTRA_whisperlib_libwhisperlib_a_SOURCES) \
   whisperlib/base/app.cc \
@@ -1061,7 +1148,8 @@ nobase_include_HEADERS = \
   whisperlib/sync/thread.h \
   whisperlib/sync/thread_pool.h \
   whisperlib/url/simple_url.h \
-  whisperlib/url/url.h
+  whisperlib/url/url.h \
+  $(extra_whisperlib_libwhisperlib_a_headers)
 
 @HAVE_GLOG_TRUE@glog_check_programs = \
 @HAVE_GLOG_TRUE@  whisperlib/io/logio/test/logio_test \
@@ -1132,6 +1220,9 @@ $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENC
 
 $(top_srcdir)/configure:  $(am__configure_deps)
 	$(am__cd) $(srcdir) && $(AUTOCONF)
+$(ACLOCAL_M4):  $(am__aclocal_m4_deps)
+	$(am__cd) $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
+$(am__aclocal_m4_deps):
 
 whisperlib/base/config.h: whisperlib/base/stamp-h1
 	@test -f $@ || rm -f whisperlib/base/stamp-h1

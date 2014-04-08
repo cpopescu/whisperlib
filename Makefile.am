@@ -52,7 +52,21 @@ EXTRA_whisperlib_libwhisperlib_a_SOURCES = \
   whisperlib/url/google-url/url_parse.cc \
   whisperlib/url/google-url/url_parse_file.cc \
   whisperlib/url/google-url/url_util.cc
+
+extra_whisperlib_libwhisperlib_a_headers = \
+  whisperlib/url/google-url/gurl.h \
+  whisperlib/url/google-url/url_canon.h \
+  whisperlib/url/google-url/url_canon_icu.h \
+  whisperlib/url/google-url/url_canon_internal.h \
+  whisperlib/url/google-url/url_canon_internal_file.h \
+  whisperlib/url/google-url/url_canon_stdstring.h \
+  whisperlib/url/google-url/url_file.h \
+  whisperlib/url/google-url/url_parse.h \
+  whisperlib/url/google-url/url_parse_internal.h \
+  whisperlib/url/google-url/url_util.h
+
 endif
+
 
 whisperlib_libwhisperlib_a_SOURCES = \
   $(EXTRA_whisperlib_libwhisperlib_a_SOURCES) \
@@ -205,7 +219,8 @@ nobase_include_HEADERS = \
   whisperlib/sync/thread.h \
   whisperlib/sync/thread_pool.h \
   whisperlib/url/simple_url.h \
-  whisperlib/url/url.h
+  whisperlib/url/url.h \
+  $(extra_whisperlib_libwhisperlib_a_headers)
 
 if HAVE_GLOG
 glog_check_programs = \
