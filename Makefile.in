@@ -2489,10 +2489,11 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+@HAVE_GLOG_FALSE@clean-local:
 clean: clean-am
 
 clean-am: clean-checkPROGRAMS clean-generic clean-libLIBRARIES \
-	mostlyclean-am
+	clean-local mostlyclean-am
 
 distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
@@ -2567,26 +2568,30 @@ uninstall-am: uninstall-dist_docDATA uninstall-libLIBRARIES \
 
 .PHONY: CTAGS GTAGS TAGS all all-am am--refresh check check-TESTS \
 	check-am clean clean-checkPROGRAMS clean-cscope clean-generic \
-	clean-libLIBRARIES cscope cscopelist-am ctags ctags-am dist \
-	dist-all dist-bzip2 dist-gzip dist-lzip dist-shar dist-tarZ \
-	dist-xz dist-zip distcheck distclean distclean-compile \
-	distclean-generic distclean-hdr distclean-tags distcleancheck \
-	distdir distuninstallcheck dvi dvi-am html html-am info \
-	info-am install install-am install-data install-data-am \
-	install-dist_docDATA install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-libLIBRARIES install-man \
-	install-nobase_includeHEADERS install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic pdf pdf-am ps ps-am recheck tags tags-am \
-	uninstall uninstall-am uninstall-dist_docDATA \
-	uninstall-libLIBRARIES uninstall-nobase_includeHEADERS
+	clean-libLIBRARIES clean-local cscope cscopelist-am ctags \
+	ctags-am dist dist-all dist-bzip2 dist-gzip dist-lzip \
+	dist-shar dist-tarZ dist-xz dist-zip distcheck distclean \
+	distclean-compile distclean-generic distclean-hdr \
+	distclean-tags distcleancheck distdir distuninstallcheck dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-data install-data-am install-dist_docDATA install-dvi \
+	install-dvi-am install-exec install-exec-am install-html \
+	install-html-am install-info install-info-am \
+	install-libLIBRARIES install-man install-nobase_includeHEADERS \
+	install-pdf install-pdf-am install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic pdf pdf-am ps ps-am \
+	recheck tags tags-am uninstall uninstall-am \
+	uninstall-dist_docDATA uninstall-libLIBRARIES \
+	uninstall-nobase_includeHEADERS
 
 
 @HAVE_GLOG_TRUE@whisperlib/rpc/test/rpc_test_proto.cc: whisperlib/rpc/test/rpc_test_proto.proto
 @HAVE_GLOG_TRUE@	protoc $< --cpp_out=.
+
+@HAVE_GLOG_TRUE@clean-local:
+@HAVE_GLOG_TRUE@	-rm -f whisperlib/rpc/test/rpc_test_proto.pb.{h,cc}
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

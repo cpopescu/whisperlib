@@ -224,6 +224,8 @@ whisperlib_rpc_test_rpc_test_server_LDADD = whisperlib/rpc/test/rpc_test_proto.p
 whisperlib/rpc/test/rpc_test_proto.cc: whisperlib/rpc/test/rpc_test_proto.proto
 	protoc $< --cpp_out=.
 
+clean-local:
+	-rm -f whisperlib/rpc/test/rpc_test_proto.pb.{h,cc}
 endif
 
 TEST_EXTENSIONS = .sh
