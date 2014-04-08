@@ -1,4 +1,4 @@
-Date: 2014-04-07 20:17:20
+Date: 2014-04-08 12:37:05
 
 whisperlib
 ==========
@@ -100,6 +100,9 @@ cannot yet build for iOS or Android.
 
 If you need to generate the configure script, you need at least
 automake-14.1 and autoconf-2.69 installed on your machine. Older
-versions of these programs will not work.
+versions of these programs will not work. To regenerate the configure
+and Makefile.in files:
+
+$ ./autogen.sh
 
 Enjoy
