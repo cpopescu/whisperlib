@@ -48,11 +48,6 @@
 #include <whisperlib/net/address.h>
 #include <whisperlib/url/url.h>
 
-#ifndef PRId64
-#define PRId64 "ld"
-#define __INTERNAL_PRId64_DEFINED
-#endif
-
 namespace http {
 
 //////////////////////////////////////////////////////////////////////
@@ -572,7 +567,7 @@ class ClientRequest  {
   string name() const {
     return strutil::StrTrim(
         request_.client_header()->ComposeFirstLine()) +
-        strutil::StringPrintf(" req_id: %" PRId64, request_id_);
+        strutil::StringPrintf(" req_id: %lld", (long long int) request_id_);
   }
  private:
   http::Request request_;
@@ -592,9 +587,5 @@ class ClientRequest  {
   DISALLOW_EVIL_CONSTRUCTORS(ClientRequest);
 };
 }
-
-#ifdef __INTERNAL_PRId64_DEFINED
-#undef __INTERNAL_PRId64_DEFINED
-#endif
 
 #endif  // __NET_HTTP_HTTP_CLIENT_PROTOCOL_H__

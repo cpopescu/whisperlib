@@ -47,10 +47,21 @@
 namespace util {
 
 template <typename T>
-class FreeList {
+class Disposer {
+ public:
+    Disposer() {}
+    virtual ~Disposer() {}
+    virtual bool Dispose(T* p) {
+        delete p;
+        return true;
+    }
+};
+
+template <typename T>
+class FreeList : public Disposer<T> {
  public:
   explicit FreeList(size_t max_size)
-    : max_size_(max_size) {
+    : outstanding_(0), max_size_(max_size) {
   }
   virtual ~FreeList() {
     while ( !free_list_.empty() ) {
@@ -60,6 +71,7 @@ class FreeList {
     }
   }
   virtual T* New() {
+    ++outstanding_;
     if ( !free_list_.empty() ) {
       T* const p = free_list_.back();
       free_list_.pop_back();
@@ -69,6 +81,7 @@ class FreeList {
     }
   }
   virtual bool Dispose(T* p) {
+    --outstanding_;
     if ( free_list_.size() < max_size_ ) {
       free_list_.push_back(p);
       return false;
@@ -79,7 +92,12 @@ class FreeList {
   size_t max_size() const {
     return max_size_;
   }
+  virtual size_t outstanding() const {
+    return outstanding_;
+  }
+
  private:
+  size_t outstanding_;
   const size_t max_size_;
   vector<T*> free_list_;
 };
@@ -98,8 +116,12 @@ class ThreadSafeFreeList : public FreeList<T> {
     synch::MutexLocker ml(&mutex_);
     return FreeList<T>::Dispose(p);
   }
+  virtual size_t outstanding() const {
+    synch::MutexLocker ml(&mutex_);
+    return FreeList<T>::outstanding();
+  }
  private:
-  synch::Mutex mutex_;
+  mutable synch::Mutex mutex_;
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -123,6 +145,7 @@ class FreeArrayList {
     }
   }
   virtual T* New() {
+    ++outstanding_;
     if ( !free_list_.empty() ) {
       T* const p = free_list_.back();
       free_list_.pop_back();
@@ -132,12 +155,16 @@ class FreeArrayList {
     }
   }
   virtual bool Dispose(T* p) {
+    --outstanding_;
     if ( free_list_.size() < max_size_ ) {
       free_list_.push_back(p);
       return false;
     }
     delete [] p;
     return true;
+  }
+  virtual size_t GetOutstanding() const {
+    return outstanding_;
   }
   size_t size() const {
     return size_;
@@ -146,6 +173,7 @@ class FreeArrayList {
   const size_t size_;
   const size_t max_size_;
   vector<T*> free_list_;
+  size_t outstanding_;
 };
 
 template <typename T>
@@ -162,8 +190,12 @@ class ThreadSafeFreeArrayList : public FreeArrayList<T> {
     synch::MutexLocker ml(&mutex_);
     return FreeArrayList<T>::Dispose(p);
   }
+  virtual size_t GetOutstanding() const {
+    synch::MutexLocker ml(&mutex_);
+    return FreeArrayList<T>::GetOutstanding();
+  }
  protected:
-  synch::Mutex mutex_;
+  mutable synch::Mutex mutex_;
 };
 
 //////////////////////////////////////////////////////////////////////

@@ -37,8 +37,15 @@
 int main(int argc, char* argv[]) {
   common::Init(argc, argv);
   {
+    LOG_INFO << " Testing strutil::JsonStrEscape / JsonStrUnescape";
     string s("',P6=-7E|c\\\\\\\\$'+@kz[\\\"\\\"3l]jtDkyt?$!o8>zOax4@U8F`W4^54^H!>5vb\\\"pWArX2,t\\/[Y");
     CHECK_EQ(strutil::JsonStrEscape(strutil::JsonStrUnescape(s)), s);
+
+    CHECK_EQ(strutil::JsonStrEscape("Șoseaua Olteniței"), "Șoseaua Olteniței");
+    CHECK_EQ(strutil::JsonStrUnescape("Șoseaua Olteniței"), "Șoseaua Olteniței");
+
+    CHECK_EQ(strutil::JsonStrEscape("Șoseaua \\ \"2\""), "Șoseaua \\\\ \\\"2\\\"");
+    CHECK_EQ(strutil::JsonStrUnescape("\u0218oseaua Olteni\u021Bei"), "Șoseaua Olteniței");
   }
 
   LOG_INFO << " Testing strutil::StrEql";
@@ -76,7 +83,7 @@ int main(int argc, char* argv[]) {
   LOG_INFO << " Testing strutil::ShiftLeftBuffer";
   char test_shift[100];
   strcpy(test_shift, "abcdefghijkl");
-  strutil::ShiftLeftBuffer(test_shift, sizeof(test_shift - 1), 0, 0);
+  strutil::ShiftLeftBuffer(test_shift, sizeof(test_shift) - 1, 0, 0);
   CHECK(!strcmp(test_shift, "abcdefghijkl")) << "[" << test_shift << "]";
   strutil::ShiftLeftBuffer(test_shift, 5, 3, 'x');
   CHECK(!strcmp(test_shift, "dexxxfghijkl")) << "[" << test_shift << "]";
@@ -147,7 +154,7 @@ int main(int argc, char* argv[]) {
   TEST_SPLIT("abc", "a", 2, (string() + "" + "," + "bc"));
   TEST_SPLIT("abc", "c", 2, (string() + "ab" + "," + ""));
   TEST_SPLIT("abc", "", 3, (string() + "a" + "," + "b" + "," + "c"));
-  TEST_SPLIT("", "a", 1, (string() + ""));
+  TEST_SPLIT("", "a", 0, (string()));
   TEST_SPLIT("", "", 0, (string()));
 
 #define TEST_SPLIT_ANY(str, sep, nExpectedTokens, strExpectedJoinedTokens) \
@@ -408,7 +415,8 @@ int main(int argc, char* argv[]) {
   CHECK_EQ(strutil::JoinPaths("/", "/b"), "//b");
   CHECK_EQ(strutil::JoinPaths("/a", "b"), "/a/b");
   CHECK_EQ(strutil::JoinPaths("/a", "/b"), "/a/b");
-  CHECK_EQ(strutil::JoinPaths("/a/b", "//c//d//"), "/a/b/c/d/");
+  CHECK_EQ(strutil::NormalizePath(
+               strutil::JoinPaths("/a/b", "//c//d//")), "/a/b/c/d/");
   CHECK_EQ(strutil::JoinPaths("a", "b"), "a/b");
   CHECK_EQ(strutil::JoinPaths("a", "/b"), "a/b");
   CHECK_EQ(strutil::JoinPaths("a/", "b/"), "a/b/");
@@ -479,6 +487,140 @@ int main(int argc, char* argv[]) {
   LOG_INFO << " Testing strutil::ToBinary";
   CHECK_STREQ(strutil::ToBinary(0x1234567890abcdefULL).c_str(),
               "0001001000110100010101100111100010010000101010111100110111101111");
+
+  //////////////////////////////////////////////////////////////////////
+  //
+  // i18n stuff
+  //
+
+  string ss;
+  CHECK_EQ(1, strutil::i18n::CodePointToUtf8('A', &ss));
+  CHECK_EQ(ss, "A"); ss.clear();
+  CHECK_EQ(2, strutil::i18n::CodePointToUtf8(0xA2, &ss));
+  CHECK_EQ(ss, "\xc2\xa2"); ss.clear();
+  CHECK_EQ(3, strutil::i18n::CodePointToUtf8(0x0baa, &ss));
+  CHECK_EQ(ss, "\xe0\xae\xaa"); ss.clear();
+  CHECK_EQ(4, strutil::i18n::CodePointToUtf8(0x10ffff, &ss));
+  CHECK_EQ(ss, "\xf4\x8f\xbf\xbf"); ss.clear();
+  CHECK_EQ(4, strutil::i18n::CodePointToUtf8(0x10ffff, &ss));
+  CHECK_EQ(ss, "\xf4\x8f\xbf\xbf"); ss.clear();
+
+
+  string us;
+  LOG_INFO << " Testing ::i18n::";
+  CHECK_EQ(strutil::i18n::Utf8Strlen(""), 0);
+  CHECK_EQ(strutil::i18n::Utf8Strlen("oko\xc4"), 0);
+  CHECK_EQ(strutil::i18n::Utf8Strlen("oko\xc4x"), 0);
+  CHECK_EQ(strutil::i18n::Utf8Strlen("oko\xffxo"), 0);
+  CHECK_EQ(strutil::i18n::Utf8Strlen("\xc4\x90okovi\xc4\x87"), 7);
+  CHECK_EQ(strutil::i18n::Utf8Strlen("Nadal"), 5);
+  CHECK_EQ(strutil::i18n::Utf8Strlen(
+               "\xe5\x89\xaf\xe7\x9c\x81\xe7\xba\xa7\xe5\x9f\x8e\xe5\xb8\x82"), 5);
+
+  strutil::i18n::UmlautTransformUtf8("\xc4\x90okovi\xc4\x87", &us);
+  // CHECK_STREQ(us.c_str(), "Djokovic"); -- TODO(cp);
+  CHECK_STREQ(us.c_str(), "Dokovic");  //  TODO(cp);
+  us.clear();
+  strutil::i18n::UmlautTransformUtf8("Z\xc3\xbcrich", &us);
+  CHECK_STREQ(us.c_str(), "Zurich");
+
+  CHECK_EQ(strutil::i18n::WcharToUtf8String(L"\u0110okovi\u0107"),
+           string("\xc4\x90okovi\xc4\x87"));
+  CHECK_EQ(strutil::i18n::WcharToUtf8String(L"\u526f\u7701\u7ea7\u57ce\u5e02"),
+           string("\xe5\x89\xaf\xe7\x9c\x81\xe7\xba\xa7\xe5\x9f\x8e\xe5\xb8\x82"));
+
+  wchar_t* wbuf = strutil::i18n::Utf8ToWchar(
+      "\xe5\x89\xaf\xe7\x9c\x81\xe7\xba\xa7\xe5\x9f\x8e\xe5\xb8\x82");
+  CHECK(wcscmp(wbuf, L"\u526f\u7701\u7ea7\u57ce\u5e02") == 0)
+      << "Got: " << wbuf;
+  delete [] wbuf;
+  wbuf = strutil::i18n::Utf8ToWchar("\xc4\x90okovi\xc4\x87");
+  CHECK(wcscmp(wbuf, L"\u0110okovi\u0107") == 0)
+      << "Got: " << wbuf;
+  delete [] wbuf;
+
+  CHECK_EQ(strutil::i18n::ToUpperStr("\xc4\x91okovi\xc4\x87"),
+           string("\xc4\x90OKOVI\xc4\x86"));
+  CHECK_EQ(strutil::i18n::ToLowerStr("\xc4\x90OKOVI\xc4\x86"),
+           string("\xc4\x91okovi\xc4\x87"));
+
+  CHECK_EQ(strutil::i18n::Utf8StrPrefix("\xc4\x91okovi\xc4\x87", 1), "\xc4\x91");
+  CHECK_EQ(strutil::i18n::Utf8StrPrefix("\xc4\x91okovi\xc4\x87", 3), "\xc4\x91ok");
+  CHECK_EQ(strutil::i18n::Utf8StrPrefix("\xc4\x91okovi\xc4\x87", 7), "\xc4\x91okovi\xc4\x87");
+  CHECK_EQ(strutil::i18n::Utf8StrPrefix("\xc4\x91okovi\xc4\x87", 20), "\xc4\x91okovi\xc4\x87");
+
+  CHECK(strutil::i18n::IsAlnum(L'C'));
+  CHECK(strutil::i18n::IsAlnum(L'\u526f'));
+  CHECK(strutil::i18n::IsAlnum(L'\u0132'));
+  CHECK(strutil::i18n::IsAlnum(L'\uFB00'));
+  CHECK(strutil::i18n::IsAlnum(L'\u0110'));
+  CHECK(strutil::i18n::IsAlnum(L'\u1E9E'));
+
+  CHECK(!strutil::i18n::IsAlnum(L'+'));
+  CHECK(!strutil::i18n::IsAlnum(L'_'));
+  CHECK(!strutil::i18n::IsAlnum(L'('));
+  // CHECK(!strutil::i18n::IsAlnum(L'\u037B'));
+
+  CHECK(strutil::i18n::IsSpace(L'\u0020'));
+  CHECK(strutil::i18n::IsSpace(L'\u0009'));
+  CHECK(strutil::i18n::IsSpace(L'\u000A'));
+  CHECK(strutil::i18n::IsSpace(L'\u000D'));
+  CHECK(strutil::i18n::IsSpace(L'\u2000'));
+  CHECK(strutil::i18n::IsSpace(L'\u2004'));
+  CHECK(strutil::i18n::IsSpace(L'\u2005'));
+  CHECK(strutil::i18n::IsSpace(L'\u3000'));
+  CHECK(strutil::i18n::IsSpace(L'\uFEFF'));
+  CHECK(strutil::i18n::IsSpace(L'\n'));
+  CHECK(strutil::i18n::IsSpace(L'\r'));
+  CHECK(strutil::i18n::IsSpace(L'\t'));
+
+  vector<string> terms;
+  strutil::i18n::Utf8SplitOnWhitespace(
+      "  \xc4\x91okovi\xc4\x87\xe3\x80\x80nadal \xe3\x80\x80 federer\t ", &terms);
+  CHECK_EQ(terms.size(), 3);
+  CHECK_EQ(terms[0], "\xc4\x91okovi\xc4\x87");
+  CHECK_EQ(terms[1], "nadal");
+  CHECK_EQ(terms[2], "federer");
+  terms.clear();
+
+  strutil::i18n::Utf8SplitOnWhitespace(
+      "\xc4\x91okovi\xc4\x87\xe3\x80\x80nadal\xe3\x80\x80\tfederer", &terms);
+  CHECK_EQ(terms.size(), 3);
+  CHECK_EQ(terms[0], "\xc4\x91okovi\xc4\x87");
+  CHECK_EQ(terms[1], "nadal");
+  CHECK_EQ(terms[2], "federer");
+  terms.clear();
+
+  strutil::i18n::Utf8SplitOnWhitespace(
+      " \xe3\x80\x80 \t \xe3\x80\x80zfederer", &terms);
+  CHECK_EQ(terms.size(), 1);
+  CHECK_EQ(terms[0], "zfederer");
+  terms.clear();
+
+  strutil::i18n::Utf8SplitOnWhitespace(
+      " \xe3\x80\x80 \t \xe3\x80\x80", &terms);
+  CHECK_EQ(terms.size(), 0);
+  terms.clear();
+
+  CHECK_EQ(strutil::i18n::Utf8StrTrim(""), "");
+  CHECK_EQ(strutil::i18n::Utf8StrTrim("  \xe3\x80\x80 x\t\n"), "x");
+  CHECK_EQ(strutil::i18n::Utf8StrTrim("\xe3\x80\x80 x\t\n"), "x");
+  CHECK_EQ(strutil::i18n::Utf8StrTrim(
+               " \xe3\x80\x80\xc4\x91okovi\xc4\x87 \xe3\x80\x80 x ldka y \xe3\x80\x80Z"),
+           "\xc4\x91okovi\xc4\x87 \xe3\x80\x80 x ldka y \xe3\x80\x80Z");
+  CHECK_EQ(strutil::i18n::Utf8StrTrim("W\n"), "W");
+
+  pair<string, string> p = strutil::i18n::Utf8SplitPairs("name = Batu Caves<br>பத்து மலை ", L'=');
+  CHECK_EQ(p.first, "name ");
+  CHECK_EQ(p.second, " Batu Caves<br>பத்து மலை ");
+  p = strutil::i18n::Utf8SplitPairs("name = Batu Caves<br>பத்து மலை ", L'|');
+  CHECK_EQ(p.first, "name = Batu Caves<br>பத்து மலை ");
+  CHECK_EQ(p.second, "");
+  p = strutil::i18n::Utf8SplitPairs("", L'|');
+  CHECK_EQ(p.second, "");
+  CHECK_EQ(p.first, "");
+
+
 
   LOG_INFO << "PASS";
   common::Exit(0);

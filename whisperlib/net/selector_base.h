@@ -38,6 +38,7 @@
 
 #include <vector>
 #include <whisperlib/base/types.h>
+#include <whisperlib/net/selector_event_data.h>
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -82,19 +83,6 @@
 namespace net {
 
 class Selectable;
-
-struct SelectorEventData {
-  void* data_;
-  int32 desires_;
-  int internal_event_;
-  SelectorEventData(void* data,
-                    int32 desires,
-                    int internal_event)
-      : data_(data),
-        desires_(desires),
-        internal_event_(internal_event) {
-  }
-};
 
 class SelectorBase {
  public:

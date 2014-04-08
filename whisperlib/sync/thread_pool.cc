@@ -30,16 +30,16 @@
 // Author: Catalin Popescu
 
 #include "whisperlib/sync/thread_pool.h"
+#include "whisperlib/base/strutil.h"
 
 namespace thread {
 
-ThreadPool::ThreadPool(int pool_size, int backlog_size)
-  : jobs_(backlog_size) {
+ThreadPool::ThreadPool(uint32 pool_size, uint32 backlog_size, bool low_priority)
+  : jobs_(backlog_size),
+    count_completed_(pool_size, 0) {
   CHECK_GT(backlog_size, pool_size);
-  for ( int i = 0; i < pool_size; ++i ) {
-    threads_.push_back(new Thread(NewCallback(this, &ThreadPool::ThreadRun)));
-  }
-  for ( int i = 0; i < threads_.size(); ++i ) {
+  for ( uint32 i = 0; i < pool_size; ++i ) {
+    threads_.push_back(new Thread(NewCallback(this, &ThreadPool::ThreadRun, i), low_priority));
     threads_[i]->SetJoinable();
     threads_[i]->Start();
   }
@@ -54,7 +54,7 @@ ThreadPool::~ThreadPool() {
       delete callback;
     }
   } while ( callback != NULL );
-  for ( int i = 0; i < threads_.size(); ++i ) {
+  for ( uint32 i = 0; i < threads_.size(); ++i ) {
     while ( !jobs_.Put(NULL, 0) ) {
       callback = jobs_.Get(0);
       if ( callback != NULL && !callback->is_permanent() ) {
@@ -62,17 +62,18 @@ ThreadPool::~ThreadPool() {
       }
     }
   }
-  for ( int i = 0; i < threads_.size(); ++i ) {
+  for ( uint32 i = 0; i < threads_.size(); ++i ) {
     threads_[i]->Join();
     delete threads_[i];
   }
+  LOG_INFO << "ThreadPool jobs completed by each thread: " << strutil::ToString(count_completed_);
 }
 
 void ThreadPool::FinishWork() {
-  for ( int i = 0; i < threads_.size(); ++i ) {
+  for ( uint32 i = 0; i < threads_.size(); ++i ) {
     jobs_.Put(NULL);
   }
-  for ( int i = 0; i < threads_.size(); ++i ) {
+  for ( uint32 i = 0; i < threads_.size(); ++i ) {
     threads_[i]->Join();
     delete threads_[i];
   }
@@ -80,13 +81,14 @@ void ThreadPool::FinishWork() {
 }
 
 
-void ThreadPool::ThreadRun() {
+void ThreadPool::ThreadRun(uint32 thread_index) {
   while ( true ) {
     Closure* callback = jobs_.Get();
     if ( callback == NULL ) {
       return;
     }
     callback->Run();
+    count_completed_[thread_index]++;
   }
 }
 }

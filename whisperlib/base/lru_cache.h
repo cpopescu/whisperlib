@@ -77,6 +77,14 @@ public:
     virtual bool Create(const K& key, V** value) const = 0;
 
     /**
+     * This is used to destroy a value that was created w/ create
+     * and never user. Normally we just delete it.
+     */
+    virtual void Destroy(V* value) const {
+        delete value;
+    }
+
+    /**
      * Returns the size of the entry for {@code key} and {@code value} in
      * user-defined units.  The default implementation returns 1 so that size
      * is the number of entries and max size is the maximum number of entries.
@@ -84,6 +92,15 @@ public:
      * <p>An entry's size must not change while it is in the cache.
      */
     virtual int SizeOf(const K& key, const V* value) const = 0;
+
+    /**
+     * Creates a ref counted for the provided key / value, w/ value incremented.
+     */
+    virtual ref_counted<V>* CreateRef(const K& key, V* value, synch::MutexPool* pool) const {
+        ref_counted<V>* const ref = new ref_counted<V>(value, pool->GetMutex(value));
+        ref->IncRef();
+        return ref;
+    }
 };
 
 template<class K, class V>
@@ -136,6 +153,20 @@ class LruCache {
     }
 
     /**
+     * Adjust the size of a key - if it got modified while in cache
+     */
+    bool AdjustSize(const K& key, int delta) {
+        synch::MutexLocker l(&mutex_);
+        typename Map::const_iterator it = map_.find(key);
+        if (it == map_.end()) {
+            return false;
+        }
+        DCHECK((delta > 0) || (-delta < size_));
+        size_ += delta;
+        return true;
+    }
+
+    /**
      * Returns the value for {@code key} if it exists in the cache or can be
      * created by {@code #create}. If a value was returned, it is moved to the
      * head of the queue. This returns null if a value is not cached and cannot
@@ -179,8 +210,7 @@ class LruCache {
             createdDumped = true;
         } else {
             typename list<K>::iterator it_key = list_.insert(list_.begin(), key);
-            ref_counted<V>* ref = new ref_counted<V>(createdValue, pool_->GetMutex(createdValue));
-            ref->IncRef();
+            ref_counted<V>* const ref = policy_.CreateRef(key, createdValue, pool_);
             *ret_val = ref;
             map_.insert(make_pair(key, make_pair(ref, it_key)));
             size_ += SafeSizeOf(key, createdValue);
@@ -189,7 +219,7 @@ class LruCache {
         mutex_.Unlock();
 
         if (createdDumped) {
-            delete createdValue;
+            policy_.Destroy(createdValue);
         } else {
             TrimToSize(max_size_);
         }
@@ -233,8 +263,7 @@ class LruCache {
             size_ -= SafeSizeOf(key, (*previous)->get());
             list_.erase(it->second.second);
             it->second.second = list_.insert(list_.begin(), key);
-            ref_counted<V>* ref = new ref_counted<V>(value, pool_->GetMutex(value));
-            ref->IncRef();
+            ref_counted<V>* const ref = policy_.CreateRef(key, value, pool_);
             if (added) {
                 ref->IncRef();
                 *added = ref;
@@ -243,8 +272,7 @@ class LruCache {
             entry_removed = true;
         } else {
             typename list<K>::iterator it_key = list_.insert(list_.begin(), key);
-            ref_counted<V>* ref = new ref_counted<V>(value, pool_->GetMutex(value));
-            ref->IncRef();
+            ref_counted<V>* const ref = policy_.CreateRef(key, value, pool_);
             map_.insert(make_pair(key, make_pair(ref, it_key)));
             if (added) {
                 ref->IncRef();
@@ -325,9 +353,17 @@ class LruCache {
      * of entries in the cache. For all other caches, this returns the sum of
      * the sizes of the entries in this cache.
      */
-    int size() const {
+    int64 size() const {
         synch::MutexLocker l(&mutex_);
         return size_;
+    }
+
+    /**
+     * Returns the number of elements in cache
+     */
+    size_t count() const {
+        synch::MutexLocker l(&mutex_);
+        return map_.size();
     }
 
     /**
@@ -343,7 +379,7 @@ class LruCache {
     /**
      * Returns the number of times {@link #get} returned a value.
      */
-    int hit_count() const {
+    int64 hit_count() const {
         synch::MutexLocker l(&mutex_);
         return hit_count_;
     }
@@ -352,7 +388,7 @@ class LruCache {
      * Returns the number of times {@link #get} returned null or required a new
      * value to be created.
      */
-    int miss_count() const {
+    int64 miss_count() const {
         synch::MutexLocker l(&mutex_);
         return miss_count_;
     }
@@ -360,7 +396,7 @@ class LruCache {
     /**
      * Returns the number of times {@link #create(Object)} returned a value.
      */
-    int create_count() const {
+    int64 create_count() const {
         synch::MutexLocker l(&mutex_);
         return create_count_;
     }
@@ -368,7 +404,7 @@ class LruCache {
     /**
      * Returns the number of times {@link #put} was called.
      */
-    int put_count() const {
+    int64 put_count() const {
         synch::MutexLocker l(&mutex_);
         return put_count_;
     }
@@ -430,11 +466,11 @@ class LruCache {
     int64 size_;
     int64 max_size_;
 
-    int put_count_;
-    int create_count_;
-    int eviction_count_;
-    int hit_count_;
-    int miss_count_;
+    int64 put_count_;
+    int64 create_count_;
+    int64 eviction_count_;
+    int64 hit_count_;
+    int64 miss_count_;
 
     mutable synch::Mutex mutex_;
 

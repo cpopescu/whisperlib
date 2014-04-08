@@ -82,12 +82,22 @@ class IpAddress {
     if ( s.size() >= 3 && s.find(':') != string::npos ) {
       is_ipv4_ = false;
       // NOTE: inet_pton delivers address in network byte order
+#ifdef HAVE_INET_PTON
       error = inet_pton(AF_INET6, s.c_str(), addr_.ipv6_) <= 0;
       // we keep addr_.ipv6_ in network byte order
+#else
+      LOG_ERROR << "inet_pton not supported on this system.";
+      error = -1;
+#endif
     } else {
       is_ipv4_ = true;
+#ifdef HAVE_INET_PTON
       // NOTE: inet_pton delivers address in network byte order
       error = inet_pton(AF_INET, s.c_str(), &addr_.ipv4_) <= 0;
+#else
+      LOG_ERROR << "inet_pton not supported on this system.";
+      error = -1;
+#endif
       // we keep addr_.ipv4_ in host byte order
       addr_.ipv4_ = ntohl(addr_.ipv4_);
     }
@@ -228,7 +238,7 @@ class HostPort {
   void set_port(uint16 port) { port_ = port; }
 
   bool IsInvalid() const {
-    return ip_.IsInvalid() || IsInvalidPort();
+    return host_.empty() && (ip_.IsInvalid() || IsInvalidPort());
   }
   bool IsInvalidPort() const {
     return port_ == kInvalidPort;

@@ -75,6 +75,7 @@ void MemoryStream::AppendBlock(DataBlock* block) {
 
 //////////////////////////////////////////////////////////////////////
 
+#if defined(HAVE_SYS_UIO_H)
 int32 MemoryStream::ReadForWritev(struct ::iovec** iov,
                                   int* iovcnt,
                                   int32 max_size) {
@@ -112,6 +113,7 @@ int32 MemoryStream::ReadForWritev(struct ::iovec** iov,
   DCHECK_EQ(read_pointer_.Distance(write_pointer_), size_);
   return sz;
 }
+#endif   // (HAVE_SYS_UIO_H)
 
 
 

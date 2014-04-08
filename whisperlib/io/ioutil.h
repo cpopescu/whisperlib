@@ -60,6 +60,10 @@ bool Exists(const char* path);
 bool Exists(const string& path);
 int64 GetFileSize(const char* name);
 int64 GetFileSize(const string& name);
+int64 GetFileMtime(const char* name);
+int64 GetFileMtime(const string& name);
+bool SetFileMtime(const char* name, int64 t);
+bool SetFileMtime(const string& name, int64 t);
 
 // List a directory, possibly looking into subdirectories, filter by regex.
 // Symlinks are not followed, and completely ignored.
@@ -67,7 +71,7 @@ int64 GetFileSize(const string& name);
 // out: Returned entries are relative to 'dir' (they do not contain the 'dir').
 // Returns success.
 enum DirListAttributes {
-  // return regular files
+  // return regular files & symlinks
   LIST_FILES = 0x01,
   // return directories
   LIST_DIRS = 0x02,

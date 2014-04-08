@@ -48,6 +48,9 @@ class App {
   // The main entry point, should be called ONLY from the main() function.
   int Main();
 
+  int argc() const { return argc_; }
+  const char* const* argv() const { return argv_; }
+
  protected:
   // This is called from the main thread, before the application is run,
   // if not 0, the result will be returned from the main() function.

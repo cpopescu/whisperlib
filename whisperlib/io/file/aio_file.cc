@@ -34,6 +34,10 @@
 #include "whisperlib/base/errno.h"
 #include "whisperlib/base/gflags.h"
 
+#ifdef TIZEN
+#include <bits/local_lim.h>
+#endif
+
 //////////////////////////////////////////////////////////////////////
 
 DEFINE_int32(max_concurrent_aio_ops,

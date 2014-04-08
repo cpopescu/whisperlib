@@ -33,6 +33,10 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#ifdef HAVE_BITS_LIMITS_H
+#include <bits/limits.h>
+#endif
+#include <utime.h>
 
 #include "whisperlib/io/ioutil.h"
 #include "whisperlib/base/strutil.h"
@@ -70,6 +74,7 @@ bool IsReadableFile(const char* name) {
 bool IsReadableFile(const string& name) {
   return IsReadableFile(name.c_str());
 }
+
 bool IsSymlink(const string& path) {
   struct __STAT st;
   // NOTE: ::stat queries the file referenced by link, not the link itself.
@@ -78,6 +83,7 @@ bool IsSymlink(const string& path) {
   }
   return S_ISLNK(st.st_mode);
 }
+
 bool Exists(const char* path) {
   struct __STAT st;
   if ( 0 != ::__LSTAT(path, &st) ) {
@@ -88,6 +94,7 @@ bool Exists(const char* path) {
 bool Exists(const string& path) {
   return Exists(path.c_str());
 }
+
 int64 GetFileSize(const char* name) {
   struct __STAT st;
   if ( 0 != ::__STAT(name, &st) ) {
@@ -99,6 +106,27 @@ int64 GetFileSize(const char* name) {
 int64 GetFileSize(const string& name) {
   return GetFileSize(name.c_str());
 }
+
+int64 GetFileMtime(const char* name) {
+  struct __STAT st;
+  if ( 0 != ::__STAT(name, &st) ) {
+    return -1;
+  }
+  return st.st_mtime;
+}
+
+int64 GetFileMtime(const string& name) {
+  return GetFileMtime(name.c_str());
+}
+bool SetFileMtime(const char* name, int64 t) {
+    const struct utimbuf times = {time_t(t), time_t(t)};
+    return utime(name, &times) == 0;
+}
+
+bool SetFileMtime(const string& name, int64 t) {
+    return SetFileMtime(name.c_str(), t);
+}
+
 
 bool CreateRecursiveDirs(const char* dirname, mode_t mode) {
   string crt_dir(strutil::NormalizePath(dirname));
@@ -368,15 +396,31 @@ bool DirList(const string& dir,
     return false;
   }
 
+#ifdef HAVE_READDIR_R
   struct dirent* buf = static_cast<struct dirent *>(malloc(size));
+#endif
   while ( true ) {
     struct dirent* entry = NULL;
-    int error = ::readdir_r(dirp, buf, &entry);
+    int error = 0;
+#ifdef HAVE_READDIR_R
+    error = ::readdir_r(dirp, buf, &entry);
+#else
+    entry = ::readdir(dirp);
+    if (entry == NULL) {
+        error = 1;
+    }
+#endif
+
     if ( error != 0 ) {
       ::closedir(dirp);
+#ifdef HAVE_READDIR_R
       free(buf);
-      LOG_ERROR << "readdir_r failed dir: [" << dir << "] error: "
+      LOG_ERROR << "readdir_r() failed dir: [" << dir << "] error: "
                 << GetSystemErrorDescription(error);
+#else
+      LOG_ERROR << "readdir() failed dir: [" << dir << "] error: "
+                << GetSystemErrorDescription(error);
+#endif
       return false;
     }
     if ( entry == NULL) {
@@ -399,7 +443,7 @@ bool DirList(const string& dir,
     }
     // maybe accumulate entry
     if ( (list_attr & LIST_EVERYTHING) == LIST_EVERYTHING ||
-         ((list_attr & LIST_FILES) && S_ISREG(st.st_mode)) ||
+         ((list_attr & LIST_FILES) && (S_ISREG(st.st_mode) || S_ISLNK(st.st_mode))) ||
          ((list_attr & LIST_DIRS) && S_ISDIR(st.st_mode)) ) {
         // skip entries which don't match the regex
         if ( regex == NULL || regex->Matches(basename) ) {
@@ -415,7 +459,9 @@ bool DirList(const string& dir,
       }
     }
   }
+#ifdef HAVE_READDIR_R
   free(buf);
+#endif
   ::closedir(dirp);
   return true;
 }

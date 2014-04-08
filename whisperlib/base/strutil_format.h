@@ -17,11 +17,15 @@
 
 #include <whisperlib/base/types.h>
 
+/*
 #ifdef HAVE_GLIB_2_0_GLIB_GMACROS_H
 #include <glib-2.0/glib/gmacros.h>
 #else
 #define G_GNUC_PRINTF(p1, p2)
 #endif
+#define STRING_UTIL_PRINTF G_GNUC_PRINTF
+*/
+#define STRING_UTIL_PRINTF(p1, p2)
 
 namespace strutil {
 
@@ -35,7 +39,7 @@ int vsnprintf(char* buffer, size_t size, const char* format, va_list arguments);
 inline int snprintf(char* buffer, size_t size, const char* format, ...) {
   va_list arguments;
   va_start(arguments, format);
-  int result = vsnprintf(buffer, size, format, arguments);
+  int result = strutil::vsnprintf(buffer, size, format, arguments);
   va_end(arguments);
   return result;
 }
@@ -48,16 +52,16 @@ std::string Int64ToString(int64 value);
 std::string Uint64ToString(uint64 value);
 
 // Return a C++ string given printf-like input.
-std::string StringPrintf(const char* format, ...) G_GNUC_PRINTF (1, 2);
+std::string StringPrintf(const char* format, ...) STRING_UTIL_PRINTF (1, 2);
 
 
 // Store result into a supplied string and return it
 const std::string& SStringPrintf(std::string* dst,
-                                 const char* format, ...) G_GNUC_PRINTF (2, 3);;
+                                 const char* format, ...) STRING_UTIL_PRINTF (2, 3);;
 
 // Append result to a supplied string
 void StringAppendF(std::string* dst,
-                   const char* format, ...) G_GNUC_PRINTF (2, 3);;
+                   const char* format, ...) STRING_UTIL_PRINTF (2, 3);;
 
 // Lower-level routine that takes a va_list and appends to a specified
 // string.  All other routines are just convenience wrappers around it.

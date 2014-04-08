@@ -5,18 +5,23 @@
 #ifndef __WHISPERLIB_BASE_GFLAGS_H
 #define __WHISPERLIB_BASE_GFLAGS_H
 
-#include <whisperlib/base/config.h>
+#include <whisperlib/base/core_config.h>
+
+#ifndef GFLAGS_NAMESPACE
+#define GFLAGS_NAMESPACE google
+#endif
 
 #if defined(HAVE_GFLAGS) || defined(HAVE_GFLAGS_GFLAGS_H)
 // We have real flags
 #include <gflags/gflags.h>
 
-#else
+#else  // ! HAVE_GFLAGS
 
 #if (defined(HAVE_GLOG) || defined(HAVE_GLOG_LOGGING_H)) && defined(USE_GLOG_LOGGING)
 #error "If you enable glog, you cannot disable gflags."
 #endif
 
+#include <string>
 #include <whisperlib/base/types.h>
 // Flags definitions - no flags - just global variable placeholders
 
@@ -44,9 +49,9 @@ using fL##shorttype::FLAGS_##name;                                      \
 
 #define DEFINE_string(name, val, txt)                                   \
 namespace fLS {                                                         \
-    static const string* const FLAGSX_##name =                          \
-        val ? new string(val) : new string("");                         \
-    const string& FLAGS_##name = *FLAGSX_##name;                        \
+    static std::string* const FLAGSX_##name =                           \
+        val ? new std::string(val) : new std::string("");               \
+    std::string& FLAGS_##name = *FLAGSX_##name;                         \
 }                                                                       \
 using fLS::FLAGS_##name                                                 \
 
@@ -77,5 +82,9 @@ namespace fLS {                                 \
 }                                               \
 using fLS::FLAGS_##name
 
-#endif  // HAVE_GFLAGS || HAVE_GFLAGS_GFLAGS_H
+
+#define ParseCommandLineFlags(argc, argv, t)
+
+#endif  // HAVE_GFLAGS
+
 #endif  // __WHISPERLIB_BASE_GFLAGS_H

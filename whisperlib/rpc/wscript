@@ -2,6 +2,7 @@
 
 RPC_SERVER_SOURCES = [
     "rpc_http_server.cc",
+    "server_base.cc",
 ]
 RPC_SOURCES = [
     # "thrift_http_async_channel.cc",
@@ -10,6 +11,7 @@ RPC_SOURCES = [
     "rpc_http_client.cc",
     "codec/rpc_json_decoder.cc",
     "codec/rpc_json_encoder.cc",
+    "client_net.cc",
 ]
 
 def build(ctx):

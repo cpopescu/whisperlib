@@ -39,14 +39,27 @@
 #include "whisperlib/base/log.h"
 #include "whisperlib/base/strutil.h"
 #include "whisperlib/base/gflags.h"
-
+#include "whisperlib/io/ioutil.h"
 
 #include "whisperlib/net/dns_resolver.h"
+
+#ifdef HAVE_GFLAGS
+ #ifdef GFLAGS_NAMESPACE
+  using namespace GFLAGS_NAMESPACE ;
+ #else
+  using namespace google;
+ #endif // GFLAGS_NAMESPACE
+#endif  // HAVE_GFLAGS
+
 
 //////////////////////////////////////////////////////////////////////
 
 DEFINE_bool(loop_on_exit, false,
             "If this is turned on, we loop on exit waiting for your debuger");
+
+#if defined(USE_GLOG_LOGGING) && defined(HAVE_GLOG)
+DECLARE_bool(alsologtostderr);
+#endif
 
 namespace common {
 
@@ -76,26 +89,36 @@ int Exit(int error, bool forced) {
   return error;
 }
 
-void Init(int argc, char* argv[]) {
+
+void Init(int& argc, char**& argv) {
   //  bfd_filename = strdup(argv[0]);
   string full_command(
     strutil::JoinStrings(const_cast<const char**>(argv), argc, " "));
-  char cwd[2048] = { 0, };
-  fprintf(stderr, "CWD: [%s] CMD: [%s]\n",
-          getcwd(cwd, sizeof(cwd)), full_command.c_str());
 
 #if defined(HAVE_GLOG) && defined(USE_GLOG_LOGGING)
   google::InitGoogleLogging(argv[0]);
   google::InstallFailureSignalHandler();
 #endif
+
+  bool print_cmd = true;
 #if defined(HAVE_GFLAGS)
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
+  print_cmd = !FLAGS_alsologtostderr;
 #endif
   net::DnsInit();
 
-  LOG_INFO << "Started : " << argv[0];
+  if (print_cmd) {
+    char cwd[2048] = { 0, };
+    fprintf(stderr, "CWD: [%s] CMD: [%s]\n",
+            getcwd(cwd, sizeof(cwd)), full_command.c_str());
+  }
+
+  time_t bin_mtime = io::GetFileMtime(argv[0]);
+  LOG_INFO << "Binary date: " << ctime(&bin_mtime);
+  // LOG_INFO << "Started : " << argv[0];
   LOG_INFO << "Command Line: " << full_command;
 }
+
 
 const char* ByteOrderName(ByteOrder order) {
   switch ( order ) {

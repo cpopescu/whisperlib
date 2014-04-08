@@ -54,8 +54,12 @@ int64 TicksNsec() {
   }
   return m_time * (timer_info.numer / timer_info.denom);
 }
+int64 CpuNsec() {
+    return TicksNsec();
+}
 
 #elif defined(HAVE_CLOCK_GETTIME)
+
 int64 TicksNsec() {
   struct timespec ts = { 0, };
   const int result = clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -63,14 +67,24 @@ int64 TicksNsec() {
   const int64 time_nsec = ts.tv_sec * 1000000000LL + ts.tv_nsec;
   return time_nsec;
 }
+int64 CpuNsec() {
+    struct timespec ts = { 0, };
+    const int result = clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
+    CHECK_EQ(result, 0);
+    const int64 time_nsec = ts.tv_sec * 1000000000LL + ts.tv_nsec;
+    return time_nsec;
+}
 
 #elif defined(HAVE_GETTIMEOFDAY)
 #include <sys/time.h>
 
 int64 TicksNsec() {
   struct timeval now;
-  int ret = gettimeofday(&now, NULL);
+  gettimeofday(&now, NULL);
   return now.tv_sec * 1000000000LL + now.tv_usec * 1000LL;
+}
+int64 CpuNsec() {
+    return TicksNsec();
 }
 
 #else

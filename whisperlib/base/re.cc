@@ -29,7 +29,8 @@
 //
 // Author: Catalin Popescu
 
-#include "whisperlib/base/re.h"
+#include <whisperlib/base/types.h>
+#include <whisperlib/base/re.h>
 
 namespace re {
 

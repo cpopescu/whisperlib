@@ -120,8 +120,8 @@ ClientRequest::ClientRequest(HttpMethod http_method,
 ClientRequest::ClientRequest(HttpMethod http_method,
                              const string& escaped_query_path)
     : error_(http::CONN_INCOMPLETE),
-      request_id_(0),
       request_timeout_ms_(0),
+      request_id_(0),
       is_pure_dumping_(false) {
   request_.client_header()->PrepareRequestLine(escaped_query_path.c_str(),
                                                http_method);
@@ -790,7 +790,7 @@ bool ClientProtocol::IdentifyReadingRequest() {
     if ( errno || endptr == NULL || *endptr != '\0' ) {
       req_id = -1;
     }
-  } else if ( params_->max_concurrent_requests_  == 1 && current_request_ != NULL ) {
+  } else if ( params_->max_concurrent_requests_ == 1 && current_request_ != NULL ) {
     req_id = current_request_->request_id();
   }
 

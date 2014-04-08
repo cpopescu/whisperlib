@@ -133,7 +133,11 @@ class Date {
   int GetDayOfTheYear() const { return broken_down_time_.tm_yday; }
 
   const char* GetTimezoneName() const {
+#ifdef NACL
+    return "UTC";
+#else
     return broken_down_time_.tm_zone;
+#endif
   }
   const char* GetMonthName() const {
     return MonthName(GetMonth());

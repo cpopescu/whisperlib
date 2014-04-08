@@ -1,6 +1,6 @@
 /*
- * FILE:	sha2.h
- * AUTHOR:	Aaron D. Gifford - http://www.aarongifford.com/
+ * FILE:        sha2.h
+ * AUTHOR:        Aaron D. Gifford - http://www.aarongifford.com/
  *
  * Copyright (c) 2000-2001, Aaron D. Gifford
  * All rights reserved.
@@ -46,9 +46,9 @@ extern "C" {
 #endif
 
 /*** SHA-256/384/512 Various Length Definitions ***********************/
-#define SHA256_BLOCK_LENGTH		64
-#define SHA256_DIGEST_LENGTH		32
-#define SHA256_DIGEST_STRING_LENGTH	(SHA256_DIGEST_LENGTH * 2 + 1)
+#define WL_SHA256_BLOCK_LENGTH                64
+#define WL_SHA256_DIGEST_LENGTH                32
+#define WL_SHA256_DIGEST_STRING_LENGTH        (WL_SHA256_DIGEST_LENGTH * 2 + 1)
 
 /*** SHA-256/384/512 Context Structures *******************************/
 /* NOTE: If your architecture does not define either u_intXX_t types or
@@ -56,39 +56,39 @@ extern "C" {
  * for your system:
  */
 
-typedef struct __SHA256_CTX {
+typedef struct _WL_SHA256_CTX {
   uint32 state[8];
   uint64 bitcount;
-  uint8  buffer[SHA256_BLOCK_LENGTH];
-} _SHA256_CTX;
+  uint8  buffer[WL_SHA256_BLOCK_LENGTH];
+} WL_SHA256_CTX;
 
 /*** SHA-256 Function Prototypes ******************************/
 
-void SHA256_Init(_SHA256_CTX* context);
-void SHA256_Update(_SHA256_CTX* context, const uint8*, size_t);
-void SHA256_Final(uint8* digest /*[SHA256_DIGEST_LENGTH]*/, _SHA256_CTX* context);
-char* SHA256_End(_SHA256_CTX* context, char* buffer /*[SHA256_DIGEST_STRING_LENGTH]*/);
-void SHA256_Data(const uint8* data, size_t len,
-                 uint8* digest /*[SHA256_DIGEST_LENGTH]*/);
-char* SHA256_DataHex(const uint8* data, size_t len,
-                     char* digest  /*[SHA256_DIGEST_STRING_LENGTH]*/);
+void WL_SHA256_Init(WL_SHA256_CTX* context);
+void WL_SHA256_Update(WL_SHA256_CTX* context, const uint8*, size_t);
+void WL_SHA256_Final(uint8* digest /*[WL_SHA256_DIGEST_LENGTH]*/, WL_SHA256_CTX* context);
+char* WL_SHA256_End(WL_SHA256_CTX* context, char* buffer /*[WL_SHA256_DIGEST_STRING_LENGTH]*/);
+void WL_SHA256_Data(const uint8* data, size_t len,
+                 uint8* digest /*[WL_SHA256_DIGEST_LENGTH]*/);
+char* WL_SHA256_DataHex(const uint8* data, size_t len,
+                     char* digest  /*[WL_SHA256_DIGEST_STRING_LENGTH]*/);
 
 int HmacSha256PrepareKey(const uint8* key,
                          size_t key_len,
-                         uint8* key_to_use /*[SHA256_DIGEST_LENGTH]*/);
+                         uint8* key_to_use /*[WL_SHA256_DIGEST_LENGTH]*/);
 void HmacSha256WithPreparedKey(const uint8* key_to_use,
                                size_t key_to_use_len,
                                const uint8* data,
                                size_t data_len,
-                               uint8* result /*[SHA256_DIGEST_LENGTH]*/);
+                               uint8* result /*[WL_SHA256_DIGEST_LENGTH]*/);
 void HmacSha256(const uint8* key, size_t key_len,
                 const uint8* data, size_t data_len,
-                uint8* result /*[SHA256_DIGEST_LENGTH]*/);
+                uint8* result /*[WL_SHA256_DIGEST_LENGTH]*/);
 
 #ifdef  __cplusplus
 }
 
-string SHA256_StringHex(const char* str);
+string WL_SHA256_StringHex(const char* str);
 
 #endif /* __cplusplus */
 

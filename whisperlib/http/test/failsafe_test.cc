@@ -138,12 +138,10 @@ int main(int argc, char* argv[]) {
   net::NetFactory net_factory(&selector);
   http::ClientParams params;
   // params.dlog_level_ = true;
-  ResultClosure<http::BaseClientConnection*>* rcl =
-      NewPermanentCallback(&CreateConnection, &selector,
-                           &net_factory, net::PROTOCOL_TCP);
   http::FailSafeClient* fsc = new http::FailSafeClient(
       &selector, &params, servers,
-      rcl,
+      NewPermanentCallback(&CreateConnection, &selector, &net_factory, net::PROTOCOL_TCP),
+      true,
       4,
       400000, 5000,
       FLAGS_force_host_header);

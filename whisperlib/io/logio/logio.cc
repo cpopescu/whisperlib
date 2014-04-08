@@ -71,7 +71,6 @@ LogWriter::LogWriter(const string& log_dir,
         file_base_.c_str(), block_size)),
     file_num_(-1),
     recorder_(block_size, deflate) {
-  CHECK(io::IsDir(log_dir)) << " No a directory: [" << log_dir << "]";
 }
 LogWriter::~LogWriter() {
   Close();
@@ -80,6 +79,7 @@ LogWriter::~LogWriter() {
 }
 
 bool LogWriter::Initialize() {
+  io::Mkdir(log_dir_, true);
   //////////////////////////////////////////////////////////////////////
   // exclusion mechanism, to prevent multiple LogWriters from writing
   // the same file:
@@ -609,7 +609,9 @@ bool DetectLogSettings(const string& log_dir,
   // detect file_base
   string filename = files[0];
   CHECK(filename.size() >= 22) << " For file: [" << filename << "]";
-  *out_file_base = filename.substr(0, filename.size() - 22);
+  if (out_file_base != NULL) {
+    *out_file_base = filename.substr(0, filename.size() - 22);
+  }
 
   // detect block_size
   string str_block_size = filename.substr(filename.size() - 21, 10).c_str();
@@ -638,5 +640,13 @@ bool DetectLogSettings(const string& log_dir,
   }
   return true;
 }
+
+bool LogExists(const string& dir, const string& file_base, int32 block_size, int32 file_num) {
+    return io::Exists(ComposeFileName(dir, file_base, block_size, file_num));
+}
+int64 LogFileTime(const string& dir, const string& file_base, int32 block_size, int32 file_num) {
+    return io::GetFileMtime(ComposeFileName(dir, file_base, block_size, file_num));
+}
+
 
 }

@@ -66,6 +66,7 @@ int main(int argc, char* argv[]) {
   URL url(FLAGS_url);
   CHECK(url.is_valid()) << " Invalid url given !";
   struct hostent *hp = gethostbyname(url.host().c_str());
+
   CHECK(hp != NULL)
     << " Cannot resolve: " << url.host();
   CHECK(hp->h_addr_list[0] != NULL)
@@ -79,9 +80,25 @@ int main(int argc, char* argv[]) {
   net::Selector selector;
   http::ClientParams params;
   params.dlog_level_ = true;
-  http::ClientProtocol proto(&params,
-                             new http::SimpleClientConnection(&selector),
-                             server);
+
+  // Initialize protocol parameters. We can use TCP or SSL under HTTP
+  net::NetFactory net_factory(&selector);
+  net::PROTOCOL protocol = net::PROTOCOL_TCP;
+
+#ifdef USE_SSL
+  SSL_CTX* ctx = NULL;
+  // Deal with https (use SSL -> initialize and set parameters to use it)
+  if (url.SchemeIsSecure()) {
+    ctx = net::SslConnection::SslCreateContext();
+    net_factory.SetSslConnectionParams(net::SslConnectionParams(ctx));
+    protocol = net::PROTOCOL_SSL;
+  }
+#endif
+  // Construct the connection
+  http::SimpleClientConnection* const conn =
+      new http::SimpleClientConnection(&selector, net_factory, protocol);
+
+  http::ClientProtocol proto(&params, conn, server);
   http::ClientRequest req(http::METHOD_GET, &url);
 
   Closure* const done_callback =

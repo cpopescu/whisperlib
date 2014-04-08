@@ -30,6 +30,7 @@
 // Author: Catalin Popescu
 
 #include <signal.h>
+ #include <sched.h>
 #include "whisperlib/sync/thread.h"
 
 namespace {
@@ -44,10 +45,19 @@ void* InternalThreadRun(void* param) {
 
 namespace thread {
 
-Thread::Thread(Closure* thread_function)
+Thread::Thread(Closure* thread_function, bool low_priority)
   : thread_(0),
     thread_function_(thread_function) {
   pthread_attr_init(&attr_);
+#ifndef NACL
+  if (low_priority) {
+      struct sched_param param;
+      param.sched_priority = sched_get_priority_min(SCHED_RR);
+      const int status = pthread_attr_setschedparam(&attr_, &param);
+      LOG_INFO << " Thread priority set to: " <<  param.sched_priority
+               << " with status: " << status;
+  }
+#endif
 }
 
 Thread::~Thread() {
@@ -55,8 +65,12 @@ Thread::~Thread() {
 }
 bool Thread::Start() {
   CHECK(thread_function_ != NULL);
-  return pthread_create(&thread_, &attr_,
-                        InternalThreadRun, thread_function_) == 0;
+  const int error = pthread_create(&thread_, &attr_,
+                                   InternalThreadRun, thread_function_);
+  if (error != 0) {
+      LOG_ERROR << " Thread starting failed with error: " << error;
+  }
+  return error == 0;
 }
 bool Thread::Join() {
   void* status;
@@ -66,14 +80,22 @@ bool Thread::SetJoinable() {
   return pthread_attr_setdetachstate(&attr_, PTHREAD_CREATE_JOINABLE) == 0;
 }
 bool Thread::SetStackSize(size_t stacksize) {
+#ifdef NACL
+  return true;
+#else
 #if defined(PTHREAD_STACK_MIN) && defined(PAGE_SIZE)
   // Apparently android does not have this
   CHECK_LE(PTHREAD_STACK_MIN, stacksize);
 #endif
   return pthread_attr_setstacksize(&attr_, stacksize) == 0;
+#endif  // NACL
 }
 bool Thread::Kill() {
+#ifdef NACL
+  return false;
+#else
   return 0 == pthread_kill(thread_, SIGKILL);
+#endif
 }
 bool Thread::IsInThread() const {
   return thread_ == ::pthread_self();

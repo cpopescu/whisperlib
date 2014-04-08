@@ -29,10 +29,14 @@
 //
 // Author: Cosmin Tudorache
 
+#include <sstream>              // ostringstream
 #include <whisperlib/base/util.h>
 #include <whisperlib/base/strutil.h>
+#include <whisperlib/base/timer.h>
 
 namespace util {
+
+const string kEmptyString;
 
 Interval::Interval(const Interval& other)
     : min_(other.min_), max_(other.max_) {}
@@ -72,6 +76,38 @@ int32 Interval::Rand(unsigned int* seed) const {
   int rnd = (seed == NULL ? ::rand() : ::rand_r(seed));
 #endif
   return min_ + (rnd % (max_ - min_));
+}
+
+string Interval::RandomString(unsigned int* seed) const {
+  static const char kLetters[] =
+          " 1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM_";
+  Interval letter_index(0, sizeof(kLetters));
+
+  string s(Rand(seed), ' ');
+  for (uint32 i = 0; i < s.size(); ++i) {
+    s[i] = kLetters[letter_index.Rand(seed)];
+  }
+  return s;
+}
+
+///////////////////////////////////////////////////////////////////////
+
+void InstanceCounter::Inc() {
+    synch::MutexLocker l(&lock_);
+    count_++;
+    PrintReport();
+}
+void InstanceCounter::Dec() {
+    synch::MutexLocker l(&lock_);
+    count_--;
+    PrintReport();
+}
+void InstanceCounter::PrintReport() {
+    const int64 now = timer::TicksMsec();
+    if (now - print_ts_ > kPrintIntervalMs) {
+        print_ts_ = now;
+        LOG_WARNING << "#Instance " << name_ << " " << count_;
+    }
 }
 
 }

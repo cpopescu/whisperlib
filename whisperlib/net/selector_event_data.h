@@ -27,47 +27,26 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Author: Catalin Popescu
+// Authors: Cosmin Tudorache & Catalin Popescu
 
-#ifndef __WHISPERLIB_SYNC_THREAD_POOL_H__
-#define __WHISPERLIB_SYNC_THREAD_POOL_H__
+#ifndef __NET_BASE_SELECTOR_EVENT_DATA_H__
+#define __NET_BASE_SELECTOR_EVENT_DATA_H__
 
-#include <vector>
-#include <whisperlib/sync/thread.h>
-#include <whisperlib/sync/producer_consumer_queue.h>
+namespace net {
 
-namespace thread {
-
-class ThreadPool {
- public:
-  // Constructs a thread pool w/ pool_size threads and a queue of
-  // backlog_size (condition: backlog_size > pool_size).
-  ThreadPool(uint32 pool_size, uint32 backlog_size, bool low_priority=false);
-  // Stops all threads (as soon as they are idle).
-  ~ThreadPool();
-
-  // Use this accessors to add jobs to the pool (in a blocking on non
-  // blocking way).
-  // Example:
-  //   thread_pool->jobs()->Put(NewCallback(this, &Worker::DoWork, work_data));
-  synch::ProducerConsumerQueue<Closure*>* jobs() {
-    return &jobs_;
+struct SelectorEventData {
+  void* data_;
+  int32 desires_;
+  int internal_event_;
+  SelectorEventData(void* data,
+                    int32 desires,
+                    int internal_event)
+      : data_(data),
+        desires_(desires),
+        internal_event_(internal_event) {
   }
-
-  // Finalizes the threads - possibly waiting for their work to be done.
-  // The destructor would try to flush the jobs queue, use this first to
-  // have the work finished
-  void FinishWork();
-
- private:
-  void ThreadRun(uint32 thread_index);
-  synch::ProducerConsumerQueue<Closure*> jobs_;
-  vector<Thread*> threads_;
-  // the count of jobs processed by each thread
-  vector<uint32> count_completed_;
-
-  DISALLOW_EVIL_CONSTRUCTORS(ThreadPool);
 };
+
 }
 
-#endif  // __COMMON_SYNC_THREAD_POOL_H__
+#endif

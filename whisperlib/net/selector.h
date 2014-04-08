@@ -44,7 +44,12 @@
 #include <whisperlib/base/callback.h>
 #include <whisperlib/sync/mutex.h>
 #include <whisperlib/sync/thread.h>
+
+#ifdef __USE_LEAN_SELECTOR__
+#include <whisperlib/sync/producer_consumer_queue.h>
+#else
 #include <whisperlib/net/selector_base.h>
+#endif
 
 // Just a helper function
 
@@ -179,6 +184,10 @@ class Selector {
 
   // Internal control:
 
+#ifdef __USE_LEAN_SELECTOR__
+  synch::ProducerConsumerQueue<Closure*> to_run_;
+
+#else
   // these file descriptors are for waking the selector when a function
   // needs to be executed in the select loop
   int event_fd_;
@@ -186,18 +195,26 @@ class Selector {
   int signal_pipe_[2];     // when not using eventfd, we use sigan_pipe_[0] as
                            //  event_fd_
 #endif
-  // functions registered to be run in the select loop
+
+    // functions registered to be run in the select loop
   deque<Closure*> to_run_;
+
+    // OS specific selector base implementation
+  SelectorBase* base_;
+
+#endif   // __USE_LEAN_SELECTOR__
 
   // Cache for timer::TicksMsec(); Instead of calling TicksMsec() you can easily
   // take the value of selector_->now()
   int64 now_;
 
   // we wake up in loop every 100 ms by default
+#ifdef __USE_LEAN_SELECTOR__
+  static const int32 kStandardWakeUpTimeMs = 1000;
+#else
   static const int32 kStandardWakeUpTimeMs = 100;
+#endif
 
-  // OS specific selector base implementation
-  SelectorBase* base_;
 
   // called when we end our loop
   Closure* call_on_close_;
@@ -211,13 +228,15 @@ class SelectorThread {
       : thread_(NewCallback(this, &SelectorThread::Execution)) {
   }
   ~SelectorThread() {
-    selector_.RunInSelectLoop(NewCallback(&selector_,
-                                          &net::Selector::MakeLoopExit));
-    thread_.Join();
+      Stop();
   }
   void Start() {
     CHECK(thread_.SetJoinable());
     CHECK(thread_.Start());
+  }
+  void Stop() {
+      selector_.RunInSelectLoop(NewCallback(&selector_, &net::Selector::MakeLoopExit));
+      thread_.Join();
   }
   void CleanAndCloseAll() {
     selector_.RunInSelectLoop(NewCallback(&selector_,

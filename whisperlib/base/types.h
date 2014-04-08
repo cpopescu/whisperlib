@@ -8,6 +8,20 @@
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
+#include <core_config.h>
+
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
+#ifdef __GNUC__
+  #define GCC_VER (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
+#endif
+#ifdef __clang__
+  #define CLANG_VER (__clang_major__ * 10000 + __clang_minor__ * 100 + __clang_patchlevel__)
+#endif
+
+
 #ifndef PRId64
 #define PRId64 "lld"
 #endif
@@ -527,12 +541,22 @@ namespace tr1 { }
 }
 namespace  __gnu_cxx { }
 using namespace std;
-using namespace std::tr1;
+// using namespace std::tr1;
 using namespace __gnu_cxx;
 
 //////////////////////////////////////////////////////////////////////
 
 // determine hash map includes
+
+// For C++11: >= 201103;  For C98: == 199711
+#if __cplusplus >= 201103       // c++11
+ #if GCC_VER > 40500  // || CLANG_VER > 30000
+   #define HAVE_UNORDERED_SET
+   #define HAVE_UNORDERED_MAP
+   #undef HAVE_TR1_UNORDERED_SET
+   #undef HAVE_TR1_UNORDERED_MAP
+ #endif
+#endif // c++11
 
 #if defined(HAVE_UNORDERED_SET)
 #  define WHISPER_HASH_SET_HEADER <unordered_set>
@@ -549,20 +573,39 @@ using namespace __gnu_cxx;
 #if defined(HAVE_UNORDERED_MAP)
 #  define WHISPER_HASH_MAP_HEADER <unordered_map>
 #  define hash_map unordered_map
+#  define hash_multimap unordered_multimap
+
+#  if defined(HAVE_FUNCTIONAL_HASH_H)
+#    define WHISPER_HASH_FUN_HEADER <functional_hash.h>
+#  elif defined(HAVE_FUNCTIONAL)
+#    define WHISPER_HASH_FUN_HEADER <functional>
+#  else
+#    error "Unknown functional hash header"
+#  endif
 #  define WHISPER_HASH_FUN_NAMESPACE_BEGIN namespace std {
 #  define WHISPER_HASH_FUN_NAMESPACE_END }
 #  define WHISPER_HASH_FUN_NAMESPACE std
+
 #elif defined(HAVE_TR1_UNORDERED_MAP)
 #  define WHISPER_HASH_MAP_HEADER <tr1/unordered_map>
 #  define hash_map tr1::unordered_map
+#  define hash_multimap tr1::unordered_multimap
+#  define WHISPER_HASH_FUN_HEADER <tr1/functional_hash.h>
 #  define WHISPER_HASH_FUN_NAMESPACE_BEGIN namespace std { namespace tr1 {
 #  define WHISPER_HASH_FUN_NAMESPACE_END } }
 #  define WHISPER_HASH_FUN_NAMESPACE std::tr1
+
 #elif defined(HAVE_EXT_HASH_MAP)
 #  define WHISPER_HASH_MAP_HEADER <ext/hash_map>
+#  ifdef (HAVE_EXT_HASH_FUN_H)
+#     define WHISPER_HASH_FUN_HEADER <ext/hash_fun.h>
+#  else
+#     error "Unknown hash function header"
+#  endif
 #  define WHISPER_HASH_FUN_NAMESPACE_BEGIN namespace __gnu_cxx {
 #  define WHISPER_HASH_FUN_NAMESPACE_END }
 #  define WHISPER_HASH_FUN_NAMESPACE __gnu_cxx
+
 #else
 #  error "Cannot find hash_map include"
 #endif

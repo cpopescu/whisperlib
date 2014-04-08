@@ -34,7 +34,9 @@
 
 #include <unistd.h>
 #include <fcntl.h>
+#if defined(HAVE_SYS_UIO_H)
 #include <sys/uio.h>
+#endif
 #include <sys/socket.h>
 #include "whisperlib/base/errno.h"
 #include "whisperlib/base/gflags.h"
@@ -63,7 +65,10 @@ int32 Selectable::Write(const char* buf, int32 size) {
 //    writev (by some large margin..)
 //
 
+#if defined(HAVE_SYS_UIO_H)
 #define __USE_WRITEV__
+#endif
+
 #ifdef  __USE_WRITEV__
 
 //////////////////////////////////////////////////////////////////////
@@ -131,11 +136,11 @@ int32 Selectable::Write(io::MemoryStream* ms, int32 size) {
 
 # else
 
-int32 Selectable::Write(io::MemoryStream* ms) {
+int32 Selectable::Write(io::MemoryStream* ms, int32 len) {
   const char* buf;
   int size = 0;
   int32 cb = 0;
-  while ( !ms->IsEmpty() ) {
+  while ( !ms->IsEmpty() && (len < 0 || cb < len)) {
     ms->MarkerSet();
     size = 0;
     CHECK(ms->ReadNext(&buf, &size))

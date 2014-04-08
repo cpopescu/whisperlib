@@ -505,7 +505,7 @@ int32 RequestParser::ParseClientRequest(io::MemoryStream* in, Request* req) {
     } else if ( req->client_header()->bytes_parsed() > max_header_size_ ) {
       // ERROR - header too big
       LOG_HTTP_ERR << " Header too long. Parsed: "
-                   << in->Size() + req->client_header()->bytes_parsed()
+                   << req->client_header()->bytes_parsed()
                    << " max: " << max_header_size_;
       set_parse_state(ERROR_HEADER_TOO_LONG);
       return REQUEST_FINISHED;

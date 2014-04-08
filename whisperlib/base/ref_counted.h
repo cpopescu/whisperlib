@@ -35,6 +35,7 @@
 #include <whisperlib/base/types.h>
 #include <whisperlib/base/log.h>
 #include <whisperlib/sync/mutex.h>
+#include <whisperlib/base/callback.h>
 
 // Reference counted through encapsulation.
 // The "ref_counted" contains the object C
@@ -44,28 +45,32 @@ class ref_counted {
   explicit ref_counted(C* data, synch::Mutex* mutex)
       : data_(data),
         mutex_(mutex),
-        ref_count_(0) {
-    CHECK_NOT_NULL(mutex_);
+        ref_count_(0),
+        release_cb_(NULL) {
   }
   ~ref_counted() {
 #ifndef NDEBUG
-    mutex_->Lock();
+    if (mutex_) { mutex_->Lock(); }
     DCHECK_EQ(ref_count_, 0);
-    mutex_->Unlock();
+    if (mutex_) { mutex_->Unlock(); }
 #endif
-    delete data_;
+    if (release_cb_) {
+        release_cb_->Run(data_);
+    } else {
+        delete data_;
+    }
   }
-  void IncRef() {
-    mutex_->Lock();
+  void IncRef() const {
+    if (mutex_) { mutex_->Lock(); }
     ++ref_count_;
-    mutex_->Unlock();
+    if (mutex_) { mutex_->Unlock(); }
   }
-  void DecRef() {
-    mutex_->Lock();
+  void DecRef() const {
+    if (mutex_) { mutex_->Lock(); }
     DCHECK_GT(ref_count_, 0);
     --ref_count_;
     const bool do_delete = (ref_count_ == 0);
-    mutex_->Unlock();
+    if (mutex_) { mutex_->Unlock(); }
     if ( do_delete ) {
       delete this;
     }
@@ -85,12 +90,23 @@ class ref_counted {
     return data_;
   }
   void clear() {
-      data_ = NULL;
+    data_ = NULL;
+  }
+  C* set(C* data) {
+    if (mutex_) { mutex_->Lock(); }
+    C* d = data_;
+    data_ = data;
+    if (mutex_) { mutex_->Unlock(); }
+    return d;
+  }
+  void set_release_cb(Callback1<C*>* release_cb) {
+    release_cb_ = release_cb;
   }
  private:
   C* data_;
   synch::Mutex* const mutex_;
-  int ref_count_;
+  mutable int ref_count_;
+  Callback1<C*>* release_cb_;
   DISALLOW_EVIL_CONSTRUCTORS(ref_counted);
 };
 
@@ -111,15 +127,15 @@ class RefCounted {
     return ref_count_;
   }
   void IncRef() const {
-    ref_mutex_->Lock();
+    if (ref_mutex_ != NULL) ref_mutex_->Lock();
     IncRefLocked();
-    ref_mutex_->Unlock();
+    if (ref_mutex_ != NULL) ref_mutex_->Unlock();
   }
   // returns: true = this object was deleted.
   bool DecRef() const {
-    ref_mutex_->Lock();
+    if (ref_mutex_ != NULL) ref_mutex_->Lock();
     const bool do_delete = DecRefLocked();
-    ref_mutex_->Unlock();
+    if (ref_mutex_ != NULL) ref_mutex_->Unlock();
 
     if ( do_delete ) {
       delete this;
@@ -195,13 +211,14 @@ public:
     CHECK_NOT_NULL(p_);
     return p_;
   }
-  void operator=(REF_COUNTED* other) {
+  scoped_ref<REF_COUNTED>& operator=(REF_COUNTED* other) {
     reset(other);
-  }
-  scoped_ref<REF_COUNTED> operator=(const scoped_ref<REF_COUNTED>& other) {
-    operator=(other.p_);
     return *this;
   }
+  scoped_ref<REF_COUNTED>& operator=(const scoped_ref<REF_COUNTED>& other) {
+    return operator=(other.p_);
+  }
+
   REF_COUNTED* release() {
     REF_COUNTED* ret = p_;
     p_ = NULL;

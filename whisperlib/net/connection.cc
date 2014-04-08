@@ -459,6 +459,7 @@ bool TcpAcceptor::HandleWriteEvent(const SelectorEventData& event) {
 
 
 bool TcpAcceptor::HandleErrorEvent(const SelectorEventData& event) {
+#ifndef __USE_LEAN_SELECTOR__
   //////////////////////////////////////////////////////////////////////
   //
   // EPOLL & EPOLL version
@@ -496,6 +497,7 @@ bool TcpAcceptor::HandleErrorEvent(const SelectorEventData& event) {
     return false;
   }
   ECONNLOG << "HandleErrorEvent: unknown event: 0x" << std::hex << events;
+#endif  // __USE_LEAN_SELECTOR__
   return true;
 }
 
@@ -823,7 +825,7 @@ bool TcpConnection::HandleWriteEvent(const SelectorEventData& event) {
     return false;
   }
   D10CONNLOG << "HandleWriteEvent: #" << cb << " bytes written"
-             << " to: " << remote_address();
+             << " to: " << remote_address() << ", left: " << outbuf()->Size();
   inc_bytes_written(cb);
   last_write_ts_ = selector_->now();
 
@@ -869,6 +871,7 @@ bool TcpConnection::HandleWriteEvent(const SelectorEventData& event) {
 }
 
 bool TcpConnection::HandleErrorEvent(const SelectorEventData& event) {
+#ifndef __USE_LEAN_SELECTOR__
   CHECK_NE(state(), DISCONNECTED);
 
   const int events = event.internal_event_;
@@ -968,7 +971,7 @@ bool TcpConnection::HandleErrorEvent(const SelectorEventData& event) {
     return false;
   }
   ECONNLOG << "HandleErrorEvent: unknown event: 0x" << std::hex << events;
-
+#endif  // __USE_LEAN_SELECTOR__
   return true;
 }
 
@@ -1087,7 +1090,13 @@ void TcpConnection::InternalClose(int err, bool call_close_handler) {
   set_write_closed(true);
   set_last_error_code(err);
   timeouter_.UnsetAllTimeouts();
+  if (inbuf()->Size() > 0) {
+      ECONNLOG << "Unread bytes: #" << inbuf()->Size();
+  }
   inbuf()->Clear();
+  if (outbuf()->Size() > 0) {
+      ECONNLOG << "Unwritten bytes: #" << outbuf()->Size();
+  }
   outbuf()->Clear();
   if ( call_close_handler ) {
     InvokeCloseHandler(err, CLOSE_READ_WRITE);
@@ -1370,11 +1379,11 @@ bool SslConnection::TcpConnectionReadHandler() {
     }
 
     ssl_in_count_ += write;
-    //WCONNLOG << "BIO write: " << write << " bytes"
-    //            ", BIO total: in " << ssl_in_count_
-    //         << " / out " << ssl_out_count_
-    //         << " TCP buffers: in " << tcp_connection_->inbuf()->Size()
-    //         << " / out " << tcp_connection_->outbuf()->Size();
+    WCONNLOG << "BIO write: " << write << " bytes"
+                ", BIO total: in " << ssl_in_count_
+             << " / out " << ssl_out_count_
+             << " TCP buffers: in " << tcp_connection_->inbuf()->Size()
+             << " / out " << tcp_connection_->outbuf()->Size();
     DCONNLOG << "TCP >>>> " << write << " bytes >>>> SSL";
   }
   if ( state() == CONNECTING ) {
@@ -1384,6 +1393,7 @@ bool SslConnection::TcpConnectionReadHandler() {
   }
 
   if ( write_blocked_on_read_ ) {
+    DCONNLOG << "SSL >>>> write in progress.";
     // an SSL_write is in progress, we cannot SSL_read.
     RequestWriteEvents(true);
     return true;
@@ -1396,16 +1406,19 @@ bool SslConnection::TcpConnectionReadHandler() {
   while ( BIO_pending(p_bio_read_) ) {
     // If there is no data in p_bio_read_ then avoid calling SSL_read because
     // it would return WANT_READ and we'll get read_blocked.
-    //WCONNLOG << "Going to SSL_read from bio_data: " << SslPrintableBio(p_bio_read_);
-    char buf[1024];
-    int32 read = SSL_read(p_ssl_, buf, sizeof(buf));
+    // WCONNLOG << "Going to SSL_read from bio_data: " << SslPrintableBio(p_bio_read_);
+    char* buffer;
+    int32 scratch;
+    inbuf()->GetScratchSpace(&buffer, &scratch);
+    const int32 cb = SSL_read(p_ssl_, buffer, scratch);
+
     //WCONNLOG << "SSL read: " << read << " bytes"
     //            " => " << SslErrorName(SSL_get_error(p_ssl_, read));
     //WCONNLOG << "After SSL_read remaining bio_data: " << SslPrintableBio(p_bio_read_);
     read_blocked_ = false;
     read_blocked_on_write_ = false;
-    if ( read < 0 ) {
-      int error = SSL_get_error(p_ssl_, read);
+    if ( cb < 0 ) {
+      int error = SSL_get_error(p_ssl_, cb);
       switch(error) {
         case SSL_ERROR_NONE:
           break;
@@ -1429,12 +1442,12 @@ bool SslConnection::TcpConnectionReadHandler() {
           ForceClose();
           return false;
       };
+      inbuf()->ConfirmScratch(0);
       break;
     }
     // SSL_read was successful
-    int32 write = inbuf()->Write(buf, read);
-    CHECK_EQ(write, read);
-    DCONNLOG << "SSL >>>> " << read << " bytes >>>> APP";
+    inbuf()->ConfirmScratch(cb);
+    DCONNLOG << "SSL >>>> " << cb << " bytes >>>> APP";
   }
 
   if ( !read_blocked_ && !outbuf()->IsEmpty() ) {
