@@ -116,6 +116,7 @@ whisperlib_libwhisperlib_a_SOURCES = \
   whisperlib/url/simple_url.cc
 
 nobase_include_HEADERS = \
+  whisperlib/base/config.h \
   whisperlib/base/app.h \
   whisperlib/base/basictypes.h \
   whisperlib/base/cache.h \
