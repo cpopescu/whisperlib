@@ -85,9 +85,9 @@ TESTS = $(am__EXEEXT_3) $(driver_test_scripts)
 subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) acconfig.h \
-	$(srcdir)/config.h.in depcomp $(dist_doc_DATA) \
-	$(nobase_include_HEADERS) test-driver ar-lib compile \
-	config.guess config.sub install-sh missing
+	$(top_srcdir)/whisperlib/base/config.h.in depcomp \
+	$(dist_doc_DATA) $(nobase_include_HEADERS) test-driver ar-lib \
+	compile config.guess config.sub install-sh missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -95,7 +95,7 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
-CONFIG_HEADER = config.h
+CONFIG_HEADER = $(top_builddir)/whisperlib/base/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
@@ -467,7 +467,7 @@ AM_V_at = $(am__v_at_@AM_V@)
 am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
 am__v_at_1 = 
-DEFAULT_INCLUDES = -I.@am__isrc@
+DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/whisperlib/base
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
@@ -531,8 +531,7 @@ am__can_run_installinfo = \
   esac
 DATA = $(dist_doc_DATA)
 HEADERS = $(nobase_include_HEADERS)
-am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) \
-	$(LISP)config.h.in
+am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
 # and print each of them once, without duplicates.  Input order is
 # *not* preserved.
@@ -973,6 +972,7 @@ whisperlib_libwhisperlib_a_SOURCES = \
   whisperlib/url/simple_url.cc
 
 nobase_include_HEADERS = \
+  whisperlib/base/config.h \
   whisperlib/base/app.h \
   whisperlib/base/basictypes.h \
   whisperlib/base/cache.h \
@@ -1097,8 +1097,7 @@ driver_test_scripts = \
   whisperlib/net/test/selectable_filereader_test.sh
 
 LDADD = whisperlib/libwhisperlib.a $(ICU_LIBS)
-all: config.h
-	$(MAKE) $(AM_MAKEFLAGS) all-am
+all: all-am
 
 .SUFFIXES:
 .SUFFIXES: .cc .log .o .obj .sh .sh$(EXEEXT) .trs
@@ -1134,20 +1133,20 @@ $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENC
 $(top_srcdir)/configure:  $(am__configure_deps)
 	$(am__cd) $(srcdir) && $(AUTOCONF)
 
-config.h: stamp-h1
-	@test -f $@ || rm -f stamp-h1
-	@test -f $@ || $(MAKE) $(AM_MAKEFLAGS) stamp-h1
+whisperlib/base/config.h: whisperlib/base/stamp-h1
+	@test -f $@ || rm -f whisperlib/base/stamp-h1
+	@test -f $@ || $(MAKE) $(AM_MAKEFLAGS) whisperlib/base/stamp-h1
 
-stamp-h1: $(srcdir)/config.h.in $(top_builddir)/config.status
-	@rm -f stamp-h1
-	cd $(top_builddir) && $(SHELL) ./config.status config.h
-$(srcdir)/config.h.in:  $(am__configure_deps) $(top_srcdir)/acconfig.h
+whisperlib/base/stamp-h1: $(top_srcdir)/whisperlib/base/config.h.in $(top_builddir)/config.status
+	@rm -f whisperlib/base/stamp-h1
+	cd $(top_builddir) && $(SHELL) ./config.status whisperlib/base/config.h
+$(top_srcdir)/whisperlib/base/config.h.in:  $(am__configure_deps) $(top_srcdir)/acconfig.h
 	($(am__cd) $(top_srcdir) && $(AUTOHEADER))
-	rm -f stamp-h1
+	rm -f whisperlib/base/stamp-h1
 	touch $@
 
 distclean-hdr:
-	-rm -f config.h stamp-h1
+	-rm -f whisperlib/base/config.h whisperlib/base/stamp-h1
 install-libLIBRARIES: $(lib_LIBRARIES)
 	@$(NORMAL_INSTALL)
 	@list='$(lib_LIBRARIES)'; test -n "$(libdir)" || list=; \
@@ -2435,7 +2434,7 @@ check-am: all-am
 	$(MAKE) $(AM_MAKEFLAGS) $(check_PROGRAMS)
 	$(MAKE) $(AM_MAKEFLAGS) check-TESTS
 check: check-am
-all-am: Makefile $(LIBRARIES) $(DATA) $(HEADERS) config.h
+all-am: Makefile $(LIBRARIES) $(DATA) $(HEADERS)
 installdirs:
 	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(docdir)" "$(DESTDIR)$(includedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
@@ -2598,7 +2597,7 @@ ps-am:
 uninstall-am: uninstall-dist_docDATA uninstall-libLIBRARIES \
 	uninstall-nobase_includeHEADERS
 
-.MAKE: all check-am install-am install-strip
+.MAKE: check-am install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am am--refresh check check-TESTS \
 	check-am clean clean-checkPROGRAMS clean-cscope clean-generic \
