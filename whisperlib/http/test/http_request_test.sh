@@ -30,7 +30,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-for f in $1/test_data/server_req_*; do echo test_data/`basename $f`; $2/http_request_test  --input_file=$f  --is_server=true 2>/dev/null; done > /tmp/output_server_req
-diff $1/test_data/expected_output_server_req  /tmp/output_server_req || exit 1
-for f in $1/test_data/client_req_*; do echo test_data/`basename $f`; $2/http_request_test  --input_file=$f  --is_server=false 2>/dev/null; done > /tmp/output_client_req
-diff $1/test_data/expected_output_client_req  /tmp/output_client_req || exit 1
+golden=whisperlib/http/test
+
+for f in $golden/test_data/server_req_*; do echo test_data/`basename $f`; $2/http_request_test  --input_file=$f  --is_server=true 2>/dev/null; done > /tmp/output_server_req
+diff $golden/test_data/expected_output_server_req  /tmp/output_server_req || exit 1
+for f in $golden/test_data/client_req_*; do echo test_data/`basename $f`; $2/http_request_test  --input_file=$f  --is_server=false 2>/dev/null; done > /tmp/output_client_req
+diff $golden/test_data/expected_output_client_req  /tmp/output_client_req || exit 1
