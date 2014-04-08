@@ -34,3 +34,48 @@ DEFINE_bool(test, false, "help string");
     ifelse([$1], , :, [$1])
   fi
 ])
+
+# Sets `variable` to the namespace used by the gflags library
+#
+# AX_GFLAGS_NAMESPACE(variable)
+AC_DEFUN([AX_GFLAGS_NAMESPACE], [
+  AC_MSG_CHECKING([for gflags namespace])
+  AC_LANG_PUSH([C++])
+  AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM([[
+#include <gflags/gflags.h>
+int main(int argc, char** argv) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+}
+/* override the definition of main, since we do not want to interfere with
+   ours */
+#define main test
+]],
+      [[]])],
+      [AS_VAR_SET([$1],gflags)
+       found=yes
+       ],
+       [found=no]
+    )
+
+  if test "$found" = no; then
+    AC_LINK_IFELSE(
+      [AC_LANG_PROGRAM([[
+#include <gflags/gflags.h>
+int main(int argc, char** argv) {
+  google::ParseCommandLineFlags(&argc, &argv, true);
+}
+/* override the definition of main, since we do not want to interfere with
+   ours */
+#define main test
+]],
+        [[]])],
+        [AS_VAR_SET([$1],google)
+         found=yes
+         ],
+         [found=no]
+    )
+  fi
+  AC_LANG_POP([C++])
+  AC_MSG_RESULT($[$1])
+])

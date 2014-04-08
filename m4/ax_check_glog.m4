@@ -9,7 +9,7 @@ AC_DEFUN([AX_CHECK_GLOG], [
   ax_save_LIBS="$LIBS"
   LIBS="-lglog"
 
-  AC_MSG_CHECKING([for usable glog library])
+  AC_MSG_CHECKING([for glog library])
   AC_LANG_PUSH([C++])
 AC_TRY_LINK([
 #include <glog/logging.h>
