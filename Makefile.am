@@ -169,6 +169,7 @@ nobase_include_HEADERS = \
   whisperlib/io/file/file.h \
   whisperlib/io/file/file_input_stream.h \
   whisperlib/io/file/file_output_stream.h \
+  whisperlib/io/file/file_reader.h \
   whisperlib/io/input_stream.h \
   whisperlib/io/iomarker.h \
   whisperlib/io/ioutil.h \
@@ -190,6 +191,7 @@ nobase_include_HEADERS = \
   whisperlib/net/selectable_filereader.h \
   whisperlib/net/selector.h \
   whisperlib/net/selector_base.h \
+  whisperlib/net/selector_event_data.h \
   whisperlib/net/timeouter.h \
   whisperlib/net/udp_connection.h \
   whisperlib/net/user_authenticator.h \

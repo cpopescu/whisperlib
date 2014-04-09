@@ -568,17 +568,19 @@ am__nobase_include_HEADERS_DIST = whisperlib/base/core_config.h \
 	whisperlib/io/file/fd_input_stream.h whisperlib/io/file/file.h \
 	whisperlib/io/file/file_input_stream.h \
 	whisperlib/io/file/file_output_stream.h \
-	whisperlib/io/input_stream.h whisperlib/io/iomarker.h \
-	whisperlib/io/ioutil.h whisperlib/io/logio/logio.h \
-	whisperlib/io/logio/recordio.h whisperlib/io/num_streaming.h \
-	whisperlib/io/output_stream.h whisperlib/io/seeker.h \
-	whisperlib/io/stream_base.h whisperlib/io/util/base64.h \
-	whisperlib/io/util/sha256.h whisperlib/io/zlib/zlibwrapper.h \
-	whisperlib/net/address.h whisperlib/net/alarm.h \
-	whisperlib/net/connection.h whisperlib/net/dns_resolver.h \
-	whisperlib/net/ipclassifier.h whisperlib/net/selectable.h \
+	whisperlib/io/file/file_reader.h whisperlib/io/input_stream.h \
+	whisperlib/io/iomarker.h whisperlib/io/ioutil.h \
+	whisperlib/io/logio/logio.h whisperlib/io/logio/recordio.h \
+	whisperlib/io/num_streaming.h whisperlib/io/output_stream.h \
+	whisperlib/io/seeker.h whisperlib/io/stream_base.h \
+	whisperlib/io/util/base64.h whisperlib/io/util/sha256.h \
+	whisperlib/io/zlib/zlibwrapper.h whisperlib/net/address.h \
+	whisperlib/net/alarm.h whisperlib/net/connection.h \
+	whisperlib/net/dns_resolver.h whisperlib/net/ipclassifier.h \
+	whisperlib/net/selectable.h \
 	whisperlib/net/selectable_filereader.h \
 	whisperlib/net/selector.h whisperlib/net/selector_base.h \
+	whisperlib/net/selector_event_data.h \
 	whisperlib/net/timeouter.h whisperlib/net/udp_connection.h \
 	whisperlib/net/user_authenticator.h \
 	whisperlib/rpc/codec/rpc_decode_result.h \
@@ -1091,6 +1093,7 @@ nobase_include_HEADERS = \
   whisperlib/io/file/file.h \
   whisperlib/io/file/file_input_stream.h \
   whisperlib/io/file/file_output_stream.h \
+  whisperlib/io/file/file_reader.h \
   whisperlib/io/input_stream.h \
   whisperlib/io/iomarker.h \
   whisperlib/io/ioutil.h \
@@ -1112,6 +1115,7 @@ nobase_include_HEADERS = \
   whisperlib/net/selectable_filereader.h \
   whisperlib/net/selector.h \
   whisperlib/net/selector_base.h \
+  whisperlib/net/selector_event_data.h \
   whisperlib/net/timeouter.h \
   whisperlib/net/udp_connection.h \
   whisperlib/net/user_authenticator.h \
