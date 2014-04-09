@@ -36,7 +36,7 @@ AC_DEFUN([AX_CHECK_ICU], [
   else
     ICU_VERSION=`$ICU_CONFIG --version`
     AC_MSG_CHECKING(for ICU >= $1)
-        VERSION_CHECK=`expr $ICU_VERSION \>\= $1`
+        VERSION_CHECK=`expr ${ICU_VERSION}. \>\= $1`
         if test "$VERSION_CHECK" = "1" ; then
             AC_MSG_RESULT(yes)
             succeeded=yes
