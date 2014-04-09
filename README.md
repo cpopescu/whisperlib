@@ -1,4 +1,4 @@
-Date: 2014-04-08 12:37:05
+Date: 2014-04-08 23:35:37
 
 whisperlib
 ==========
@@ -10,12 +10,13 @@ Prerequisites
 
 This library depends on the following additional libraries:
 
-- glog (https://code.google.com/p/google-glog/)
-- gflags (https://code.google.com/p/gflags/)
+- glog (https://code.google.com/p/google-glog/) - for logging
+- gflags (https://code.google.com/p/gflags/) - command line flags
 
 Optional libraries:
 
-- ICU (http://site.icu-project.org/)
+- ICU (http://site.icu-project.org/) - to handle UTF8
+- Protobuf (https://code.google.com/p/protobuf/) - used by the RPC mechanism
 
 You might find useful the gperftools (https://code.google.com/p/gperftools/).
 
