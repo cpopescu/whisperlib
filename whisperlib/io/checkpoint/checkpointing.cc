@@ -32,7 +32,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <whisperlib/base/errno.h>
+#include <whisperlib/base/core_errno.h>
 #include <whisperlib/io/checkpoint/checkpointing.h>
 #include <whisperlib/io/ioutil.h>
 

@@ -35,7 +35,7 @@
 #include <sys/time.h>
 
 #include "whisperlib/base/log.h"
-#include "whisperlib/base/errno.h"
+#include "whisperlib/base/core_errno.h"
 #include "whisperlib/base/strutil.h"
 
 #include "whisperlib/base/date.h"

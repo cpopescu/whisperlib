@@ -36,7 +36,7 @@
 #include <errno.h>
 
 // #include "whisperlib/base/common.h"
-#include "whisperlib/base/errno.h"
+#include "whisperlib/base/core_errno.h"
 #include "whisperlib/base/log.h"
 #include "whisperlib/io/file/fd.h"
 

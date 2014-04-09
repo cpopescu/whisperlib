@@ -33,7 +33,7 @@
 // poll - most portable, epoll - great for linux, kevents - great for bsd
 //
 
-#include <whisperlib/base/errno.h>
+#include <whisperlib/base/core_errno.h>
 #include <whisperlib/net/selector_base.h>
 #include <whisperlib/net/selector.h>
 #include <unistd.h>

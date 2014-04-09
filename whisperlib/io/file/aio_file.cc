@@ -31,7 +31,7 @@
 
 #include "whisperlib/io/file/aio_file.h"
 #include "whisperlib/base/free_list.h"
-#include "whisperlib/base/errno.h"
+#include "whisperlib/base/core_errno.h"
 #include "whisperlib/base/gflags.h"
 
 #ifdef TIZEN

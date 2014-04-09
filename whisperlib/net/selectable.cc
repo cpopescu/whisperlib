@@ -38,7 +38,7 @@
 #include <sys/uio.h>
 #endif
 #include <sys/socket.h>
-#include "whisperlib/base/errno.h"
+#include "whisperlib/base/core_errno.h"
 #include "whisperlib/base/gflags.h"
 
 namespace net {

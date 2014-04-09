@@ -30,7 +30,7 @@
 // Author: Catalin Popescu
 
 #include "whisperlib/http/http_client_protocol.h"
-#include "whisperlib/base/errno.h"
+#include "whisperlib/base/core_errno.h"
 
 #define LOG_HTTP \
     LOG_INFO_IF(params_->dlog_level_) << " - HTTP[" << server_ << "]: "

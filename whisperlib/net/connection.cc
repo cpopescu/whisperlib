@@ -42,7 +42,7 @@
 #include <linux/errqueue.h>
 #endif
 
-#include "whisperlib/base/errno.h"
+#include "whisperlib/base/core_errno.h"
 #include "whisperlib/base/log.h"
 #include "whisperlib/base/timer.h"
 #include "whisperlib/base/gflags.h"

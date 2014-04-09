@@ -32,7 +32,7 @@
 #include <time.h>
 #include "whisperlib/http/http_header.h"
 #include "whisperlib/io/buffer/memory_stream.h"
-#include "whisperlib/base/errno.h"
+#include "whisperlib/base/core_errno.h"
 #include "whisperlib/base/strutil.h"
 #include "whisperlib/io/util/base64.h"
 

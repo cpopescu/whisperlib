@@ -41,7 +41,7 @@
 #include "whisperlib/io/ioutil.h"
 #include "whisperlib/base/strutil.h"
 #include "whisperlib/base/log.h"
-#include "whisperlib/base/errno.h"
+#include "whisperlib/base/core_errno.h"
 
 #ifdef HAVE_STAT64
 #define __STAT stat64

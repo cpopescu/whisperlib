@@ -40,7 +40,7 @@
 #endif
 
 #include <whisperlib/base/log.h>
-#include <whisperlib/base/errno.h>
+#include <whisperlib/base/core_errno.h>
 #include <whisperlib/base/timer.h>
 #include <whisperlib/base/gflags.h>
 #include <whisperlib/net/selectable.h>

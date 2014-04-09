@@ -33,7 +33,7 @@
 
 #include <unistd.h>
 #include <fcntl.h>
-#include "whisperlib/base/errno.h"
+#include "whisperlib/base/core_errno.h"
 
 namespace net {
 

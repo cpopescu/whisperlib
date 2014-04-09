@@ -41,7 +41,7 @@
 #include <vector>
 #include <whisperlib/base/types.h>
 #include <whisperlib/base/timer.h>
-#include <whisperlib/base/errno.h>
+#include <whisperlib/base/core_errno.h>
 #include <whisperlib/sync/mutex.h>
 
 namespace util {

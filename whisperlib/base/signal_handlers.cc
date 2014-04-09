@@ -47,7 +47,7 @@
 #endif
 
 #include <whisperlib/base/log.h>
-#include <whisperlib/base/errno.h>
+#include <whisperlib/base/core_errno.h>
 #include <whisperlib/base/system.h>
 #include <whisperlib/base/date.h>
 #include <whisperlib/base/callback.h>

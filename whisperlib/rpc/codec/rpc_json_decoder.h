@@ -34,7 +34,7 @@
 
 #include <string>
 #include <whisperlib/rpc/codec/rpc_decoder.h>
-#include <whisperlib/base/errno.h>
+#include <whisperlib/base/core_errno.h>
 
 namespace codec {
 

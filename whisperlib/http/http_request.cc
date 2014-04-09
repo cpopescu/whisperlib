@@ -30,7 +30,7 @@
 // Author: Catalin Popescu
 
 #include "whisperlib/http/http_request.h"
-#include "whisperlib/base/errno.h"
+#include "whisperlib/base/core_errno.h"
 #include "whisperlib/base/gflags.h"
 
 DEFINE_bool(http_log_detail_errors,

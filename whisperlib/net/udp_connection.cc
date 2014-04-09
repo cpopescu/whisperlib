@@ -56,7 +56,7 @@
 #endif
 
 
-#include <whisperlib/base/errno.h>
+#include <whisperlib/base/core_errno.h>
 #include <whisperlib/base/log.h>
 #include <whisperlib/base/scoped_ptr.h>
 #include <whisperlib/base/timer.h>

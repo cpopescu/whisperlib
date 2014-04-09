@@ -35,7 +35,7 @@
 #include <sys/errno.h>
 
 // Returns a description of the given system error.
-// System errors are defined in /usr/include/asm/errno.h
+// System errors are defined in /usr/include/asm/core_errno.h
 const char* GetSystemErrorDescription(int sys_err);
 
 // Returns the last system error: namely "errno" on Linux

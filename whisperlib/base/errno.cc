@@ -32,7 +32,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include "whisperlib/base/errno.h"
+#include "whisperlib/base/core_errno.h"
 
 #define ESUCCESS 0
 // One annoying feature of the POSIX 1003.1 specification is the lack of a

@@ -128,7 +128,7 @@ nobase_include_HEADERS = \
   whisperlib/base/callback/result_closure.h \
   whisperlib/base/callback.h \
   whisperlib/base/date.h \
-  whisperlib/base/errno.h \
+  whisperlib/base/core_errno.h \
   whisperlib/base/free_list.h \
   whisperlib/base/gflags.h \
   whisperlib/base/log.h \

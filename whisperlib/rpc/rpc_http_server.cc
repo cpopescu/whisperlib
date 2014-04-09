@@ -38,7 +38,7 @@
 #include <google/protobuf/descriptor.h>
 
 #include <whisperlib/base/log.h>
-#include <whisperlib/base/errno.h>
+#include <whisperlib/base/core_errno.h>
 #include <whisperlib/base/gflags.h>
 #include <whisperlib/rpc/rpc_consts.h>
 #include <whisperlib/rpc/rpc_controller.h>

@@ -48,7 +48,7 @@
 #include <whisperlib/base/log.h>
 #include <whisperlib/base/system.h>
 #include <whisperlib/base/gflags.h>
-#include <whisperlib/base/errno.h>
+#include <whisperlib/base/core_errno.h>
 
 #include <whisperlib/net/selector.h>
 #include <whisperlib/net/selectable_filereader.h>
