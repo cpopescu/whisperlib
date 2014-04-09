@@ -2489,7 +2489,6 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-@HAVE_GLOG_FALSE@clean-local:
 clean: clean-am
 
 clean-am: clean-checkPROGRAMS clean-generic clean-libLIBRARIES \
@@ -2587,11 +2586,13 @@ uninstall-am: uninstall-dist_docDATA uninstall-libLIBRARIES \
 	uninstall-nobase_includeHEADERS
 
 
-@HAVE_GLOG_TRUE@whisperlib/rpc/test/rpc_test_proto.cc: whisperlib/rpc/test/rpc_test_proto.proto
+@HAVE_GLOG_TRUE@whisperlib/rpc/test/rpc_test_proto.pb.cc: whisperlib/rpc/test/rpc_test_proto.proto
 @HAVE_GLOG_TRUE@	protoc $< --cpp_out=.
 
-@HAVE_GLOG_TRUE@clean-local:
-@HAVE_GLOG_TRUE@	-rm -f whisperlib/rpc/test/rpc_test_proto.pb.{h,cc}
+clean-local:
+	-rm -f whisperlib/rpc/test/rpc_test_proto.pb.{h,cc}
+	-rm -rf autom4te.cache
+	-rm -f stamp-h1
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

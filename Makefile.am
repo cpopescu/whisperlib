@@ -221,11 +221,9 @@ endif
 whisperlib_rpc_test_rpc_test_client_LDADD = whisperlib/rpc/test/rpc_test_proto.pb.o $(LDADD)
 whisperlib_rpc_test_rpc_test_server_LDADD = whisperlib/rpc/test/rpc_test_proto.pb.o $(LDADD)
 
-whisperlib/rpc/test/rpc_test_proto.cc: whisperlib/rpc/test/rpc_test_proto.proto
+whisperlib/rpc/test/rpc_test_proto.pb.cc: whisperlib/rpc/test/rpc_test_proto.proto
 	protoc $< --cpp_out=.
 
-clean-local:
-	-rm -f whisperlib/rpc/test/rpc_test_proto.pb.{h,cc}
 endif
 
 TEST_EXTENSIONS = .sh
@@ -262,3 +260,8 @@ check_PROGRAMS = \
   $(rpc_test_programs)
 
 TESTS = $(standalone_test_programs) $(driver_test_scripts)
+
+clean-local:
+	-rm -f whisperlib/rpc/test/rpc_test_proto.pb.{h,cc}
+	-rm -rf autom4te.cache
+	-rm -f stamp-h1
