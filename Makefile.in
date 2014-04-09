@@ -143,7 +143,7 @@ am__v_AR_1 =
 whisperlib_libwhisperlib_a_AR = $(AR) $(ARFLAGS)
 whisperlib_libwhisperlib_a_LIBADD =
 am__whisperlib_libwhisperlib_a_SOURCES_DIST =  \
-	whisperlib/url/google-url/gurl.cc \
+	whisperlib/url/simple_url.cc whisperlib/url/google-url/gurl.cc \
 	whisperlib/url/google-url/url_canon_etc.cc \
 	whisperlib/url/google-url/url_canon_fileurl.cc \
 	whisperlib/url/google-url/url_canon_host.cc \
@@ -196,8 +196,9 @@ am__whisperlib_libwhisperlib_a_SOURCES_DIST =  \
 	whisperlib/rpc/codec/rpc_json_decoder.cc \
 	whisperlib/rpc/codec/rpc_json_encoder.cc \
 	whisperlib/sync/event.cc whisperlib/sync/thread.cc \
-	whisperlib/sync/thread_pool.cc whisperlib/url/simple_url.cc
+	whisperlib/sync/thread_pool.cc
 am__dirstamp = $(am__leading_dot)dirstamp
+@HAVE_ICU_FALSE@am__objects_1 = whisperlib/url/simple_url.$(OBJEXT)
 @HAVE_ICU_TRUE@am__objects_1 =  \
 @HAVE_ICU_TRUE@	whisperlib/url/google-url/gurl.$(OBJEXT) \
 @HAVE_ICU_TRUE@	whisperlib/url/google-url/url_canon_etc.$(OBJEXT) \
@@ -270,10 +271,9 @@ am_whisperlib_libwhisperlib_a_OBJECTS = $(am__objects_1) \
 	whisperlib/rpc/codec/rpc_json_encoder.$(OBJEXT) \
 	whisperlib/sync/event.$(OBJEXT) \
 	whisperlib/sync/thread.$(OBJEXT) \
-	whisperlib/sync/thread_pool.$(OBJEXT) \
-	whisperlib/url/simple_url.$(OBJEXT)
+	whisperlib/sync/thread_pool.$(OBJEXT)
 am__EXTRA_whisperlib_libwhisperlib_a_SOURCES_DIST =  \
-	whisperlib/url/google-url/gurl.cc \
+	whisperlib/url/simple_url.cc whisperlib/url/google-url/gurl.cc \
 	whisperlib/url/google-url/url_canon_etc.cc \
 	whisperlib/url/google-url/url_canon_fileurl.cc \
 	whisperlib/url/google-url/url_canon_host.cc \
@@ -589,7 +589,7 @@ am__nobase_include_HEADERS_DIST = whisperlib/base/core_config.h \
 	whisperlib/sync/event.h whisperlib/sync/mutex.h \
 	whisperlib/sync/producer_consumer_queue.h \
 	whisperlib/sync/thread.h whisperlib/sync/thread_pool.h \
-	whisperlib/url/simple_url.h whisperlib/url/url.h \
+	whisperlib/url/url.h whisperlib/url/simple_url.h \
 	whisperlib/url/google-url/gurl.h \
 	whisperlib/url/google-url/url_canon.h \
 	whisperlib/url/google-url/url_canon_icu.h \
@@ -936,6 +936,9 @@ dist_doc_DATA = README.md
 AM_DEFAULT_SOURCE_EXT = .cc
 lib_LIBRARIES = whisperlib/libwhisperlib.a
 LDADD = whisperlib/libwhisperlib.a $(ICU_LIBS)
+@HAVE_ICU_FALSE@EXTRA_whisperlib_libwhisperlib_a_SOURCES = \
+@HAVE_ICU_FALSE@  whisperlib/url/simple_url.cc
+
 @HAVE_ICU_TRUE@EXTRA_whisperlib_libwhisperlib_a_SOURCES = \
 @HAVE_ICU_TRUE@  whisperlib/url/google-url/gurl.cc \
 @HAVE_ICU_TRUE@  whisperlib/url/google-url/url_canon_etc.cc \
@@ -952,6 +955,9 @@ LDADD = whisperlib/libwhisperlib.a $(ICU_LIBS)
 @HAVE_ICU_TRUE@  whisperlib/url/google-url/url_parse.cc \
 @HAVE_ICU_TRUE@  whisperlib/url/google-url/url_parse_file.cc \
 @HAVE_ICU_TRUE@  whisperlib/url/google-url/url_util.cc
+
+@HAVE_ICU_FALSE@extra_whisperlib_libwhisperlib_a_headers = \
+@HAVE_ICU_FALSE@  whisperlib/url/simple_url.h
 
 @HAVE_ICU_TRUE@extra_whisperlib_libwhisperlib_a_headers = \
 @HAVE_ICU_TRUE@  whisperlib/url/google-url/gurl.h \
@@ -1032,8 +1038,7 @@ whisperlib_libwhisperlib_a_SOURCES = \
   whisperlib/rpc/codec/rpc_json_encoder.cc \
   whisperlib/sync/event.cc \
   whisperlib/sync/thread.cc \
-  whisperlib/sync/thread_pool.cc \
-  whisperlib/url/simple_url.cc
+  whisperlib/sync/thread_pool.cc
 
 nobase_include_HEADERS = \
   whisperlib/base/core_config.h \
@@ -1120,7 +1125,6 @@ nobase_include_HEADERS = \
   whisperlib/sync/producer_consumer_queue.h \
   whisperlib/sync/thread.h \
   whisperlib/sync/thread_pool.h \
-  whisperlib/url/simple_url.h \
   whisperlib/url/url.h \
   $(extra_whisperlib_libwhisperlib_a_headers) \
   $(rpc_protobuf_headers)
@@ -1249,6 +1253,14 @@ uninstall-libLIBRARIES:
 
 clean-libLIBRARIES:
 	-test -z "$(lib_LIBRARIES)" || rm -f $(lib_LIBRARIES)
+whisperlib/url/$(am__dirstamp):
+	@$(MKDIR_P) whisperlib/url
+	@: > whisperlib/url/$(am__dirstamp)
+whisperlib/url/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) whisperlib/url/$(DEPDIR)
+	@: > whisperlib/url/$(DEPDIR)/$(am__dirstamp)
+whisperlib/url/simple_url.$(OBJEXT): whisperlib/url/$(am__dirstamp) \
+	whisperlib/url/$(DEPDIR)/$(am__dirstamp)
 whisperlib/url/google-url/$(am__dirstamp):
 	@$(MKDIR_P) whisperlib/url/google-url
 	@: > whisperlib/url/google-url/$(am__dirstamp)
@@ -1526,14 +1538,6 @@ whisperlib/sync/thread.$(OBJEXT): whisperlib/sync/$(am__dirstamp) \
 whisperlib/sync/thread_pool.$(OBJEXT):  \
 	whisperlib/sync/$(am__dirstamp) \
 	whisperlib/sync/$(DEPDIR)/$(am__dirstamp)
-whisperlib/url/$(am__dirstamp):
-	@$(MKDIR_P) whisperlib/url
-	@: > whisperlib/url/$(am__dirstamp)
-whisperlib/url/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) whisperlib/url/$(DEPDIR)
-	@: > whisperlib/url/$(DEPDIR)/$(am__dirstamp)
-whisperlib/url/simple_url.$(OBJEXT): whisperlib/url/$(am__dirstamp) \
-	whisperlib/url/$(DEPDIR)/$(am__dirstamp)
 whisperlib/$(am__dirstamp):
 	@$(MKDIR_P) whisperlib
 	@: > whisperlib/$(am__dirstamp)

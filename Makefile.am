@@ -36,6 +36,13 @@ extra_whisperlib_libwhisperlib_a_headers = \
   whisperlib/url/google-url/url_parse_internal.h \
   whisperlib/url/google-url/url_util.h
 
+else
+EXTRA_whisperlib_libwhisperlib_a_SOURCES = \
+  whisperlib/url/simple_url.cc
+
+extra_whisperlib_libwhisperlib_a_headers = \
+  whisperlib/url/simple_url.h
+
 endif
 
 if HAVE_PROTOBUF
@@ -109,8 +116,7 @@ whisperlib_libwhisperlib_a_SOURCES = \
   whisperlib/rpc/codec/rpc_json_encoder.cc \
   whisperlib/sync/event.cc \
   whisperlib/sync/thread.cc \
-  whisperlib/sync/thread_pool.cc \
-  whisperlib/url/simple_url.cc
+  whisperlib/sync/thread_pool.cc
 
 nobase_include_HEADERS = \
   whisperlib/base/core_config.h \
@@ -197,7 +203,6 @@ nobase_include_HEADERS = \
   whisperlib/sync/producer_consumer_queue.h \
   whisperlib/sync/thread.h \
   whisperlib/sync/thread_pool.h \
-  whisperlib/url/simple_url.h \
   whisperlib/url/url.h \
   $(extra_whisperlib_libwhisperlib_a_headers) \
   $(rpc_protobuf_headers)
