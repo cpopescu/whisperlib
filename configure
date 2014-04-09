@@ -5699,7 +5699,7 @@ fi
     ICU_VERSION=`$ICU_CONFIG --version`
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ICU >= 51" >&5
 $as_echo_n "checking for ICU >= 51... " >&6; }
-        VERSION_CHECK=`expr $ICU_VERSION \>\= 51`
+        VERSION_CHECK=`expr ${ICU_VERSION}. \>\= 51`
         if test "$VERSION_CHECK" = "1" ; then
             { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
