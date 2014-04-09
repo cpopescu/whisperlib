@@ -3,12 +3,10 @@
 #define __WHISPERLIB_BASE_TYPES_H
 #pragma once
 
-#include <whisperlib/base/config.h>
+#include <whisperlib/base/core_config.h>
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
-
-#include <core_config.h>
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>

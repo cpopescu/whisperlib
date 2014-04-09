@@ -32,7 +32,7 @@
 #ifndef __WHISPERLIB_BASE_SYSTEM_H__
 #define __WHISPERLIB_BASE_SYSTEM_H__
 
-#include <whisperlib/base/config.h>
+#include <whisperlib/base/core_config.h>
 #include <string>
 #include <stdarg.h>
 

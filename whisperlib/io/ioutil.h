@@ -32,7 +32,7 @@
 #ifndef __WHISPERLIB_IO_IOUTIL_H__
 #define __WHISPERLIB_IO_IOUTIL_H__
 
-#include <whisperlib/base/config.h>
+#include <whisperlib/base/core_config.h>
 
 #ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>

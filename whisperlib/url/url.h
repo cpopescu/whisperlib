@@ -2,7 +2,7 @@
 // (c) Copyright 2011, 1618labs
 // All rights reserved.
 
-#include <whisperlib/base/config.h>
+#include <whisperlib/base/core_config.h>
 
 #ifdef HAVE_ICU
 #include "whisperlib/url/google-url/gurl.h"
