@@ -1,4 +1,4 @@
-Date: 2014-04-08 23:35:37
+Date: 2014-04-09 15:46:27
 
 whisperlib
 ==========
@@ -34,7 +34,7 @@ http://code.google.com/p/waf/
 
 To build on your local machine run:
 
-$ waf configure build
+    $ waf configure build
 
 The build output will go to build/wout/.... You may want to run:
 $ waf install --install_dir=<your install dir>
@@ -42,14 +42,17 @@ to place the headers and libs where you want them to end up.
 
 To build for ios run something like:
 
-$ waf configure build --arch=ios-armv7s
+    $ waf configure build --arch=ios-armv7s
+
 (this will build for ios6, and armv7s set). Other values for arch are:
 ios-armv6, ios-armv7, ios-i386  (last one is for the simulator)
 
 The build output will go to build/wout.ios-armv7s/...
 
 To build for android run:
-$ waf configure build --arch=android-14-arm
+
+    $ waf configure build --arch=android-14-arm
+
 (This builds for ICS in ARM - look in n WafUtil.py for other possible values).
 
 Important:
@@ -60,7 +63,7 @@ You may need to specify your android sdk / ndk paths.
 You may want to install in your project directory if you want to incorporate
 this in an IOS app. To do this run after build:
 
-waf install -v --arch=ios-armv7s --install_root=$MY_IOS_PROJECT_DIR/libs/whisperlib
+    waf install -v --arch=ios-armv7s --install_root=$MY_IOS_PROJECT_DIR/libs/whisperlib
 
 You may also want to build for all ios architectures then run a lipo to combine
 all libraries into a combined one and copy it manually (with another script).
@@ -70,27 +73,27 @@ Building using the autoconf utilities
 
 Run
 
-$ ./configure
-$ make
-$ make check
+    $ ./configure
+    $ make
+    $ make check
 
 If you want to keep the source directory clean, without any .o files,
 you can do the following:
 
-$ mkdir build
-$ cd build
-$ ../configure
-$ make
-$ make check
+    $ mkdir build
+    $ cd build
+    $ ../configure
+    $ make
+    $ make check
 
 If your build machine has a multi-core CPU with lots of RAM, try
 passing the -j option to make, to speed up the build:
 
-$ make -j24
+    $ make -j24
 
 To install the library, run:
 
-$ sudo make install
+    $ sudo make install
 
 By default this installs the header files and statically built library
 in /usr/local. To change the installation location, run configure with
@@ -104,6 +107,6 @@ automake-14.1 and autoconf-2.69 installed on your machine. Older
 versions of these programs will not work. To regenerate the configure
 and Makefile.in files:
 
-$ ./autogen.sh
+    $ ./autogen.sh
 
 Enjoy
