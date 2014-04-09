@@ -30,7 +30,7 @@ AC_ARG_WITH([icu],
         [Ignore the presence of ICU and disable it]))
 
 AS_IF([test "x$with_icu" != "xno"],
-  [AX_CHECK_ICU([51],
+  [AX_CHECK_ICU([4.8],
    [AC_DEFINE(HAVE_ICU)
     have_icu=yes
    ])],

@@ -5697,9 +5697,9 @@ fi
     echo "*** Or see http://ibm.com/software/globalization/icu/"
   else
     ICU_VERSION=`$ICU_CONFIG --version`
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ICU >= 51" >&5
-$as_echo_n "checking for ICU >= 51... " >&6; }
-        VERSION_CHECK=`expr ${ICU_VERSION}. \>\= 51`
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ICU >= 4.8" >&5
+$as_echo_n "checking for ICU >= 4.8... " >&6; }
+        VERSION_CHECK=`expr ${ICU_VERSION}. \>\= 4.8`
         if test "$VERSION_CHECK" = "1" ; then
             { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
@@ -5735,7 +5735,7 @@ $as_echo "$ICU_LIBS" >&6; }
             ICU_LIBS=""
             ## If we have a custom action on failure, don't print errors, but
             ## do set a variable so people can do so.
-            echo "can't find ICU >= 51"
+            echo "can't find ICU >= 4.8"
         fi
 
 
