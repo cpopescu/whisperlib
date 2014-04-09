@@ -1,4 +1,4 @@
-Date: 2014-04-09 15:43:56
+Date: 2014-04-09 15:44:36
 
 A simple web server
 ==================
@@ -42,4 +42,4 @@ int main(int argc, char* argv[]) {
 ```
 
 For a more elaborate example, check out
-[whisperlib/http/test/http_server_test.cc](/tree/master/whisperlib/http/test/http_server_test.cc).
+whisperlib/http/test/http_server_test.cc
