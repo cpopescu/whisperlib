@@ -55,7 +55,8 @@ net::Selector* g_selector = NULL;
 
 void HandleDnsResult(string hostname, bool expected_success,
     scoped_ref<net::DnsHostInfo> info) {
-  CHECK(expected_success == (info.get() != NULL))
+  LOG_INFO << "Got info " << info->is_valid();
+  CHECK(expected_success == info->is_valid())
       << "For hostname: [" << hostname
       << "], expected_success: " << strutil::BoolToString(expected_success)
       << ", result: " << info.ToString();
