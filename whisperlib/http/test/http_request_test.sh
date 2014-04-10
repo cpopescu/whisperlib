@@ -31,8 +31,9 @@
 #
 
 golden=whisperlib/http/test
+dir=whisperlib/http/test
 
-for f in $golden/test_data/server_req_*; do echo test_data/`basename $f`; $2/http_request_test  --input_file=$f  --is_server=true 2>/dev/null; done > /tmp/output_server_req
-diff $golden/test_data/expected_output_server_req  /tmp/output_server_req || exit 1
-for f in $golden/test_data/client_req_*; do echo test_data/`basename $f`; $2/http_request_test  --input_file=$f  --is_server=false 2>/dev/null; done > /tmp/output_client_req
+for f in $golden/test_data/server_req_*; do echo test_data/`basename $f`; $dir/http_request_test  --input_file=$f  --is_server=true 2>/dev/null; done > /tmp/output_server_req
+diff -u $golden/test_data/expected_output_server_req  /tmp/output_server_req || exit 1
+for f in $golden/test_data/client_req_*; do echo test_data/`basename $f`; $dir/http_request_test  --input_file=$f  --is_server=false 2>/dev/null; done > /tmp/output_client_req
 diff $golden/test_data/expected_output_client_req  /tmp/output_client_req || exit 1
