@@ -37,7 +37,7 @@
 //  - you provide us w/ a selector where we run your completed callbacks.
 //  - upon error we automatically delete the guilty file descriptor.
 //
-// IMPORTANT - use one AioManager per phisical disk !!
+// IMPORTANT - use one AioManager per physical disk !!
 //
 #ifndef __COMMON_IO_FILE_AIO_FILE__
 #define __COMMON_IO_FILE_AIO_FILE__
