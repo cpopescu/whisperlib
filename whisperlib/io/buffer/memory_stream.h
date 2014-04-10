@@ -32,10 +32,6 @@
 #ifndef __WHISPERLIB_IO_BUFFER_MEMORY_STREAM_H__
 #define __WHISPERLIB_IO_BUFFER_MEMORY_STREAM_H__
 
-#if defined(HAVE_SYS_UIO_H)
-#include <sys/uio.h>
-#endif
-
 #include <utility>
 #include <string>
 #include <vector>
@@ -43,6 +39,10 @@
 #include <whisperlib/base/types.h>
 #include <whisperlib/io/buffer/data_block.h>
 #include <whisperlib/io/num_streaming.h>
+
+#if defined(HAVE_SYS_UIO_H)
+#include <sys/uio.h>
+#endif
 
 namespace io {
 
