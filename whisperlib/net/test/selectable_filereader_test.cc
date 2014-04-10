@@ -69,41 +69,53 @@ DEFINE_int32(expected_bytes,
 
 //////////////////////////////////////////////////////////////////////
 
+int fd[2];
 int64 total_bytes = 0;
+net::Selector selector;
 
 void PrintFileData(io::MemoryStream* in) {
   string s;
   in->ReadString(&s);
   total_bytes += s.size();
   LOG_INFO << "READ: [" << s << "]";
+  if (s == "FIN\n") {
+    LOG(INFO) << "Got end";
+    close(fd[0]);
+  }
 }
 
 int main(int argc, char* argv[]) {
+  FLAGS_logtostderr = 1;
+  FLAGS_v = 0;
   common::Init(argc, argv);
   CHECK(!FLAGS_cmd_path.empty())
     << " Please specify a command for the test !";
-  int fd[2];
   CHECK_EQ(pipe(fd), 0);
   const int pid = fork();
   CHECK_NE(pid, -1);
-  if ( pid == 0 ) {
-    net::Selector selector;
+  if (pid) {
+    LOG(INFO) << "Parent: " << getpid();
     net::SelectableFilereader reader(&selector);
     CHECK(reader.InitializeFd(fd[0],
                               NewPermanentCallback(PrintFileData),
                               NewCallback(&selector,
                                           &net::Selector::MakeLoopExit)));
     selector.Loop();
+    LOG_INFO << "Done";
     if ( FLAGS_expected_bytes >= 0 ) {
       CHECK_EQ(total_bytes, FLAGS_expected_bytes);
     }
     LOG_INFO << "PASS";
   } else {
+    LOG(INFO) << "Child: " << getpid();
     // redirect stdout to fd[1]
+    sleep(1);
     close(fd[0]);
     close(1);
     CHECK_EQ(1, dup(fd[1]));
     execl(FLAGS_cmd_path.c_str(), FLAGS_cmd_args.c_str(), NULL);
     LOG_INFO << " Command pid ended !";
+    close(fd[1]);
+    exit(0);
   }
 }
