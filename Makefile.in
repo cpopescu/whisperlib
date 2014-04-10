@@ -160,9 +160,10 @@ am__whisperlib_libwhisperlib_a_SOURCES_DIST =  \
 	whisperlib/url/google-url/url_util.cc \
 	whisperlib/rpc/rpc_http_client.cc \
 	whisperlib/rpc/rpc_http_server.cc \
-	whisperlib/rpc/rpc_controller.cc whisperlib/base/app.cc \
-	whisperlib/base/date.cc whisperlib/base/errno.cc \
-	whisperlib/base/re.cc whisperlib/base/signal_handlers.cc \
+	whisperlib/rpc/rpc_controller.cc whisperlib/base/log.cc \
+	whisperlib/base/app.cc whisperlib/base/date.cc \
+	whisperlib/base/errno.cc whisperlib/base/re.cc \
+	whisperlib/base/signal_handlers.cc \
 	whisperlib/base/stringprintf.cc whisperlib/base/strutil.cc \
 	whisperlib/base/strutil_format.cc whisperlib/base/system.cc \
 	whisperlib/base/timer.cc whisperlib/base/util.cc \
@@ -219,10 +220,11 @@ am__dirstamp = $(am__leading_dot)dirstamp
 @HAVE_PROTOBUF_TRUE@	whisperlib/rpc/rpc_http_client.$(OBJEXT) \
 @HAVE_PROTOBUF_TRUE@	whisperlib/rpc/rpc_http_server.$(OBJEXT) \
 @HAVE_PROTOBUF_TRUE@	whisperlib/rpc/rpc_controller.$(OBJEXT)
+@HAVE_GLOG_FALSE@am__objects_3 = whisperlib/base/log.$(OBJEXT)
 am_whisperlib_libwhisperlib_a_OBJECTS = $(am__objects_1) \
-	$(am__objects_2) whisperlib/base/app.$(OBJEXT) \
-	whisperlib/base/date.$(OBJEXT) whisperlib/base/errno.$(OBJEXT) \
-	whisperlib/base/re.$(OBJEXT) \
+	$(am__objects_2) $(am__objects_3) \
+	whisperlib/base/app.$(OBJEXT) whisperlib/base/date.$(OBJEXT) \
+	whisperlib/base/errno.$(OBJEXT) whisperlib/base/re.$(OBJEXT) \
 	whisperlib/base/signal_handlers.$(OBJEXT) \
 	whisperlib/base/stringprintf.$(OBJEXT) \
 	whisperlib/base/strutil.$(OBJEXT) \
@@ -984,9 +986,13 @@ LDADD = whisperlib/libwhisperlib.a $(ICU_LIBS)
 @HAVE_PROTOBUF_TRUE@  whisperlib/rpc/rpc_http_client.h \
 @HAVE_PROTOBUF_TRUE@  whisperlib/rpc/rpc_http_server.h
 
+@HAVE_GLOG_FALSE@whisperlib_log_sources = \
+@HAVE_GLOG_FALSE@  whisperlib/base/log.cc
+
 whisperlib_libwhisperlib_a_SOURCES = \
   $(EXTRA_whisperlib_libwhisperlib_a_SOURCES) \
   $(rpc_protobuf_sources) \
+  $(whisperlib_log_sources) \
   whisperlib/base/app.cc \
   whisperlib/base/date.cc \
   whisperlib/base/errno.cc \
@@ -1337,6 +1343,8 @@ whisperlib/base/$(am__dirstamp):
 whisperlib/base/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) whisperlib/base/$(DEPDIR)
 	@: > whisperlib/base/$(DEPDIR)/$(am__dirstamp)
+whisperlib/base/log.$(OBJEXT): whisperlib/base/$(am__dirstamp) \
+	whisperlib/base/$(DEPDIR)/$(am__dirstamp)
 whisperlib/base/app.$(OBJEXT): whisperlib/base/$(am__dirstamp) \
 	whisperlib/base/$(DEPDIR)/$(am__dirstamp)
 whisperlib/base/date.$(OBJEXT): whisperlib/base/$(am__dirstamp) \
@@ -1774,6 +1782,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/base/$(DEPDIR)/app.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/base/$(DEPDIR)/date.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/base/$(DEPDIR)/errno.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@whisperlib/base/$(DEPDIR)/log.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/base/$(DEPDIR)/re.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/base/$(DEPDIR)/signal_handlers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/base/$(DEPDIR)/stringprintf.Po@am__quote@
