@@ -1177,7 +1177,7 @@ driver_check_programs = \
 driver_test_scripts = \
   whisperlib/http/test/test_failsafe.sh \
   whisperlib/http/test/http_request_test.sh \
-  whisperlib/net/test/selectable_filereader_test.sh
+  whisperlib/net/test/selectable_filereader_test_cmd.sh
 
 all: all-am
 
