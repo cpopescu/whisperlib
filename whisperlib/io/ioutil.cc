@@ -29,6 +29,12 @@
 //
 // Author: Catalin Popescu
 
+#include <whisperlib/base/core_config.h>
+
+#if defined(MACOSX)
+# define _DARWIN_USE_64_BIT_INODE
+#endif
+
 #include <dirent.h>
 
 #include <stdio.h>
@@ -43,7 +49,7 @@
 #include "whisperlib/base/log.h"
 #include "whisperlib/base/core_errno.h"
 
-#ifdef HAVE_STAT64
+#if defined(HAVE_STAT64) && !defined(MACOSX)
 #define __STAT stat64
 #define __LSTAT lstat64
 #else
