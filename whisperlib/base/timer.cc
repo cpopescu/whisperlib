@@ -37,7 +37,7 @@
 
 namespace timer {
 
-#if defined(HAVE_MACH_TIMEBASE)
+#if defined(HAVE_MACH_TIMEBASE) || defined(HAVE_MACH_MACH_TIME_H)
 #include <sys/time.h>
 #include <mach/mach_time.h>
 
