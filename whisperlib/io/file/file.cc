@@ -32,6 +32,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+
 #include "whisperlib/base/log.h"
 // #include "whisperlib/base/common.h"
 #include "whisperlib/base/core_errno.h"
@@ -45,14 +46,15 @@
 #define __LSEEK lseek
 #endif
 
-#ifdef HAVE_FDATASYNC
-#define __FDATASYNC(fd) fdatasync(fd)
+
+#ifdef F_FULLFSYNC
+# define __FDATASYNC(fd) fcntl((fd), F_FULLFSYNC)
 #else
-  #ifdef F_FULLFSYNC
-  #define __FDATASYNC(fd) fcntl((fd), F_FULLFSYNC)
-  #else
-  #define __FDATASYNC(fd) fsync(fd)
-  #endif
+# ifdef HAVE_FDATASYNC
+#  define __FDATASYNC(fd) fdatasync(fd)
+# else
+#  define __FDATASYNC(fd) fsync(fd)
+# endif
 #endif
 
 #ifndef O_LARGEFILE
@@ -393,7 +395,7 @@ int32 File::Write(io::MemoryStream* ms, int32 len) {
 void File::Flush() {
   CHECK(is_open()) << filename_;
   // Well this should not happen - we are screwed otherwise
-  CHECK(::__FDATASYNC(fd_) != -1) << "::fdatasync() failed for file: ["
+  CHECK(__FDATASYNC(fd_) != -1) << "::fdatasync() failed for file: ["
       << filename_ << "], err: " << GetLastSystemErrorDescription();
 }
 
