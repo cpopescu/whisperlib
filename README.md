@@ -1,4 +1,4 @@
-Date: 2014-04-09 15:46:27
+Date: 2014-04-10 08:30:11
 
 whisperlib
 ==========
@@ -90,6 +90,10 @@ If your build machine has a multi-core CPU with lots of RAM, try
 passing the -j option to make, to speed up the build:
 
     $ make -j24
+
+To run a single test:
+
+    $ make -j24 check TESTS=whisperlib/base/test/strutil_test
 
 To install the library, run:
 
