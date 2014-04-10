@@ -59,10 +59,16 @@ rpc_protobuf_headers = \
 
 endif
 
+if ! HAVE_GLOG
+whisperlib_log_sources = \
+  whisperlib/base/log.cc
+endif
+
 
 whisperlib_libwhisperlib_a_SOURCES = \
   $(EXTRA_whisperlib_libwhisperlib_a_SOURCES) \
   $(rpc_protobuf_sources) \
+  $(whisperlib_log_sources) \
   whisperlib/base/app.cc \
   whisperlib/base/date.cc \
   whisperlib/base/errno.cc \
