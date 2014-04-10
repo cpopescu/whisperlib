@@ -80,8 +80,9 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-check_PROGRAMS = $(am__EXEEXT_3) $(am__EXEEXT_4) $(am__EXEEXT_5)
-TESTS = $(am__EXEEXT_3) $(driver_test_scripts)
+check_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_4) $(am__EXEEXT_5) \
+	$(am__EXEEXT_6)
+TESTS = $(am__EXEEXT_4) $(driver_test_scripts)
 subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) acconfig.h \
@@ -292,14 +293,14 @@ am__EXTRA_whisperlib_libwhisperlib_a_SOURCES_DIST =  \
 	whisperlib/url/google-url/url_util.cc
 whisperlib_libwhisperlib_a_OBJECTS =  \
 	$(am_whisperlib_libwhisperlib_a_OBJECTS)
-@HAVE_GLOG_TRUE@am__EXEEXT_1 =  \
+am__EXEEXT_1 = whisperlib/http/test/http_server_test$(EXEEXT)
+@HAVE_GLOG_TRUE@am__EXEEXT_2 =  \
 @HAVE_GLOG_TRUE@	whisperlib/io/logio/test/logio_test$(EXEEXT) \
 @HAVE_GLOG_TRUE@	whisperlib/io/logio/test/recordio_test$(EXEEXT)
-@HAVE_GLOG_TRUE@@HAVE_ICU_TRUE@am__EXEEXT_2 = whisperlib/url/test/url_test$(EXEEXT)
-am__EXEEXT_3 = whisperlib/base/test/lru_cache_test$(EXEEXT) \
+@HAVE_GLOG_TRUE@@HAVE_ICU_TRUE@am__EXEEXT_3 = whisperlib/url/test/url_test$(EXEEXT)
+am__EXEEXT_4 = whisperlib/base/test/lru_cache_test$(EXEEXT) \
 	whisperlib/base/test/strutil_test$(EXEEXT) \
 	whisperlib/http/test/http_header_test$(EXEEXT) \
-	whisperlib/http/test/http_server_test$(EXEEXT) \
 	whisperlib/io/buffer/test/data_block_test$(EXEEXT) \
 	whisperlib/io/buffer/test/memory_stream_test$(EXEEXT) \
 	whisperlib/io/checkpoint/test/checkpointing_test$(EXEEXT) \
@@ -308,11 +309,11 @@ am__EXEEXT_3 = whisperlib/base/test/lru_cache_test$(EXEEXT) \
 	whisperlib/net/test/dns_resolver_test$(EXEEXT) \
 	whisperlib/net/test/selector_test$(EXEEXT) \
 	whisperlib/net/test/udp_connection_test$(EXEEXT) \
-	$(am__EXEEXT_1) $(am__EXEEXT_2)
-am__EXEEXT_4 = whisperlib/http/test/failsafe_test$(EXEEXT) \
+	$(am__EXEEXT_2) $(am__EXEEXT_3)
+am__EXEEXT_5 = whisperlib/http/test/failsafe_test$(EXEEXT) \
 	whisperlib/http/test/http_request_test$(EXEEXT) \
 	whisperlib/net/test/selectable_filereader_test$(EXEEXT)
-@HAVE_GLOG_TRUE@@HAVE_PROTOBUF_TRUE@am__EXEEXT_5 = whisperlib/rpc/test/rpc_test_client$(EXEEXT) \
+@HAVE_GLOG_TRUE@@HAVE_PROTOBUF_TRUE@am__EXEEXT_6 = whisperlib/rpc/test/rpc_test_client$(EXEEXT) \
 @HAVE_GLOG_TRUE@@HAVE_PROTOBUF_TRUE@	whisperlib/rpc/test/rpc_test_server$(EXEEXT)
 whisperlib_base_test_lru_cache_test_SOURCES =  \
 	whisperlib/base/test/lru_cache_test.cc
@@ -1153,11 +1154,13 @@ nobase_include_HEADERS = \
 @HAVE_GLOG_TRUE@whisperlib_rpc_test_rpc_test_client_LDADD = whisperlib/rpc/test/rpc_test_proto.pb.o $(LDADD)
 @HAVE_GLOG_TRUE@whisperlib_rpc_test_rpc_test_server_LDADD = whisperlib/rpc/test/rpc_test_proto.pb.o $(LDADD)
 TEST_EXTENSIONS = .sh
+nocheck_standalone_test_programs = \
+  whisperlib/http/test/http_server_test
+
 standalone_test_programs = \
   whisperlib/base/test/lru_cache_test \
   whisperlib/base/test/strutil_test \
   whisperlib/http/test/http_header_test \
-  whisperlib/http/test/http_server_test \
   whisperlib/io/buffer/test/data_block_test \
   whisperlib/io/buffer/test/memory_stream_test \
   whisperlib/io/checkpoint/test/checkpointing_test \
@@ -2152,13 +2155,6 @@ whisperlib/base/test/strutil_test.log: whisperlib/base/test/strutil_test$(EXEEXT
 whisperlib/http/test/http_header_test.log: whisperlib/http/test/http_header_test$(EXEEXT)
 	@p='whisperlib/http/test/http_header_test$(EXEEXT)'; \
 	b='whisperlib/http/test/http_header_test'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-whisperlib/http/test/http_server_test.log: whisperlib/http/test/http_server_test$(EXEEXT)
-	@p='whisperlib/http/test/http_server_test$(EXEEXT)'; \
-	b='whisperlib/http/test/http_server_test'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

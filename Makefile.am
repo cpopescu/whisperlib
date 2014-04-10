@@ -241,11 +241,13 @@ endif
 
 TEST_EXTENSIONS = .sh
 
+nocheck_standalone_test_programs = \
+  whisperlib/http/test/http_server_test
+
 standalone_test_programs = \
   whisperlib/base/test/lru_cache_test \
   whisperlib/base/test/strutil_test \
   whisperlib/http/test/http_header_test \
-  whisperlib/http/test/http_server_test \
   whisperlib/io/buffer/test/data_block_test \
   whisperlib/io/buffer/test/memory_stream_test \
   whisperlib/io/checkpoint/test/checkpointing_test \
@@ -268,6 +270,7 @@ driver_test_scripts = \
   whisperlib/net/test/selectable_filereader_test_cmd.sh
 
 check_PROGRAMS = \
+  $(nocheck_standalone_test_programs) \
   $(standalone_test_programs) \
   $(driver_check_programs) \
   $(rpc_test_programs)
