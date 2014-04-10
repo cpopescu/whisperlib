@@ -262,7 +262,7 @@ bool SelectorBase::LoopStep(int32 timeout_in_ms,
       continue;
     }
     int32 desire = 0;
-    if ( event.revents & (POLLERR | POLLHUP | POLLRDHUP) ) {
+    if ( event.revents & (POLLERR | POLLHUP | POLLRDHUP | POLLNVAL) ) {
       desire |= Selector::kWantError;
     }
     if ( event.revents & (POLLIN | POLLPRI) ) {
