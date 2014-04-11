@@ -2079,6 +2079,9 @@ def output_config_file(ctx, filename):
 
     bld_top = ctx.bldnode.abspath()
     intermediate = os.path.join(bld_top, '%s_' % filename)
+    if not os.path.exists(os.path.dirname(intermediate)):
+        os.makedirs(os.path.dirname(intermediate))
+
     open(intermediate, 'w').write('// Automatically generated\n%s\n' % content)
     cmd = 'mv -f %s %s/%s' % (intermediate, bld_top, filename)
     ctx(rule=cmd, target=filename, source = ['WafUtil.py'])
