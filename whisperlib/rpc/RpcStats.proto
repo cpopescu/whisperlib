@@ -1,0 +1,85 @@
+/**
+ * Copyright (c) 2014, Urban Engines inc.
+ * All rights reserved.
+ */
+package whisper.rpc.pb;
+
+option cc_generic_services = true;
+option java_package = "com.whisperlib.rpc";
+option java_outer_classname = "RpcStats";
+
+
+message DiskStatus {
+    optional string path = 1;
+    optional bool is_temp = 7;
+    optional int64 total_disk_bytes = 2;
+    optional int64 free_bytes = 3;
+    optional int64 free_bytes_root = 4;
+    optional int64 free_inodes = 5;
+    optional int64 free_inodes_root = 6;
+}
+
+/** Describes the status of the system on the rpc server - sysinfo return */
+message SystemStatus {
+    optional int64 uptime = 1;     /* Seconds since boot */
+    repeated int64 loads = 2;      /* 1, 5, and 15 minute load averages */
+    optional int64 totalram = 3;   /* Total usable main memory size */
+    optional int64 freeram = 4;    /* Available memory size */
+    optional int64 sharedram = 5;  /* Amount of shared memory */
+    optional int64 bufferram = 6;  /* Memory used by buffers */
+    optional int64 totalswap = 7;  /* Total swap space size */
+    optional int64 freeswap = 8;   /* swap space still available */
+    optional int32 procs = 9;      /* Number of current processes */
+    optional int64 totalhigh = 10; /* Total high memory size */
+    optional int64 freehigh = 11;  /* Available high memory size */
+    optional int64 mem_unit = 12;  /* Memory unit size in bytes */
+}
+
+message MachineStats {
+    optional string server_name = 1;
+    optional string path = 3;
+    optional string auth_realm = 4;
+    optional SystemStatus system_status = 5;
+    repeated DiskStatus disk_status = 6;
+}
+
+message RequestStats {
+    optional string peer_address = 1;
+    optional int64 start_time_ts = 2;
+    optional int64 response_time_ts = 3;
+
+    optional string method_txt = 4;
+    optional bool is_streaming = 5;
+    optional int64 streamed_size = 6;
+
+    optional string request_type_name = 7;
+    optional int64 request_size = 8;
+    optional string request_txt = 9;
+
+    optional string response_type_name = 10;
+    optional int64 response_size = 11;
+    optional string response_txt = 12;
+
+    optional string error_txt = 13;
+
+    optional int64 server_size = 14;
+    optional int64 server_raw_size = 15;
+    optional int64 client_size = 16;
+    optional int64 client_raw_size = 17;
+}
+
+message ServerStats {
+    repeated RequestStats live_req = 1;
+    repeated RequestStats completed_req = 2;
+    optional MachineStats machine_stats = 3;
+    /** time stamp on server - _ts member above relate to this */
+    optional int64 now_ts = 4;
+}
+
+message ClientStats {
+    repeated RequestStats live_req = 1;
+    repeated RequestStats completed_req = 2;
+    optional string client_name = 3;
+    /** time stamp on server - _ts member above relate to this */
+    optional int64 now_ts = 4;
+}
