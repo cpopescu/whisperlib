@@ -33,12 +33,12 @@
 
 #include <netdb.h>
 #include <iostream>
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/system.h>
-#include <whisperlib/base/gflags.h>
-#include <whisperlib/http/http_client_protocol.h>
-#include <whisperlib/net/selector.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/system.h"
+#include "whisperlib/base/gflags.h"
+#include "whisperlib/http/http_client_protocol.h"
+#include "whisperlib/net/selector.h"
 
 //////////////////////////////////////////////////////////////////////
 
@@ -48,20 +48,20 @@ DEFINE_string(url,
 
 //////////////////////////////////////////////////////////////////////
 
-void RequestDone(net::Selector* selector,
-                 http::ClientRequest* req) {
+void RequestDone(whisper::net::Selector* selector,
+                 whisper::http::ClientRequest* req) {
   CHECK(req->is_finalized());
   LOG_INFO << " Request " << req->name() << " finished w/ error: "
            << req->error_name();
   LOG_INFO << " Response received from server (so far): "
            << "\nHeader:\n"
            << req->request()->server_header()->ToString();
-  cout << req->request()->server_data()->ToString();
+  std::cout << req->request()->server_data()->ToString();
   selector->MakeLoopExit();
 }
 
 int main(int argc, char* argv[]) {
-  common::Init(argc, argv);
+  whisper::common::Init(argc, argv);
   CHECK(!FLAGS_url.empty());
   URL url(FLAGS_url);
   CHECK(url.is_valid()) << " Invalid url given !";
@@ -72,41 +72,40 @@ int main(int argc, char* argv[]) {
   CHECK(hp->h_addr_list[0] != NULL)
     << " BAd address received for: " << url.host();
 
-  net::HostPort server(
+  whisper::net::HostPort server(
     ntohl(reinterpret_cast<struct in_addr*>(
             hp->h_addr_list[0])->s_addr),
     url.IntPort() == -1 ? 80 : url.IntPort());
 
-  net::Selector selector;
-  http::ClientParams params;
+  whisper::net::Selector selector;
+  whisper::http::ClientParams params;
   params.dlog_level_ = true;
 
   // Initialize protocol parameters. We can use TCP or SSL under HTTP
-  net::NetFactory net_factory(&selector);
-  net::PROTOCOL protocol = net::PROTOCOL_TCP;
+  whisper::net::NetFactory net_factory(&selector);
+  whisper::net::PROTOCOL protocol = whisper::net::PROTOCOL_TCP;
 
 #ifdef USE_SSL
   SSL_CTX* ctx = NULL;
   // Deal with https (use SSL -> initialize and set parameters to use it)
   if (url.SchemeIsSecure()) {
-    ctx = net::SslConnection::SslCreateContext();
-    net_factory.SetSslConnectionParams(net::SslConnectionParams(ctx));
-    protocol = net::PROTOCOL_SSL;
+    ctx = whisper::net::SslConnection::SslCreateContext();
+    net_factory.SetSslConnectionParams(whisper::net::SslConnectionParams(ctx));
+    protocol = whisper::net::PROTOCOL_SSL;
   }
 #endif
   // Construct the connection
-  http::SimpleClientConnection* const conn =
-      new http::SimpleClientConnection(&selector, net_factory, protocol);
+  whisper::http::SimpleClientConnection* const conn =
+      new whisper::http::SimpleClientConnection(&selector, net_factory, protocol);
 
-  http::ClientProtocol proto(&params, conn, server);
-  http::ClientRequest req(http::METHOD_GET, &url);
+  whisper::http::ClientProtocol proto(&params, conn, server);
+  whisper::http::ClientRequest req(whisper::http::METHOD_GET, &url);
 
-  Closure* const done_callback =
-    NewCallback(&RequestDone, &selector, &req);
+  whisper::Closure* const done_callback =
+      whisper::NewCallback(&RequestDone, &selector, &req);
   selector.RunInSelectLoop(
-    NewCallback(&proto,
-                &http::ClientProtocol::SendRequest,
-                &req,
-                done_callback));
+      whisper::NewCallback(
+          &proto, &whisper::http::ClientProtocol::SendRequest,
+          &req, done_callback));
   selector.Loop();
 }

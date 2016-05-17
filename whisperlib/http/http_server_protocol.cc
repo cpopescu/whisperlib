@@ -34,6 +34,7 @@
 
 #define LOG_HTTP LOG_INFO_IF(dlog_level_) << name() << ": "
 
+namespace whisper {
 namespace http {
 
 ServerParams::ServerParams()
@@ -140,7 +141,7 @@ bool ServerAcceptor::AcceptorFilterHandler(const net::HostPort& peer_address) {
           << server_->protocol_params().max_concurrent_connections_;
   if ( server_->num_connections() >=
        server_->protocol_params().max_concurrent_connections_ ) {
-    LOG_ERROR << acceptor_->PrefixInfo() << "Too many connections ! - refusing";
+    LOG_WARN << acceptor_->PrefixInfo() << "Too many connections ! - refusing";
     return false;
   }
   return true;
@@ -177,21 +178,32 @@ void ServerConnection::NotifyWrite() {
   CHECK(selector_->IsInSelectThread());
   net_connection_->RequestWriteEvents(true);
 }
+
 bool ServerConnection::ConnectionReadHandler() {
   CHECK(selector_->IsInSelectThread());
-  if ( !protocol_->ProcessMoreData() ) {
-    ForceClose();
-    return false;
-  }
+  do {
+      const ServerProtocol::ProcessMoreDataResult
+          result = protocol_->ProcessMoreData();
+      switch (result) {
+      case ServerProtocol::ProcessMoreDataResult_ERROR:
+          ForceClose();
+          return false;
+      case ServerProtocol::ProcessMoreDataResult_NEEDMORE:
+          return true;
+      case ServerProtocol::ProcessMoreDataResult_COMPLETE:
+          continue;
+      }
+  } while (inbuf()->Size());
   return true;
 }
+
 bool ServerConnection::ConnectionWriteHandler() {
   CHECK(selector_->IsInSelectThread());
   protocol_->NotifyConnectionWrite();
   return true;
 }
 void ServerConnection::ConnectionCloseHandler(
-    int err, net::NetConnection::CloseWhat what) {
+    int /*err*/, net::NetConnection::CloseWhat what) {
   CHECK(selector_->IsInSelectThread());
   if ( what != net::NetConnection::CLOSE_READ_WRITE ) {
     net_connection_->FlushAndClose();
@@ -326,8 +338,8 @@ void Server::RegisterClientStreaming(const string& path,
 }
 
 void Server::AddClient(ServerProtocol* proto) {
-  LOG_INFO << name() << " HTTP Adding client: " << proto->name()
-           << " to: " << protocols_.size() << " clients already serving";
+  LOG_EVERY_N(INFO, 1000)
+    << "Add client_"  << protocols_.size() << ": " << proto->name();
   synch::MutexLocker l(&mutex_);
   const ProtocolSet::const_iterator it = protocols_.find(proto);
   CHECK(it == protocols_.end());
@@ -388,6 +400,8 @@ void Server::GetSpecificProtocolParams(http::ServerRequest* req) {
     req->is_client_streaming_ = io::FindPathBased(&is_streaming_client_map_,
                                                   url_path);
   }
+  req->set_client_request_id(
+      req->request()->client_header()->FindField(kHeaderXRequestId));
   req->is_initialized_ = true;
 }
 
@@ -417,6 +431,7 @@ void Server::ProcessRequest(http::ServerRequest* req) {
     } else if ( !protocol_params_.allow_all_methods_ &&
                 hc->method() != METHOD_GET &&
                 hc->method() != METHOD_HEAD &&
+                hc->method() != METHOD_OPTIONS &&
                 hc->method() != METHOD_POST ) {
       // Bad method.
       hs->set_status_code(METHOD_NOT_ALLOWED);
@@ -435,26 +450,30 @@ void Server::ProcessRequest(http::ServerRequest* req) {
                                    url->path().size()));
   string url_path2(url_path);
 
-  synch::MutexLocker l(&mutex_);
-  Processor* const proc = io::FindPathBased(&processors_, url_path);
-  if ( proc == NULL ) {
-    LOG_ERROR << "Cannot find a processor for path: [" << url_path << "]"
-                 ", looking through: " << strutil::ToStringKeys(processors_);
-    req->server_callback_ = default_processor_;
-  } else {
-    // Check if the ip is authorized
-    const net::IpV4Filter* const
-        ipfilter = io::FindPathBased(&allowed_ips_, url_path2);
-    if ( ipfilter != NULL &&
-         !ipfilter->Matches(
-             net::IpAddress(
-                 req->protocol()->remote_address().ip_object())) ) {
-      hs->set_status_code(FORBIDDEN);
-      req->server_callback_ = error_processor_;
-    } else {
-      req->server_callback_ = proc->callback_;
-    }
+  // Identify processor based on path and set req->server_callback_
+  {
+      synch::MutexLocker l(&mutex_);
+      Processor* const proc = io::FindPathBased(&processors_, url_path);
+      if ( proc == NULL ) {
+        LOG_WARN << "Cannot find a processor for path: [" << url_path << "]"
+            ", looking through: " << strutil::ToStringKeys(processors_);
+        req->server_callback_ = default_processor_;
+      } else {
+        // Check if the ip is authorized
+        const net::IpV4Filter* const
+            ipfilter = io::FindPathBased(&allowed_ips_, url_path2);
+        if ( ipfilter != NULL &&
+             !ipfilter->Matches(
+                 net::IpAddress(
+                     req->protocol()->remote_address().ip_object())) ) {
+          hs->set_status_code(FORBIDDEN);
+          req->server_callback_ = error_processor_;
+        } else {
+          req->server_callback_ = proc->callback_;
+        }
+      }
   }
+  // Call processor without holding the mutex_! running parallel HTTP requests
   req->server_callback_->Run(req);
 }
 
@@ -537,7 +556,7 @@ void ServerProtocol::NotifyConnectionDeletion() {
     LOG_HTTP << " No active requests - deleting client";
     net_selector_->DeleteInSelectLoop(this);
   } else {
-    LOG_INFO << "HTTP :" << name()
+    LOG_HTTP << "HTTP :" << name()
              << " Waking all " << active_requests_.size()
              << " pending requests.";
     net_selector_->RunInSelectLoop(
@@ -557,25 +576,27 @@ void ServerProtocol::CloseAllActiveRequests() {
     reqs[i]->SignalClosed();
   }
   if ( !active_requests_.empty() ) {
-    LOG_ERROR << " WARNING : " << active_requests_.size()
-              << " requests did not close correctly"
-              << " so far -- keep an eye if they save it somewhere";
+    LOG_WARN << " WARNING : " << active_requests_.size()
+             << " requests did not close correctly"
+             << " so far -- keep an eye if they save it somewhere";
   }
 }
 
 void ServerProtocol::HandleTimeout(int64 timeout_id) {
-  LOG_HTTP << "Timeout encountered - closing: " << timeout_id;
-  if ( connection_ ) {
-    connection_->ForceClose();
-    connection_ = NULL;
+  if (active_requests_.empty()) {
+      LOG_HTTP << "Timeout encountered - closing: " << timeout_id;
+      if ( connection_ ) {
+          connection_->ForceClose();
+          connection_ = NULL;
+      }
   }
 }
 
-bool ServerProtocol::ProcessMoreData() {
+ServerProtocol::ProcessMoreDataResult ServerProtocol::ProcessMoreData() {
   CHECK(net_selector()->IsInSelectThread());
   if ( closed_ ) {
     connection_->inbuf()->Clear();
-    return true;   // 'soft' closed ..
+    return ProcessMoreDataResult_NEEDMORE;  // 'soft' closed ..
   }
   if ( crt_recv_ == NULL ) {
     parser_.Clear();
@@ -585,6 +606,8 @@ bool ServerProtocol::ProcessMoreData() {
     CHECK(!parser_.InFinalState());
   }
   int read_state = 0;
+  int32 in_size = connection_->inbuf()->Size();
+  int32 client_data_size = crt_recv_->request()->client_data()->Size();
   do {
     read_state = parser_.ParseClientRequest(connection_->inbuf(),
                                             crt_recv_->request());
@@ -601,10 +624,18 @@ bool ServerProtocol::ProcessMoreData() {
         parser_.set_max_num_chunks(-1);
         parser_.set_max_body_size(-1);
         active_requests_.insert(crt_recv_);
+
+        crt_recv_->request()->mutable_stats()->client_raw_size_ +=
+            in_size - connection_->inbuf()->Size();
+        crt_recv_->request()->mutable_stats()->client_size_ +=
+            crt_recv_->request()->client_data()->Size() - client_data_size;
+        in_size = connection_->inbuf()->Size();
+        client_data_size = crt_recv_->request()->client_data()->Size();
+
         server_->ProcessRequest(crt_recv_);
         if ( crt_recv_ == NULL || crt_recv_->server_callback_ == NULL ) {
           closed_ = true;
-          return false;
+          return ProcessMoreDataResult_ERROR;
         }
         timeouter_.UnsetTimeout(kRequestTimeout);
       }
@@ -614,9 +645,14 @@ bool ServerProtocol::ProcessMoreData() {
     }
   } while ( read_state & http::RequestParser::CONTINUE );
 
+  crt_recv_->request()->mutable_stats()->client_raw_size_ +=
+      in_size - connection_->inbuf()->Size();
+  crt_recv_->request()->mutable_stats()->client_size_ +=
+      crt_recv_->request()->client_data()->Size() - client_data_size;
+
   // We need more data (and no error happened)
   if ( !parser_.InFinalState() ) {
-    return true;
+    return ProcessMoreDataResult_NEEDMORE;
   }
   timeouter_.UnsetTimeout(kRequestTimeout);
   if ( parser_.InErrorState() ) {
@@ -624,7 +660,7 @@ bool ServerProtocol::ProcessMoreData() {
              << "Fully parsed an error request " << parser_.ParseStateName();
     PrepareErrorRequest(crt_recv_);
     closed_ = true;
-    return true;
+    return ProcessMoreDataResult_NEEDMORE;
   } else {
     LOG_HTTP << "Fully parsed an OK request ["
              << strutil::StrTrim(
@@ -637,11 +673,13 @@ bool ServerProtocol::ProcessMoreData() {
       crt_recv_->request()->server_header()->PrepareStatusLine(
           SERVICE_UNAVAILABLE);
       crt_recv_->request()->server_data()->Write(
-          "Too many concurrent requests.");
+          strutil::StringPrintf("Too many concurrent requests for connection: %zd / %d." ,
+                                active_requests_.size(),
+                                protocol_params().max_concurrent_requests_per_connection_));
   }
   server_->ProcessRequest(crt_recv_);
   crt_recv_ = NULL;
-  return true;
+  return ProcessMoreDataResult_COMPLETE;
 }
 
 void ServerProtocol::PrepareErrorRequest(ServerRequest* req) {
@@ -727,6 +765,10 @@ bool ServerProtocol::PrepareResponse(ServerRequest* req,
                  protocol_params().default_content_type_,
                  true);
   }
+  if ( !req->client_request_id().empty() ) {
+    hs->AddField(http::kHeaderXRequestId,
+                 req->client_request_id(), true);
+  }
   // Determine keep-alive stuff
   if ( protocol_params().keep_alive_timeout_sec_ > 0 &&
        crt_send_->request()->client_header()->HasField(
@@ -742,11 +784,15 @@ bool ServerProtocol::PrepareResponse(ServerRequest* req,
     crt_send_->is_keep_alive_ = false;
   }
   // Write the data out
+  bool append_data = true;
   if ( connection_->outbuf()->Size() >
        protocol_params().max_reply_buffer_size_ ) {
+    append_data = false;
     switch ( protocol_params().reply_full_buffer_policy_ ) {
       case ServerParams::POLICY_CLOSE:
-        LOG_INFO << name() << ": connection outbuf full -> Closing";
+        LOG_INFO << name() << ": connection outbuf full -> Closing"
+                 << " - " << connection_->outbuf()->Size() << " vs. "
+                 << protocol_params().max_reply_buffer_size_;
         should_close = true;
         crt_send_->is_keep_alive_ = false;
         break;
@@ -761,12 +807,20 @@ bool ServerProtocol::PrepareResponse(ServerRequest* req,
       case ServerParams::POLICY_DROP_NEW_DATA:
         LOG_INFO << name() << ": connection outbuf full -> Dropping new data";
         break;
+      case ServerParams::POLICY_BLINK:
+        append_data = true;
+        LOG_INFO << name() << ": connection outbuf full -> Blinking"
+                 << " - " << connection_->outbuf()->Size() << " vs. "
+                 << protocol_params().max_reply_buffer_size_;
+        break;
     }
-  } else {
+  }
+  if (append_data) {
     crt_send_->request()->AppendServerReply(
         connection_->outbuf(),
         req->is_server_streaming(),
         req->is_server_streaming_chunks());
+    connection_->NotifyWrite();
   }
   return should_close;
 }
@@ -811,12 +865,13 @@ void ServerProtocol::StreamData(ServerRequest* req, bool is_eos) {
     // while in the second we will have nothing to output..
     if ( !req->request()->server_data()->IsEmpty() ) {
       // Write the data out
+      bool append_data = true;
       if ( connection_->outbuf()->Size() >
            protocol_params().max_reply_buffer_size_ ) {
-        LOG_WARNING << "HTTP outbuf size exceeded: "
-                    << connection_->outbuf()->Size()
-                    << " > max_reply_buffer_size: "
-                    << protocol_params().max_reply_buffer_size_;
+        append_data = false;
+        LOG_WARN << "HTTP outbuf size exceeded: " << connection_->outbuf()->Size()
+                 << " > max_reply_buffer_size: "
+                 << protocol_params().max_reply_buffer_size_;
         switch ( protocol_params().reply_full_buffer_policy_ ) {
           case ServerParams::POLICY_CLOSE:
             LOG_HTTP << "Buffer full - closing connection.";
@@ -833,8 +888,12 @@ void ServerProtocol::StreamData(ServerRequest* req, bool is_eos) {
             break;
           case ServerParams::POLICY_DROP_NEW_DATA:
             break;
+          case ServerParams::POLICY_BLINK:
+            append_data = true;  // Blinking - just a notification and continue
+            break;
         }
-      } else {
+      }
+      if (append_data) {
         req->request()->AppendServerChunk(
             connection_->outbuf(), req->is_server_streaming_chunks());
       }
@@ -879,13 +938,15 @@ void ServerProtocol::EndRequestProcessing(ServerRequest* req, bool is_eos) {
             req->request()->client_header()->ComposeFirstLine()) << "] => ["
         << strutil::StrTrim(
             req->request()->server_header()->ComposeFirstLine()) << "]"
+        << " - id: " << req->client_request_id()
         << " conn sent bytes so far: "
         << (connection_ != NULL ?
             connection_->count_bytes_written() : -1)
         << " conn received bytes so far: "
         << (connection_ != NULL ?
             connection_->count_bytes_read() : -1)
-        << " should_close: " << should_close;
+        << " should_close: " << should_close
+        << " signal_ready: " << signal_ready;
     active_requests_.erase(req);
     if ( crt_recv_ == req ) {
       crt_recv_ = NULL;
@@ -901,7 +962,7 @@ void ServerProtocol::EndRequestProcessing(ServerRequest* req, bool is_eos) {
       LOG_HTTP << "Closing connection.";
       connection_->FlushAndClose();
     }
-  } else if ( is_eos && connection_ != NULL ) {
+  } else if ( is_eos && connection_ != NULL && active_requests_.empty() ) {
     timeouter_.SetTimeout(kRequestTimeout,
                           protocol_params().keep_alive_timeout_sec_ * 1000);
   }
@@ -931,6 +992,11 @@ void ServerProtocol::NotifyConnectionWrite() {
 //////////////////////////////////////////////////////////////////////
 
 void ServerRequest::ReplyWithStatus(HttpReturnCode status) {
+  if (!protocol_->net_selector()->IsInSelectThread()) {
+      protocol_->net_selector()->RunInSelectLoop(NewCallback(this,
+              &ServerRequest::ReplyWithStatus, status));
+      return;
+  }
   CHECK(protocol_ != NULL);
   CHECK(protocol_->net_selector()->IsInSelectThread());
   // We do not lock on this one - as the reply happens once
@@ -977,7 +1043,7 @@ void ServerRequest::EndStreamingData() {
 }
 
 void ServerRequest::AnswerUnauthorizedRequest(
-    net::UserAuthenticator* authenticator) {
+    const net::UserAuthenticator* authenticator) {
   request()->server_header()->AddField(
       http::kHeaderWWWAuthenticate,
       strutil::StringPrintf("Basic realm=\"%s\"",
@@ -986,7 +1052,7 @@ void ServerRequest::AnswerUnauthorizedRequest(
   ReplyWithStatus(http::UNAUTHORIZED);
 }
 
-bool ServerRequest::AuthenticateRequest(net::UserAuthenticator* authenticator) {
+bool ServerRequest::AuthenticateRequest(const net::UserAuthenticator* authenticator) {
   if ( authenticator == NULL ) {
     return true;
   }
@@ -1001,7 +1067,7 @@ bool ServerRequest::AuthenticateRequest(net::UserAuthenticator* authenticator) {
 }
 
 void ServerRequest::AuthenticateRequest(
-    net::UserAuthenticator* authenticator,
+    const net::UserAuthenticator* authenticator,
     net::UserAuthenticator::AnswerCallback* answer_callback) {
   if ( authenticator == NULL ) {
     answer_callback->Run(net::UserAuthenticator::Authenticated);
@@ -1014,4 +1080,5 @@ void ServerRequest::AuthenticateRequest(
   }
   authenticator->Authenticate(user, passwd, answer_callback);
 }
-}
+}  // namespace http
+}  // namespace whisper

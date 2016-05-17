@@ -36,14 +36,20 @@
 #include <string>
 #include <vector>
 
-#include <whisperlib/base/types.h>
-#include <whisperlib/io/buffer/data_block.h>
-#include <whisperlib/io/num_streaming.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/io/buffer/data_block.h"
+#include "whisperlib/io/num_streaming.h"
 
 #if defined(HAVE_SYS_UIO_H)
 #include <sys/uio.h>
+#elif defined(__has_include)
+ #if __has_include(<sys/uio.h>)
+  #include <sys/uio.h>
+  #define HAVE_SYS_UIO_H
+ #endif
 #endif
 
+namespace whisper {
 namespace io {
 
 //
@@ -80,6 +86,8 @@ class MemoryStream {
 
   // Returns a piece of data from the buffer and advances the read.
   // If not 0, *size may specify the maximum ammount ot be read..
+  // The returned buffer is valid until next read / append of any kind
+  // to this buffer. You do not own the pointer.
   // Retruns false on end-of-buffer.
   bool ReadNext(const char** buffer, int32* size);
 
@@ -143,20 +151,20 @@ class MemoryStream {
   // Same as read, but w/ strings - this tends to be slower..
   // If len == -1 read to the end of input, else read len bytes.
   // Returns anyway the number of read bytes
-  int32 ReadString(string* s, int32 len = -1);
+  int32 ReadString(std::string* s, int32 len = -1);
 
   bool Equals(const io::MemoryStream& other) const;
 
   // These are really slow - do not use them unless for debugging..
-  string ToString() {
-    string s;
+  std::string ToString() {
+    std::string s;
     ReadString(&s);
     return s;
   }
-  string DebugString() const {
+  std::string DebugString() const {
 #if 1 //  _DEBUG
     char* t = new char[Size()];
-    string s;
+    std::string s;
     const int32 size = Peek(t, Size());
     s.assign(t, size);
     delete [] t;
@@ -169,7 +177,7 @@ class MemoryStream {
   // Utility to read from the pointer to a CRLF. Will leave the pointer
   // after the CRLF or at the end of the buffer. Returns true (and reads)
   // a line if found. On true, s will contain the line *and* the CRLF
-  bool ReadCRLFLine(string* s) {
+  bool ReadCRLFLine(std::string* s) {
     if ( !MaybeInitReadPointer() ) {
       return false;
     }
@@ -181,7 +189,7 @@ class MemoryStream {
   }
 
   // Same as above, but looks only for \n
-  bool ReadLFLine(string* s) {
+  bool ReadLFLine(std::string* s) {
     if ( !MaybeInitReadPointer() ) {
       return false;
     }
@@ -194,7 +202,7 @@ class MemoryStream {
 
   // Reads a line until CRLF. Leaves the stream pointer after CRLF, but does
   // not return the CRLF.
-  bool ReadLine(string* s) {
+  bool ReadLine(std::string* s) {
     if ( !ReadCRLFLine(s) ) {
       return false;
     }
@@ -212,7 +220,7 @@ class MemoryStream {
   //  - a full string beginning w/ ' or "
   //    - treats " and ' as begin of string / end of string
   //  - passes over blanks
-  TokenReadError ReadNextAsciiToken(string* s) {
+  TokenReadError ReadNextAsciiToken(std::string* s) {
     if ( !MaybeInitReadPointer() ) {
       return TOKEN_NO_DATA;
     }
@@ -250,7 +258,7 @@ class MemoryStream {
     return Write(text, strlen(text));
   }
   // Convenience function for writing a string
-  int32 Write(const string& s) {
+  int32 Write(const std::string& s) {
     return Write(s.data(), s.size());
   }
 
@@ -264,7 +272,7 @@ class MemoryStream {
     if ( markers_.empty() ) {
       invalid_markers_size_ = false;
     }
-    markers_.push_back(make_pair(size_, new DataBlockPointer(read_pointer_)));
+    markers_.push_back(std::make_pair(size_, new DataBlockPointer(read_pointer_)));
   }
   // Returns true iff the some marker is set
   bool MarkerIsSet() const {
@@ -298,11 +306,11 @@ class MemoryStream {
   // DEBUG functions (terribly slow)
 
   // Utility debug function
-  string DumpContent(int32 max_size = -1) const;
-  string DumpContentHex(int32 max_size = -1) const;
-  string DumpContentInline(int32 max_size = -1) const;
+  std::string DumpContent(int32 max_size = -1) const;
+  std::string DumpContentHex(int32 max_size = -1) const;
+  std::string DumpContentInline(int32 max_size = -1) const;
 
-  string DetailedContent() const;
+  std::string DetailedContent() const;
 
   DataBlockPointer GetReadPointer() const {
     if ( read_pointer_.IsNull() && !write_pointer_.IsNull() ) {
@@ -340,7 +348,7 @@ class MemoryStream {
   DataBlockPointer scratch_pointer_;
 
   // These are for marking positions in the stream
-  typedef vector < pair<int, DataBlockPointer*> > MarkersList;
+  typedef std::vector < std::pair<int, DataBlockPointer*> > MarkersList;
   MarkersList markers_;
   bool invalid_markers_size_;
   // We keep track of our internal size *all* the time - this is of
@@ -353,5 +361,6 @@ class MemoryStream {
 };
 
 typedef BaseNumStreamer<MemoryStream, MemoryStream> NumStreamer;
-}
+}  // namespace io
+}  // namespace whisper
 #endif  // __WHISPERLIB_IO_BUFFER_MEMORY_STREAM_H__

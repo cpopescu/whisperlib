@@ -32,7 +32,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
 #include "whisperlib/base/log.h"
 // #include "whisperlib/base/common.h"
 #include "whisperlib/base/core_errno.h"
@@ -40,21 +39,22 @@
 #include "whisperlib/io/file/file.h"
 #include "whisperlib/io/file/fd.h"
 
+using namespace std;
+
 #ifdef HAVE_LSEEK64
 #define __LSEEK lseek64
 #else
 #define __LSEEK lseek
 #endif
 
-
-#ifdef F_FULLFSYNC
-# define __FDATASYNC(fd) fcntl((fd), F_FULLFSYNC)
+#ifdef HAVE_FDATASYNC
+#define __FDATASYNC(fd) fdatasync(fd)
 #else
-# ifdef HAVE_FDATASYNC
-#  define __FDATASYNC(fd) fdatasync(fd)
-# else
-#  define __FDATASYNC(fd) fsync(fd)
-# endif
+  #ifdef F_FULLFSYNC
+  #define __FDATASYNC(fd) fcntl((fd), F_FULLFSYNC)
+  #else
+  #define __FDATASYNC(fd) fsync(fd)
+  #endif
 #endif
 
 #ifndef O_LARGEFILE
@@ -64,8 +64,11 @@
 #define O_NOCTTY 0
 #endif
 
+#if defined(HAVE_SYS_UIO_H)
 static const int  kReadForWritevSize = 16384;
+#endif
 
+namespace whisper {
 namespace io {
 
 const char* File::AccessName(Access access) {
@@ -231,6 +234,9 @@ int64 File::SetPosition(int64 distance,
   position_ = crt;
   return position_;
 }
+void File::Rewind() {
+    SetPosition(0, FILE_SET);
+}
 
 void File::Truncate(int64 pos) {
   if ( pos == -1 )  {
@@ -282,6 +288,10 @@ int32 File::Read(io::MemoryStream* out, int32 len) {
     cb += cb_read;
   }
   return cb;
+}
+
+void File::Skip(int32 len) {
+    SetPosition(len, FILE_CUR);
 }
 
 int32 File::Write(const void* buf, int32 len) {
@@ -395,7 +405,7 @@ int32 File::Write(io::MemoryStream* ms, int32 len) {
 void File::Flush() {
   CHECK(is_open()) << filename_;
   // Well this should not happen - we are screwed otherwise
-  CHECK(__FDATASYNC(fd_) != -1) << "::fdatasync() failed for file: ["
+  CHECK(::__FDATASYNC(fd_) != -1) << "::fdatasync() failed for file: ["
       << filename_ << "], err: " << GetLastSystemErrorDescription();
 }
 
@@ -415,4 +425,5 @@ int64 File::UpdatePosition() {
   CHECK(position_ != -1) << GetLastSystemErrorDescription();
   return position_;
 }
-}
+}  // namespace io
+}  // namespace whisper

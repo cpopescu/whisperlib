@@ -34,15 +34,16 @@
 
 #include <vector>
 #include <string>
-#include <whisperlib/base/types.h>
-#include <whisperlib/sync/thread.h>
-#include <whisperlib/sync/event.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/sync/thread.h"
+#include "whisperlib/sync/event.h"
 
+namespace whisper {
 namespace app {
 
 class App {
  public:
-  App(int argc, char** argv);
+  App(int& argc, char**& argv);
   virtual ~App();
 
   // The main entry point, should be called ONLY from the main() function.
@@ -90,10 +91,10 @@ class App {
    int result_;
 
    // The secondary thread object - which runs the application itself.
-   thread::Thread thread_;
+   whisper::thread::Thread thread_;
 
    // The executable name.
-   string name_;
+   std::string name_;
    // The stop event
    synch::Event stop_event_;
 
@@ -101,5 +102,6 @@ class App {
   DISALLOW_EVIL_CONSTRUCTORS(App);
 };
 }  // namespace app
+}  // namespace whisper
 
 #endif  // __COMMON_APP_H__

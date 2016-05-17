@@ -32,38 +32,44 @@
 #ifndef __WHISPERLIB_SYNC_EVENT_H__
 #define __WHISPERLIB_SYNC_EVENT_H__
 
-#include <whisperlib/base/types.h>
-#include <whisperlib/sync/mutex.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/sync/mutex.h"
 
+namespace whisper {
 namespace synch {
 
 class Event {
  protected:
-  pthread_mutex_t mutex_;
+  Mutex* mutex_;
   pthread_cond_t cond_;
 
   bool is_signaled_;
   const bool manual_reset_;
+
+  bool owns_mutex_;
 
  public:
   // is_signaled - initial state
   // manual_reset - when set, the event is reset on an explicit
   //                Reset call; else we reset it implicitly when
   //                releasing a thread from a Wait.
-  Event(bool is_signaled, bool manual_reset);
+  Event(bool is_signaled, bool manual_reset, Mutex* mutex = NULL);
 
   // All waiting threads are released.
   virtual ~Event();
 
   // Signals the event and releases all threads in manual_reset_ mode
   // or only *one* thread in automatic mode (!manual_reset_)
+  void SignalLocked();
   void Signal();
 
   // resets the signal - makes sense only in manual_reset_ mode
+  void ResetLocked();
   void Reset();
 
   // Wait for is_signaled_ to be turned on, else waits for a Signal
   // to happen
+  void WaitLocked();
   void Wait();
 
   static const uint32 kInfiniteWait = 0xffffffff;
@@ -75,6 +81,7 @@ class Event {
   //   true - if the event was signaled in time.
   //   false - if the event is not signaled, and the timeout
   //           period expired.
+  bool WaitLocked(uint32 timeout_in_ms);
   bool Wait(uint32 timeout_in_ms);
 
  private:
@@ -89,6 +96,7 @@ class Event {
  private:
   DISALLOW_EVIL_CONSTRUCTORS(Event);
 };
-}
+}  // namespace synch
+}  // namespace whisper
 
 #endif  // __COMMON_SYNC_EVENT_H__

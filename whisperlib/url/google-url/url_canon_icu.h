@@ -32,7 +32,7 @@
 #ifndef GOOGLEURL_SRC_URL_CANON_ICU_H__
 #define GOOGLEURL_SRC_URL_CANON_ICU_H__
 
-#include <whisperlib/url/google-url/url_canon.h>
+#include "whisperlib/url/google-url/url_canon.h"
 
 typedef struct UConverter UConverter;
 

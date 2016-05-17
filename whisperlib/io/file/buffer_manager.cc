@@ -30,10 +30,12 @@
 // Author: Catalin Popescu
 //
 
-#include <whisperlib/base/strutil.h>
-#include <whisperlib/base/gflags.h>
-#include <whisperlib/base/date.h>
-#include <whisperlib/io/file/buffer_manager.h>
+#include "whisperlib/base/strutil.h"
+#include "whisperlib/base/gflags.h"
+#include "whisperlib/base/date.h"
+#include "whisperlib/io/file/buffer_manager.h"
+
+using namespace std;
 
 #define BM_LOG_DEBUG   VLOG(10)
 #define BM_LOG_INFO    VLOG(8)
@@ -41,6 +43,7 @@
 #define BM_LOG_ERROR   LOG_ERROR
 #define BM_LOG_FATAL   LOG_FATAL
 
+namespace whisper {
 namespace io {
 
 BufferManager::Buffer::State
@@ -260,5 +263,5 @@ string BufferManager::GetHtmlStats() const {
   return out;
 }
 
-
-}
+}  // namespace io
+}  // namespace whisper

@@ -54,7 +54,7 @@
 //              client should receive. There are two modes of operation from
 //              server's point of view: streaming data and normal data. For
 //              the streaming data, the response data is produced in multiple
-//              chunks that are sent over a longer period of time. For normal
+//              chuncks that are sent over a longer period of time. For normal
 //              data, the entire response is produced at once.
 //
 // Please check http_server_test.cc for an example of how to use it. Also
@@ -67,21 +67,26 @@
 #include <map>
 #include <set>
 #include <string>
+#include <vector>
 
-#include <whisperlib/base/types.h>
+#include "whisperlib/base/types.h"
 
+#include "whisperlib/base/hash.h"
 #include WHISPER_HASH_SET_HEADER
 #include WHISPER_HASH_MAP_HEADER
 
-#include <whisperlib/sync/mutex.h>
-#include <whisperlib/http/http_request.h>
-#include <whisperlib/net/selector.h>
-#include <whisperlib/net/timeouter.h>
-#include <whisperlib/net/connection.h>
-#include <whisperlib/net/address.h>
-#include <whisperlib/url/url.h>
-#include <whisperlib/net/user_authenticator.h>
+#include "whisperlib/sync/mutex.h"
+#include "whisperlib/http/http_request.h"
+#include "whisperlib/net/selector.h"
+#include "whisperlib/net/timeouter.h"
+#include "whisperlib/net/connection.h"
+#include "whisperlib/net/address.h"
+#include "whisperlib/url/url.h"
+#include "whisperlib/net/user_authenticator.h"
 
+using std::string;
+
+namespace whisper {
 namespace http {
 
 //////////////////////////////////////////////////////////////////////
@@ -94,6 +99,7 @@ struct ServerParams {
     POLICY_CLOSE = 1,          // close the connection
     POLICY_DROP_OLD_DATA = 2,  // drop the old data, keep the new one
     POLICY_DROP_NEW_DATA = 3,  // keep the old data, drop the new one
+    POLICY_BLINK = 4,          // don't actually do anything, just log
   };
 
   ServerParams();
@@ -336,7 +342,7 @@ class Server {
 
   // The guys who accept connections for us.
   // We use multiple acceptors, to listen on multiple ports.
-  vector<ServerAcceptor*> acceptors_;
+  std::vector<ServerAcceptor*> acceptors_;
 
   // Callbacks for processing regular
   struct Processor {
@@ -346,15 +352,15 @@ class Server {
       : callback_(callback), auto_del_callback_(auto_del_callback) {}
     ~Processor() { if ( auto_del_callback_ ) { delete callback_; } }
   };
-  typedef map<string, Processor*> ProcessorMap;
+  typedef std::map<string, Processor*> ProcessorMap;
   ProcessorMap processors_;
 
   // Signals streaming clients
-  typedef map<string, bool> IsStreamingClientMap;
+  typedef std::map<string, bool> IsStreamingClientMap;
   IsStreamingClientMap is_streaming_client_map_;
 
   // Allowed ips / per path - NULL -> All allowed
-  typedef map<string, const net::IpV4Filter*> AllowedIpsMap;
+  typedef std::map<string, const net::IpV4Filter*> AllowedIpsMap;
   AllowedIpsMap allowed_ips_;
 
   // This is called when we cannot find a processor for a given path
@@ -502,7 +508,7 @@ class ServerProtocol {
   }
   int32 free_outbuf_size() const {
     return connection_ == NULL ? 0 :
-             max(0, protocol_params().max_reply_buffer_size_ -
+        std::max(0, protocol_params().max_reply_buffer_size_ -
                     protocol_params().max_header_size_ -
                     outbuf_size());
   }
@@ -548,7 +554,12 @@ class ServerProtocol {
   void CloseAllActiveRequests();
 
   // This callback processes more data from connection_->inbuf()
-  bool ProcessMoreData();
+  enum ProcessMoreDataResult {
+      ProcessMoreDataResult_ERROR = 0,
+      ProcessMoreDataResult_NEEDMORE = 1,
+      ProcessMoreDataResult_COMPLETE = 2,
+  };
+  ProcessMoreDataResult ProcessMoreData();
 
   // Response finalization - replies to the given request. If
   // is_server_streaming is on we expect a chuncked multi chunk
@@ -614,7 +625,7 @@ class ServerProtocol {
 
   http::ServerRequest* crt_send_;
 
-  typedef set<http::ServerRequest*> RequestSet;
+  typedef std::set<http::ServerRequest*> RequestSet;
   RequestSet active_requests_;
 
   // The address & port where we received the request. Copied from connection_
@@ -710,6 +721,7 @@ class ServerRequest {
   // Use this to access the interesting data in this request (what client
   // sent) and to write data for the client.
   http::Request* request() { return &request_; }
+  const http::Request& request() const { return request_; }
 
   //  is_server_streaming_ - this means that the server is sending
   //        the answer in multiple data chunks.
@@ -754,6 +766,14 @@ class ServerRequest {
   // Local address where we received the request.
   const net::HostPort& local_address() const {
     return protocol_->local_address();
+  }
+
+  // Request id as instructed by client
+  const std::string& client_request_id() const {
+    return client_request_id_;
+  }
+  void set_client_request_id(const std::string& req) {
+    client_request_id_ = req;
   }
 
   //  The closed_callback is called when the peer closes connection
@@ -854,11 +874,11 @@ class ServerRequest {
   //  -- true - the user is authenticated and is OK.
   //  -- false - the user is noth authenticated - and the proper reply was sent
   //   (401 reply) - you just discard it..
-  bool AuthenticateRequest(net::UserAuthenticator* authenticator);
+  bool AuthenticateRequest(const net::UserAuthenticator* authenticator);
   void AuthenticateRequest(
-      net::UserAuthenticator* authenticator,
+      const net::UserAuthenticator* authenticator,
       net::UserAuthenticator::AnswerCallback* answer_callback);
-  void AnswerUnauthorizedRequest(net::UserAuthenticator* authenticator);
+  void AnswerUnauthorizedRequest(const net::UserAuthenticator* authenticator);
 
 
   // Returns a string representation for this request:
@@ -927,7 +947,7 @@ class ServerRequest {
   bool is_keep_alive_;
   bool is_orphaned_;
   bool is_parsing_finished_;
-
+  std::string client_request_id_;
   // When output pending bytes drops below this threshold, call read_callback_
   int32 ready_pending_limit_;
   // Notification of outbuf space available. Must run on media selector.
@@ -955,6 +975,7 @@ class ServerRequest {
 
   DISALLOW_EVIL_CONSTRUCTORS(ServerRequest);
 };
-}
+}   // namespace http
+}   // namespace whisper
 
 #endif  // __NET_HTTP_HTTP_SERVER_PROTOCOL_H__

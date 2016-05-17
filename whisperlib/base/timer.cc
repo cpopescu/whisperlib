@@ -29,17 +29,29 @@
 //
 // Author: Cosmin Tudorache
 
+#include <sys/time.h>
+#include <assert.h>
+#include <iomanip>
 #include <pthread.h>
+#include <sstream>
 #include <unistd.h>
+
 #include "whisperlib/base/types.h"
-#include "whisperlib/base/log.h"
 #include "whisperlib/base/timer.h"
 
+#if defined(HAVE_MACH_TIMEBASE)
+#include <mach/mach_time.h>
+#endif
+
+#ifndef CHECK_EQ
+#define CHECK_EQ(a, b) assert(a == b)
+#define CHECK_GE(a, b) assert(a >= b)
+#endif
+
+namespace whisper {
 namespace timer {
 
-#if defined(HAVE_MACH_TIMEBASE) || defined(HAVE_MACH_MACH_TIME_H)
-#include <sys/time.h>
-#include <mach/mach_time.h>
+#if defined(HAVE_MACH_TIMEBASE)
 
 static mach_timebase_info_data_t timer_info = {0,0};
 pthread_once_t  glb_once_control = PTHREAD_ONCE_INIT;
@@ -76,7 +88,6 @@ int64 CpuNsec() {
 }
 
 #elif defined(HAVE_GETTIMEOFDAY)
-#include <sys/time.h>
 
 int64 TicksNsec() {
   struct timeval now;
@@ -160,4 +171,69 @@ struct timespec TimespecAbsoluteMsec(int64 shift_up_miliseconds) {
   return TimespecAbsoluteTimespec(ts);
 }
 
+namespace {
+std::string StrTimeTm(const struct tm& now, int64 ms) {
+  std::ostringstream oss;
+  oss << std::setfill('0')
+      << (1900 + now.tm_year) << "/"
+      << std::setw(2) << 1 + now.tm_mon << "/"
+      << std::setw(2) << now.tm_mday
+      << ' '
+      << std::setw(2) << now.tm_hour  << ':'
+      << std::setw(2) << now.tm_min   << ':'
+      << std::setw(2) << now.tm_sec;
+  if (ms >= 0) {
+    oss << "." << std::setw(3) << ms;
+  }
+  return oss.str();
+}
+
+}  // namespace
+
+std::string StrHumanTimeMs(int64 time_ms) {
+  time_t val = time_ms / 1000;
+  struct tm now;
+  localtime_r(&val, &now);
+  return StrTimeTm(now, time_ms % 1000);
+}
+
+std::string StrHumanUtcTimeMs(int64 time_ms) {
+  time_t val = time_ms / 1000;
+  struct tm now;
+  gmtime_r(&val, &now);
+  return StrTimeTm(now, time_ms % 1000);
+}
+
+std::string StrHumanTimeSec(time_t time_sec) {
+  struct tm now;
+  localtime_r(&time_sec, &now);
+  return StrTimeTm(now, -1);
+}
+
+std::string StrHumanUtcTimeSec(time_t time_sec) {
+  struct tm now;
+  gmtime_r(&time_sec, &now);
+  return StrTimeTm(now, -1);
+}
+
+std::string StrHumanDuration(int64 duration_ms) {
+  std::ostringstream oss;
+  if (duration_ms > 3600000) {
+    oss << (duration_ms / 3600000) << "h";
+    duration_ms = duration_ms % 3600000;
+  }
+  if (duration_ms > 60000) {
+    oss << (duration_ms / 60000) << "m";
+    duration_ms = duration_ms % 60000;
+  }
+  oss << std::setprecision(3);
+  oss << (duration_ms / 1000.0) << "s";
+  return oss.str();
+}
+
+std::string MicroTimer::ToString() const {
+    return StrHumanDuration(msec());
+}
+
 }  // end namespace timer
+}  // end namespace whisper

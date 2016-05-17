@@ -32,9 +32,11 @@
 #ifndef __WHISPERLIB_BASE_TIMER_H__
 #define __WHISPERLIB_BASE_TIMER_H__
 
-#include <time.h>
-#include <whisperlib/base/types.h>
+#include <ctime>
+#include <string>
+#include "whisperlib/base/types.h"
 
+namespace whisper {
 namespace timer {
 
 // returns: nanoseconds since an unspecified point in the past (for example,
@@ -67,6 +69,11 @@ struct timespec TimespecFromMsec(int64 miliseconds);
 // Reversed operation
 int64 TimespecToMsec(struct timespec ts);
 
+// Returns the timezone offset (in seconds) on this device/host
+inline int TimezoneOffset() {
+    time_t now = time(NULL);
+    return now - mktime(gmtime(&now));
+}
 
 // Set moment: NOW + "shift_up_miliseconds"
 // These methods should never fail. The only possbile failure is:
@@ -85,6 +92,20 @@ struct timespec TimespecAbsoluteMsec(int64 shift_up_miliseconds);
 void TimespecAbsoluteTimespec(struct timespec* ts,
                               const struct timespec& delta_ts);
 
+/** Returns a human readable string describing the given 'duration_ms'
+ * e.g. 83057 -> "1m23.057s" */
+std::string StrHumanDuration(int64 duration_ms);
+
+/** Returns a human readable time from time in ms - in local timezone */
+std::string StrHumanTimeMs(int64 time_ms);
+/** Returns a human readable time from time in ms - in utc timezone */
+std::string StrHumanUtcTimeMs(int64 time_ms);
+
+/** Returns a human readable time from time in sec - in local timezone */
+std::string StrHumanTimeSec(time_t time_sec);
+/** Returns a human readable time from time in sec - in utc timezone */
+std::string StrHumanUtcTimeSec(time_t time_sec);
+
 class MicroTimer {
 public:
   MicroTimer() : start_ns_(0), accum_ns_(0) {
@@ -94,9 +115,13 @@ public:
   void Start() {
     start_ns_ = TicksNsec();
   }
+  bool IsRunning() const {
+    return start_ns_ > 0;
+  }
   void Stop() {
-    if (start_ns_ == 0)  return;
+    if (not IsRunning())  return;
     accum_ns_ += TicksNsec() - start_ns_;
+    start_ns_ = 0;
   }
   void Restart() {
     accum_ns_ = 0;
@@ -104,7 +129,11 @@ public:
   }
 
   int64 nsec() const {
-    return TicksNsec() - start_ns_ + accum_ns_;
+    if (IsRunning()) {
+      return TicksNsec() - start_ns_ + accum_ns_;
+    } else {
+      return accum_ns_;
+    }
   }
   double sec() const {
     return nsec() * 1e-9;
@@ -115,12 +144,17 @@ public:
   int64 usec() const {
     return static_cast<int64>(nsec() * 1e-3);
   }
+  std::string ToString() const;
 
 private:
   int64 start_ns_;
   int64 accum_ns_;
 };
-
+inline std::ostream& operator<<(std::ostream& os, const MicroTimer& tm) {
+  return os << tm.ToString();
 }
+
+}   // namespace timer
+}   // namespace whisper
 
 #endif  // __WHISPERLIB_BASE_TIMER_H__

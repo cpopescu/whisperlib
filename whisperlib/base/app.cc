@@ -29,42 +29,41 @@
 //
 // Author: Cosmin Tudorache
 
-#include <whisperlib/base/core_config.h>
-
-#ifdef HAVE_UNISTD_H
-# include <unistd.h>
-#endif
-
+#include <stdlib.h>
 #include <signal.h>
 
-#include <whisperlib/base/app.h>
-#include <whisperlib/base/strutil.h>
-#include <whisperlib/base/system.h>
-#include <whisperlib/sync/mutex.h>
+#include "whisperlib/base/app.h"
+#include "whisperlib/base/signal_handlers.h"
+#include "whisperlib/base/strutil.h"
+#include "whisperlib/base/system.h"
+#include "whisperlib/sync/mutex.h"
 
-#include <whisperlib/base/signal_handlers.h>
+// #include "whisperlib/net/dns_resolver.h" // DnsInit
 
+using namespace std;
+
+namespace whisper {
 namespace app {
 
 static App* g_app = NULL;
 
-App::App(int argc, char** argv)
-    : argc_(argc),
-      result_(0),
+App::App(int& argc, char**& argv)
+    : result_(0),
       thread_(NewCallback(this, &App::RunInternal)),
       stop_event_(false, true) {
-  argv_ = new char*[argc + 1];
-  for ( int i = 0; i < argc; ++i ) {
-    argv_[i] = strdup(argv[i]);
-  }
-  argv_[argc] = NULL;
-
   CHECK_NULL(g_app);
   g_app = this;
 
   name_ = strutil::Basename(argv[0]);
+  common::Init(argc, argv);
+  // net::DnsInit();
 
-  common::Init(argc_, argv_);
+  argc_ = argc;
+  argv_ = new char*[argc + 1];
+  for (int i = 0; i < argc; ++i) {
+    argv_[i] = strdup(argv[i]);
+  }
+  argv_[argc] = NULL;
 
   SignalSetup();
 }
@@ -141,7 +140,8 @@ void App::SignalHandler(int signal) {
 
   if (common::IsApplicationHanging()) {
     LOG_INFO << "Forced exit.";
-    ::_exit(-1);
+    // net::DnsExit();
+    ::_Exit(-1);
   }
   g_app->stop_event_.Signal();
   common::SetApplicationHanging(true);
@@ -150,4 +150,5 @@ void App::RunInternal() {
   Run();
   stop_event_.Signal();
 }
-}
+}  // namespace app
+}  // namespace whisper

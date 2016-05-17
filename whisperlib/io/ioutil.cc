@@ -29,27 +29,30 @@
 //
 // Author: Catalin Popescu
 
-#include <whisperlib/base/core_config.h>
-
-#if defined(MACOSX)
-# define _DARWIN_USE_64_BIT_INODE
-#endif
+#include "whisperlib/io/ioutil.h"
 
 #include <dirent.h>
+#include <iostream>
+#include <fstream>
 
 #include <stdio.h>
 #include <unistd.h>
+#include <fcntl.h>
+
 #ifdef HAVE_BITS_LIMITS_H
 #include <bits/limits.h>
 #endif
 #include <utime.h>
+#include <cstdio>
 
-#include "whisperlib/io/ioutil.h"
-#include "whisperlib/base/strutil.h"
-#include "whisperlib/base/log.h"
 #include "whisperlib/base/core_errno.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/re.h"
+#include "whisperlib/base/strutil.h"
 
-#if defined(HAVE_STAT64) && !defined(MACOSX)
+using namespace std;
+
+#ifdef HAVE_STAT64
 #define __STAT stat64
 #define __LSTAT lstat64
 #else
@@ -57,6 +60,7 @@
 #define __LSTAT lstat
 #endif
 
+namespace whisper {
 namespace io {
 
 bool IsDir(const char* name) {
@@ -125,8 +129,13 @@ int64 GetFileMtime(const string& name) {
   return GetFileMtime(name.c_str());
 }
 bool SetFileMtime(const char* name, int64 t) {
+#ifdef HAVE_UTIME
     const struct utimbuf times = {time_t(t), time_t(t)};
     return utime(name, &times) == 0;
+#else
+    LOG_ERROR << "utime not available - skipping for " << name << " / " << t;
+    return false;
+#endif
 }
 
 bool SetFileMtime(const string& name, int64 t) {
@@ -205,22 +214,22 @@ bool Rmdir(const string& path) {
   return true;
 }
 
-bool RmFilesUnder(const string& path, const re::RE* pattern, bool all) {
+bool RmFilesUnder(const string& path, const re::RE* pattern, bool rm_dirs) {
     vector<string> files;
     bool error = false;
     int options = 0;
-    if (all) {
+    if (rm_dirs) {
         options = io::LIST_DIRS | io::LIST_FILES | io::LIST_RECURSIVE;
     } else {
         options = io::LIST_FILES | io::LIST_RECURSIVE;
     }
     vector<string> dirs;
     if (io::DirList(path, options, pattern, &files)) {
-        LOG_INFO << " Removing: " << files.size() << " files.";
+        LOG_INFO << "From: " << path << " removing: " << files.size()
+                 << " files: " << strutil::ToString(files);
         for (int i = 0; i < files.size(); ++i) {
-            LOG_INFO << " Removing [" << files[i] << "]";
             const string f(strutil::JoinPaths(path, files[i]));
-            if (all && io::IsDir(f)) {
+            if (rm_dirs && io::IsDir(f)) {
                 dirs.push_back(f);
                 continue;
             }
@@ -295,7 +304,7 @@ bool Rename(const string& old_path,
   //  ! Atomically !
   //
   if ( !new_exists || (old_is_single && new_is_single) ) {
-    DLOG_INFO << "Renaming [" << old_path << "] to [" << new_path << "]";
+    VLOG(2) << "Renaming [" << old_path << "] to [" << new_path << "]";
     if ( ::rename(old_path.c_str(), new_path.c_str()) ) {
       LOG_ERROR << "::rename failed, old_path: [" << old_path << "]"
                 << ", new_path: [" << new_path << "]"
@@ -362,6 +371,7 @@ string MakeAbsolutePath(const char* path) {
 // * If you use autoconf, include fpathconf and dirfd in your          *
 // * AC_CHECK_FUNCS list.  Otherwise use some other method to detect   *
 // * and use them where available.                                     *
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 size_t dirent_buf_size(DIR* dirp) {
     long name_max;
     size_t name_end;
@@ -494,4 +504,59 @@ int32 GetLastNumberedFile(const string& dir,
   }
   return file_num;
 }
+
+bool ReadFileLines(const string& filepath,
+                   char comment_char,
+                   bool trim_spaces,
+                   bool trim_empty_lines,
+                   vector<string>* out) {
+    ifstream in(filepath.c_str(), ios::in);
+    if(!in.is_open()) {
+        LOG_ERROR << "Failed to open file: " << filepath;
+        return false;
+    }
+    while (in.good()) {
+        string line;
+        std::getline(in, line);
+        if (comment_char) {
+            line = strutil::StrTrimComment(line, comment_char);
+        }
+        if (trim_spaces) {
+            line = strutil::StrTrim(line);
+        }
+        if (trim_empty_lines && line.empty()) {
+            continue;
+        }
+        out->push_back(line);
+    }
+    return true;
 }
+
+bool Copy(const string& source, const string& dest, mode_t mode) {
+    char buf[BUFSIZ];
+    size_t size;
+    const int source_fd = open(source.c_str(), O_RDONLY, 0);
+    if (source_fd < 0) {
+        LOG_ERROR << "Cannot open source file for copying: " << source;
+        return false;
+    }
+    const int dest_fd= open(dest.c_str(), O_WRONLY | O_CREAT /*| O_TRUNC */, mode);
+    if (dest_fd < 0) {
+        LOG_ERROR << "Cannot open destination file for copying: " << dest;
+        close(source_fd);
+        return false;
+    }
+    bool failed = false;
+    while (!failed && (size = read(source_fd, buf, BUFSIZ)) > 0) {
+        if (size != write(dest_fd, buf, size)) {
+            LOG_ERROR << " Copying " << source << " -> " << dest << " - Error writing buffer.";
+            failed = true;
+        }
+    }
+    close(source_fd);
+    close(dest_fd);
+    return !failed;
+}
+
+}  // namespace io
+}  // namespace whisper

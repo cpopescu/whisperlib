@@ -33,12 +33,12 @@
 //
 
 #include <netdb.h>
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/system.h>
-#include <whisperlib/base/gflags.h>
-#include <whisperlib/net/selector.h>
-#include <whisperlib/http/failsafe_http_client.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/system.h"
+#include "whisperlib/base/gflags.h"
+#include "whisperlib/net/selector.h"
+#include "whisperlib/http/failsafe_http_client.h"
 
 
 DEFINE_string(servers,
@@ -60,9 +60,9 @@ DEFINE_int32(cancel_every,
 
 int32 glb_num_request = 0;
 
-void RequestDone(net::Selector* selector,
-                 http::FailSafeClient* fsc,
-                 http::ClientRequest* req) {
+void RequestDone(whisper::net::Selector* selector,
+                 whisper::http::FailSafeClient* fsc,
+                 whisper::http::ClientRequest* req) {
   CHECK(req->is_finalized());
   LOG_INFO << "=================================================";
   LOG_INFO << " Request " << req->name() << " finished w/ error: "
@@ -76,20 +76,20 @@ void RequestDone(net::Selector* selector,
   --glb_num_request;
   if ( glb_num_request <= 0 ) {
     selector->DeleteInSelectLoop(fsc);
-    selector->RunInSelectLoop(NewCallback(selector,
-                                          &net::Selector::MakeLoopExit));
+    selector->RunInSelectLoop(
+        whisper::NewCallback(selector, &whisper::net::Selector::MakeLoopExit));
   }
 }
 
-http::BaseClientConnection* CreateConnection(net::Selector* selector,
-                                             net::NetFactory* net_factory,
-                                             net::PROTOCOL net_protocol) {
-  return new http::SimpleClientConnection(selector, *net_factory, net_protocol);
+whisper::http::BaseClientConnection* CreateConnection(whisper::net::Selector* selector,
+                                             whisper::net::NetFactory* net_factory,
+                                             whisper::net::PROTOCOL net_protocol) {
+  return new whisper::http::SimpleClientConnection(selector, *net_factory, net_protocol);
 }
 
-void CancelRequest(net::Selector* selector,
-                   http::FailSafeClient* fsc,
-                   http::ClientRequest* req) {
+void CancelRequest(whisper::net::Selector* selector,
+                   whisper::http::FailSafeClient* fsc,
+                   whisper::http::ClientRequest* req) {
     if (fsc->CancelRequest(req)) {
         LOG_INFO << "#######################################\n Request canceled: "  << req->name();
     } else {
@@ -98,14 +98,14 @@ void CancelRequest(net::Selector* selector,
     --glb_num_request;
     if ( glb_num_request <= 0 ) {
         selector->DeleteInSelectLoop(fsc);
-        selector->RunInSelectLoop(NewCallback(selector,
-                                              &net::Selector::MakeLoopExit));
+        selector->RunInSelectLoop(
+            whisper::NewCallback(selector, &whisper::net::Selector::MakeLoopExit));
     }
 }
 
 int main(int argc, char* argv[]) {
-  common::Init(argc, argv);
-  vector<net::HostPort> servers;
+  whisper::common::Init(argc, argv);
+  vector<whisper::net::HostPort> servers;
   vector<string> server_names;
   vector<string> server_paths;
   if ( FLAGS_servers.empty() ) {
@@ -130,41 +130,45 @@ int main(int argc, char* argv[]) {
         << " Cannot resolve: " << comps[0];
     CHECK(hp->h_addr_list[0] != NULL)
         << " Bad address received for: " << comps[0];
-    servers.push_back(net::HostPort(ntohl(reinterpret_cast<struct in_addr*>(
+    servers.push_back(whisper::net::HostPort(ntohl(reinterpret_cast<struct in_addr*>(
                                               hp->h_addr_list[0])->s_addr),
                                     port));
   }
-  net::Selector selector;
-  net::NetFactory net_factory(&selector);
-  http::ClientParams params;
+  whisper::net::Selector selector;
+  whisper::net::NetFactory net_factory(&selector);
+  whisper::http::ClientParams params;
   // params.dlog_level_ = true;
-  http::FailSafeClient* fsc = new http::FailSafeClient(
+  whisper::http::FailSafeClient* fsc = new whisper::http::FailSafeClient(
       &selector, &params, servers,
-      NewPermanentCallback(&CreateConnection, &selector, &net_factory, net::PROTOCOL_TCP),
+      whisper::NewPermanentCallback(&CreateConnection, &selector,
+                                    &net_factory, whisper::net::PROTOCOL_TCP),
       true,
       4,
       400000, 5000,
       FLAGS_force_host_header);
-  vector<http::ClientRequest*> reqs;
+  vector<whisper::http::ClientRequest*> reqs;
   for ( int i = 0; i < server_paths.size(); ++i ) {
     LOG_INFO << "Scheduling request for: " << server_paths[i];
-    http::ClientRequest* req = new http::ClientRequest(
-        http::METHOD_GET, server_paths[i]);
-    Closure* cb = NewCallback(&RequestDone, &selector, fsc, req);
+    whisper::http::ClientRequest* req = new whisper::http::ClientRequest(
+        whisper::http::METHOD_GET, server_paths[i]);
+    whisper::Closure* cb = whisper::NewCallback(
+        &RequestDone, &selector, fsc, req);
     reqs.push_back(req);
     selector.RunInSelectLoop(
-        NewCallback(fsc,
-                    &http::FailSafeClient::StartRequest,
-                    req, cb));
+        whisper::NewCallback(fsc,
+                             &whisper::http::FailSafeClient::StartRequest,
+                             req, cb));
     glb_num_request++;
   }
   if (FLAGS_cancel_every > 0) {
     for ( int i = 0; i < server_paths.size(); ++i ) {
       if ((i % FLAGS_cancel_every) == 0) {
-        Closure* cb = NewCallback(&CancelRequest, &selector, fsc, reqs[i]);
+        whisper::Closure* cb = whisper::NewCallback(
+            &CancelRequest, &selector, fsc, reqs[i]);
         selector.RegisterAlarm(cb, i * 150);
       }
     }
   }
   selector.Loop();
+  return 0;
 }

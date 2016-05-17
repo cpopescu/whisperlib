@@ -62,4 +62,12 @@
 # define USE_GLOG_LOGGING 1
 #endif
 
+#if HAVE_GFLAGS
+# define USE_GFLAGS 1
+#endif
+
+#ifdef HAVE_ICU
+# define USE_ICU 1
+#endif
+
 /* End of section coming from acconfig.h */

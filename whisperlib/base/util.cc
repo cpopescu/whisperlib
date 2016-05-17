@@ -30,10 +30,18 @@
 // Author: Cosmin Tudorache
 
 #include <sstream>              // ostringstream
-#include <whisperlib/base/util.h>
-#include <whisperlib/base/strutil.h>
-#include <whisperlib/base/timer.h>
+#include <unistd.h>
+#include <ios>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include "whisperlib/base/util.h"
+#include "whisperlib/base/strutil.h"
+#include "whisperlib/base/timer.h"
 
+using namespace std;
+
+namespace whisper {
 namespace util {
 
 const string kEmptyString;
@@ -51,14 +59,14 @@ bool Interval::Read(const string& s) {
   max_ = ::atoll(s_max.c_str());
   if ( (min_ == 0 && s_min != "" && s_min[0] != '0') ||
        (max_ == 0 && s_max != "" && s_max[0] != '0') ) {
-    LOG_ERROR << "Invalid number in interval: [" << s << "]";
+    LOG_WARNING << "Invalid number in interval: [" << s << "]";
     return false;
   }
   if ( max_ == 0 ) {
     max_ = min_;
   }
   if ( min_ > max_ ) {
-    LOG_ERROR << "Invalid interval, number order: [" << s << "]";
+    LOG_WARNING << "Invalid interval, number order: [" << s << "]";
     return false;
   }
   return true;
@@ -90,24 +98,73 @@ string Interval::RandomString(unsigned int* seed) const {
   return s;
 }
 
+#if 0
 ///////////////////////////////////////////////////////////////////////
-
 void InstanceCounter::Inc() {
-    synch::MutexLocker l(&lock_);
-    count_++;
-    PrintReport();
+    ++count_;
+    PrintReport(false);
 }
 void InstanceCounter::Dec() {
-    synch::MutexLocker l(&lock_);
-    count_--;
-    PrintReport();
+    ++count_;
+    PrintReport(false);
 }
-void InstanceCounter::PrintReport() {
+void InstanceCounter::PrintReport(bool force) {
     const int64 now = timer::TicksMsec();
-    if (now - print_ts_ > kPrintIntervalMs) {
+    if (force || now - print_ts_ > kPrintIntervalMs) {
         print_ts_ = now;
         LOG_WARNING << "#Instance " << name_ << " " << count_;
     }
 }
+#endif
 
+//////////////////////////////////////////////////////////////////////////////
+
+bool ProcessMemUsage(int64* out_vsz, int64* out_rss) {
+   const char* kProcFilePath = "/proc/self/stat";
+   ifstream stat_stream(kProcFilePath, ios_base::in);
+   if (!stat_stream.is_open()) {
+       LOG_WARNING << "Failed to open: " << kProcFilePath;
+       return false;
+   }
+
+   // dummy vars for leading entries in stat that we don't care about
+   //
+   string pid, comm, state, ppid, pgrp, session, tty_nr;
+   string tpgid, flags, minflt, cminflt, majflt, cmajflt;
+   string utime, stime, cutime, cstime, priority, nice;
+   string O, itrealvalue, starttime;
+
+   // the two fields we want
+   //
+   int64 vsize = 0;
+   int64 rss = 0;
+
+   stat_stream >> pid >> comm >> state >> ppid >> pgrp >> session >> tty_nr
+               >> tpgid >> flags >> minflt >> cminflt >> majflt >> cmajflt
+               >> utime >> stime >> cutime >> cstime >> priority >> nice
+               >> O >> itrealvalue >> starttime >> vsize >> rss;
+
+   stat_stream.close();
+
+   long page_size = sysconf(_SC_PAGE_SIZE);
+   if (out_vsz) { *out_vsz = vsize; }
+   if (out_rss) { *out_rss = rss * page_size; }
+   return true;
 }
+int64 ProcessMemUsageVSZ() {
+    int64 vsz = 0;
+    if (!ProcessMemUsage(&vsz, NULL)) { return 0; }
+    return vsz;
+}
+
+void ProcessMemUsageCache::Update() {
+    const int64 now = timer::TicksMsec();
+    // If the values are still valid, then do nothing
+    if (now - ts_ < cache_ms_) { return; }
+    // Update the values now
+    ProcessMemUsage(&vsz_, &rss_);
+    ts_ = now;
+}
+
+}  // namespace util
+}  // namespace whisper

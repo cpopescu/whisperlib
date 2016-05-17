@@ -38,11 +38,15 @@
 #include <netinet/in.h>
 #include <string>
 #include <map>
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/strutil.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/strutil.h"
+
+using std::string;
 
 struct in_addr;
+
+namespace whisper {
 
 namespace net {
 
@@ -197,7 +201,7 @@ class HostPort {
   //       "google.ro:80" -> HOST="google.ro", IP=0, PORT=80
   HostPort(const string& hostport)
       : host_(), ip_(), port_(kInvalidPort) {
-    pair<string, string> a = strutil::SplitLast(hostport, ":");
+    std::pair<string, string> a = strutil::SplitLast(hostport, ":");
     ip_ = IpAddress(a.first);
     if ( ip_.IsInvalid() ) {
       host_ = a.first;
@@ -255,10 +259,10 @@ class HostPort {
   uint16 port_;
 };
 
-inline ostream& operator<<(ostream& os, const IpAddress& ip) {
+inline std::ostream& operator<<(std::ostream& os, const IpAddress& ip) {
   return os << ip.ToString();
 }
-inline ostream& operator<<(ostream& os, const HostPort& hp) {
+inline std::ostream& operator<<(std::ostream& os, const HostPort& hp) {
   return os << hp.ToString();
 }
 
@@ -285,9 +289,11 @@ class IpV4Filter {
     MARK_END = 2,
     MARK_BOTH = 3,
   };
-  typedef map<uint32, int32> FilterMap;
+  typedef std::map<uint32, int32> FilterMap;
   FilterMap filter_;
 };
-}
+}  // namespace net
+
+}  // namespace whisper
 
 #endif  // __NET_BASE_ADDRESS_H__

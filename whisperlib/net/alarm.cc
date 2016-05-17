@@ -29,11 +29,12 @@
 //
 // Author: Cosmin Tudorache
 
-#include <whisperlib/net/alarm.h>
+#include "whisperlib/net/alarm.h"
 
 // Disabled - most of the time.. :)
-#define LOG_ALARM if(true); else LOG_WARNING
+#define LOG_ALARM if(0) LOG_WARNING
 
+namespace whisper {
 namespace util {
 
 Alarm::Alarm(net::Selector & selector)
@@ -135,4 +136,5 @@ void Alarm::Fire() {
   }
 }
 
-} // namespace util
+}  // namespace util
+}  // namespace whisper

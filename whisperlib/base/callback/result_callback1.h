@@ -31,6 +31,7 @@
 #ifndef __WHISPERLIB_BASE_CALLBACK_RESULT_CALLBACK1_H__
 #define __WHISPERLIB_BASE_CALLBACK_RESULT_CALLBACK1_H__
 
+namespace whisper {
 
 template<typename R, typename X0>
 class ResultCallback1 {
@@ -638,6 +639,8 @@ ResultMemberCallback1_5<C, R, T0, T1, T2, T3, T4, X0>* NewCallback(C* c, R (C::*
 template<typename C, typename R, typename T0, typename T1, typename T2, typename T3, typename T4, typename X0>
 ResultMemberCallback1_5<C, R, T0, T1, T2, T3, T4, X0>* NewPermanentCallback(C* c, R (C::*fun)(T0, T1, T2, T3, T4, X0), T0 p0, T1 p1, T2 p2, T3 p3, T4 p4) {
   return new ResultMemberCallback1_5<C, R, T0, T1, T2, T3, T4, X0>(true, c, fun, p0, p1, p2, p3, p4);
+}
+
 }
 
 #endif   // __WHISPERLIB_BASE_CALLBACK_RESULT_CALLBACK1_H__

@@ -34,10 +34,11 @@
 
 #include <pthread.h>
 #include <limits.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/callback.h>
-#include <whisperlib/base/types.h>
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/callback.h"
+#include "whisperlib/base/types.h"
 
+namespace whisper {
 namespace thread {
 
 class Thread {
@@ -51,8 +52,9 @@ class Thread {
   bool Start();
   // Waits for the thread to finish
   bool Join();
-  // Enables waiting on this thread (joining)
-  bool SetJoinable();
+  // Enables/Disables waiting on this thread (joining)
+  bool SetJoinable(bool joinable = true);
+  bool IsJoinable() const;
   // Set the stack size for this thread.
   // Min value is: PTHREAD_STACK_MIN (=16384 in /usr/include/bits/local_lim.h)
   // Max value is: system-imposed limit
@@ -74,17 +76,29 @@ class Thread {
   void set_thread_function(Closure* closure) {
     thread_function_ = closure;
   }
+  void set_self_delete() {
+    self_delete_ = true;
+  }
+  bool self_delete() const {
+    return self_delete_;
+  }
 
   // Test if the caller is in this thread context
   bool IsInThread() const;
+
+ private:
+  static void* InternalRun(void* param);
 
  protected:
   pthread_t thread_;
   pthread_attr_t attr_;
   Closure* thread_function_;
+  bool self_delete_;
+  bool joinable_;
  private:
   DISALLOW_EVIL_CONSTRUCTORS(Thread);
 };
-}
+}  // namespace thread
+}  // namespace whisper
 
 #endif  // __COMMON_SYNC_THREAD_H__

@@ -24,7 +24,7 @@
 #include <algorithm>
 #include <cstddef>
 
-#include <whisperlib/base/types.h>
+#include "whisperlib/base/types.h"
 
 template <class C> class scoped_ptr;
 template <class C, class Free> class scoped_ptr_malloc;
@@ -374,4 +374,15 @@ bool operator!=(C* p, const scoped_ptr_malloc<C, FP>& b) {
   return p != b.get();
 }
 
+
+// If there's no unique_ptr<>, then use scoped_ptr as unique_ptr
+#if __cplusplus < 201103 && !defined(HAVE_UNIQUE_PTR)
+namespace std {
+    template<class T> struct unique_ptr : public scoped_ptr<T> {
+        unique_ptr(T* p = NULL) : scoped_ptr<T>(p) {}
+    };
+}
 #endif
+
+
+#endif  // __WHISPERLIB_BASE_SCOPED_PTR_H

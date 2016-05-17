@@ -31,27 +31,27 @@
 
 #include <stdlib.h>
 
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/system.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/system.h"
 
-#include <whisperlib/net/address.h>
+#include "whisperlib/net/address.h"
 
 int main(int argc, char* argv[]) {
-  common::Init(argc, argv);
+  whisper::common::Init(argc, argv);
   {
-    net::IpAddress ip1;
+    whisper::net::IpAddress ip1;
     CHECK(ip1.IsInvalid());
   }
   {
-    net::IpAddress ip1("::1");
+    whisper::net::IpAddress ip1("::1");
     CHECK(!ip1.IsInvalid());
     CHECK(!ip1.is_ipv4());
     CHECK_EQ(ip1.ToString(), string("::1"));
   }
   {
-    net::IpAddress ip1(0x01020304);
-    net::IpAddress ip2("1.2.3.4");
+    whisper::net::IpAddress ip1(0x01020304);
+    whisper::net::IpAddress ip2("1.2.3.4");
     CHECK(!ip1.IsInvalid());
     CHECK(!ip2.IsInvalid());
     CHECK_EQ(ip1.ipv4(), ip2.ipv4());
@@ -62,17 +62,17 @@ int main(int argc, char* argv[]) {
              htonl(0x01020304));
   }
   {
-    net::HostPort hp1;
+    whisper::net::HostPort hp1;
     CHECK(hp1.IsInvalid());
   }
   {
-    net::HostPort hp1("1.2.3.4", 1024);
+    whisper::net::HostPort hp1("1.2.3.4", 1024);
     CHECK(hp1.ip_object().is_ipv4());
     CHECK_EQ(hp1.ip_object().ipv4(), 0x01020304);
     CHECK_EQ(hp1.port(), 1024);
   }
   {
-    net::HostPort hp1(0xfcfdfeff, 0xffff);
+    whisper::net::HostPort hp1(0xfcfdfeff, 0xffff);
     CHECK(hp1.ip_object().is_ipv4());
     CHECK_EQ(hp1.ip_object().ipv4(), 0xfcfdfeff);
     CHECK_EQ(hp1.port(), 0xffff);
@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
              htonl(0xfcfdfeff));
   }
   {
-    net::HostPort addr("1.2.3.4:5678");
+    whisper::net::HostPort addr("1.2.3.4:5678");
     CHECK(addr.ip_object().is_ipv4());
     CHECK_EQ(addr.ip_object().ipv4(), 0x01020304);
     CHECK_EQ(addr.port(), 5678);
@@ -91,25 +91,25 @@ int main(int argc, char* argv[]) {
   }
 
   {
-    net::IpV4Filter filter;
+    whisper::net::IpV4Filter filter;
     CHECK(filter.Add("1.2.3.0/26"));
-    CHECK(filter.Matches(net::IpAddress("1.2.3.35")));
+    CHECK(filter.Matches(whisper::net::IpAddress("1.2.3.35")));
     CHECK(filter.Add("1.2.4.0/24"));
-    CHECK(!filter.Matches(net::IpAddress("1.2.3.254")));
-    CHECK(filter.Matches(net::IpAddress("1.2.4.254")));
-    CHECK(!filter.Matches(net::IpAddress("1.2.5.0")));
+    CHECK(!filter.Matches(whisper::net::IpAddress("1.2.3.254")));
+    CHECK(filter.Matches(whisper::net::IpAddress("1.2.4.254")));
+    CHECK(!filter.Matches(whisper::net::IpAddress("1.2.5.0")));
     CHECK(filter.Add("1.2.5.240/28"));
-    CHECK(filter.Matches(net::IpAddress("1.2.5.254")));
-    CHECK(!filter.Matches(net::IpAddress("1.2.5.23")));
+    CHECK(filter.Matches(whisper::net::IpAddress("1.2.5.254")));
+    CHECK(!filter.Matches(whisper::net::IpAddress("1.2.5.23")));
     CHECK(filter.Add("1.2.5.0/24"));
-    CHECK(filter.Matches(net::IpAddress("1.2.5.0")));
-    CHECK(filter.Matches(net::IpAddress("1.2.4.255")));
-    CHECK(!filter.Matches(net::IpAddress("1.2.7.124")));
+    CHECK(filter.Matches(whisper::net::IpAddress("1.2.5.0")));
+    CHECK(filter.Matches(whisper::net::IpAddress("1.2.4.255")));
+    CHECK(!filter.Matches(whisper::net::IpAddress("1.2.7.124")));
     CHECK(filter.Add("1.2.5.0/28"));
-    CHECK(filter.Matches(net::IpAddress("1.2.5.254")));
-    CHECK(filter.Matches(net::IpAddress("1.2.5.23")));
+    CHECK(filter.Matches(whisper::net::IpAddress("1.2.5.254")));
+    CHECK(filter.Matches(whisper::net::IpAddress("1.2.5.23")));
   }
 
   LOG_INFO << "PASS";
-  common::Exit(0);
+  whisper::common::Exit(0);
 }

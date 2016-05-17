@@ -36,11 +36,13 @@
 
 #include <string>
 #include <map>
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/callback.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/callback.h"
 
+#include "whisperlib/base/hash.h"
 #include WHISPER_HASH_MAP_HEADER
 
+namespace whisper {
 namespace net {
 
 class UserAuthenticator {
@@ -57,6 +59,14 @@ class UserAuthenticator {
     BadPassword,
     MissingCredentials,
   };
+  static const char* AnswerName(Answer answer) {
+    switch (answer) {
+      CONSIDER(Authenticated);
+      CONSIDER(BadUser);
+      CONSIDER(BadPassword);
+      CONSIDER(MissingCredentials);
+    }
+  }
   typedef Callback1<Answer> AnswerCallback;
   // The main authentication function - synchronous version
   virtual Answer Authenticate(const string& user,
@@ -119,6 +129,7 @@ class SimpleUserAuthenticator : public UserAuthenticator {
 
   DISALLOW_EVIL_CONSTRUCTORS(SimpleUserAuthenticator);
 };
-}
+}   // namespace net
+}   // namespace whisper
 
 #endif  // __NET_BASE_USER_AUTHENTICATOR_H__

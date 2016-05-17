@@ -33,6 +33,7 @@
 #include <strings.h>
 #include "whisperlib/http/http_consts.h"
 
+namespace whisper {
 namespace http {
 
 const char* GetHttpReturnCodeName(HttpReturnCode code) {
@@ -309,4 +310,5 @@ const unsigned char kSharedCharTypeTable[0x100] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 0xe0 - 0xef
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 0xf0 - 0xff
 };
+}
 }

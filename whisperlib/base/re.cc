@@ -29,9 +29,11 @@
 //
 // Author: Catalin Popescu
 
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/re.h>
+#include "whisperlib/base/re.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/scoped_ptr.h"
 
+namespace whisper {
 namespace re {
 
 const char* RE::ErrorName(int err) {
@@ -69,19 +71,12 @@ const char* RE::ErrorName(int err) {
   return "REG_UNKNOWN: unknown error";
 }
 
-RE::RE(const string& regex, int cflags)
+RE::RE(const std::string& regex, bool ignore_case)
   : regex_(regex),
     err_(0),
     match_begin_(true) {
   match_.rm_eo = 0;
-  err_ = regcomp(&reg_, regex.c_str(), cflags);
-}
-RE::RE(const char* regex, int cflags)
-  : regex_(regex),
-    err_(0),
-    match_begin_(true) {
-  match_.rm_eo = 0;
-  err_ = regcomp(&reg_, regex, cflags);
+  err_ = regcomp(&reg_, regex.c_str(), REG_EXTENDED | (ignore_case ? REG_ICASE : 0));
 }
 RE::~RE() {
   regfree(&reg_);
@@ -89,11 +84,14 @@ RE::~RE() {
 
 bool RE::Matches(const char* s) const {
   if ( err_ ) return false;
-  const int status = regexec(&reg_, s, size_t(0), NULL, 0);
-  return status == 0;
+  return regexec(&reg_, s, size_t(0), NULL, 0) == 0;
+}
+bool RE::MatchesNoErr(const char* s) const {
+  DCHECK(!err_);
+  return regexec(&reg_, s, size_t(0), NULL, 0) == 0;
 }
 
-bool RE::MatchNext(const char* s, string* ret) {
+bool RE::MatchNext(const char* s, std::string* ret) {
   if ( err_ ) return false;
   const int begin = match_begin_ ? 0 : match_.rm_eo;
   if ( !*(s + match_.rm_eo) )
@@ -101,7 +99,7 @@ bool RE::MatchNext(const char* s, string* ret) {
   const int status = regexec(&reg_, s + match_.rm_eo, 1, &match_,
                              match_begin_ ? 0 : REG_NOTBOL);
   if ( status != 0 ) {
-    MatchEnd();
+    Reset();
     return false;
   }
   match_.rm_so += begin;
@@ -111,7 +109,26 @@ bool RE::MatchNext(const char* s, string* ret) {
   return true;
 }
 
-bool RE::Replace(const char* s, const char* r, string& out) {
+std::string RE::GroupMatch(const std::string& s) const {
+  regmatch_t match[2];
+  const int status = regexec(&reg_, s.c_str(), 2, match, 0);
+  if (status || match[1].rm_so < 0) { return std::string(); }
+  return s.substr(match[1].rm_so, match[1].rm_eo - match[0].rm_so);
+}
+
+bool RE::GroupMatches(const std::string& s, std::vector<std::string>* out, size_t num) const {
+  scoped_array<regmatch_t> match(new regmatch_t[num + 1]);
+  const int status = regexec(&reg_, s.c_str(), num + 1, match.get(), 0);
+  if (status) { return false; }
+  for (size_t i = 0; i < num; ++i) {
+      if (match[i + 1].rm_so < 0) out->push_back(std::string());
+      else out->push_back(s.substr(match[i + 1].rm_so, match[i + 1].rm_eo - match[i + 1].rm_so));
+  }
+  return true;
+}
+
+
+bool RE::Replace(const char* s, const char* r, std::string& out) const {
   regmatch_t matches[10];
   const int status = regexec(&reg_, s, 10, matches, 0);
 
@@ -136,7 +153,7 @@ bool RE::Replace(const char* s, const char* r, string& out) {
         if (ind) {
           const regmatch_t &match = matches[*c-'0'];
           if (match.rm_so >=0) {
-            out += string(s+match.rm_so, match.rm_eo-match.rm_so);
+            out += std::string(s+match.rm_so, match.rm_eo-match.rm_so);
           }
           ind = false;
         } else {
@@ -158,7 +175,8 @@ bool RE::Replace(const char* s, const char* r, string& out) {
 
   return true;
 }
-bool RE::Replace(const string& s, const string& r, string& out) {
+bool RE::Replace(const std::string& s, const std::string& r, std::string& out) const {
   return Replace(s.c_str(), r.c_str(), out);
 }
-}
+}  // namespace re
+}  // namespace whisper

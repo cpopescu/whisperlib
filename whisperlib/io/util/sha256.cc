@@ -38,7 +38,8 @@
 #include <string.h>        /* memcpy()/memset() or bcopy()/bzero() */
 #include <assert.h>        /* assert() */
 #include "sha256.h"
-#include <whisperlib/base/system.h>
+// #include "whisperlib/base/system.h"
+
 /*
  * ASSERT NOTE:
  * Some sanity checking code is included using assert().  On my FreeBSD
@@ -658,10 +659,10 @@ void HmacSha256WithPreparedKey(const sha2_byte* key_to_use,
 #ifdef  __cplusplus
 }
 
-string WL_SHA256_StringHex(const char* str) {
+std::string WL_SHA256_StringHex(const char* str) {
     char digest[WL_SHA256_DIGEST_STRING_LENGTH];
     WL_SHA256_DataHex(reinterpret_cast<const uint8*>(str), strlen(str), digest);
-    return string(digest);
+    return std::string(digest);
 }
 
 #endif /* __cplusplus */

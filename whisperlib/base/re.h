@@ -35,36 +35,50 @@
 #ifndef __WHISPERLIB_BASE_RE_H__
 #define __WHISPERLIB_BASE_RE_H__
 
-#include <whisperlib/base/types.h>
+#include "whisperlib/base/types.h"
 #include <string>
+#include <vector>
 #include <regex.h>
 
+namespace whisper {
 namespace re {
 
 class RE {
  public:
-  RE(const string& regex, int cflags = 0);
-  RE(const char* regex, int cflags = 0);
+  RE(const std::string& regex, bool ignore_case = false);
   ~RE();
 
-  const string& regex() const { return regex_; }
+  const std::string& regex() const { return regex_; }
+  regex_t reg() const { return reg_; }
 
+  /** Returns if the std::string matches - assumes no error in the regexp.  */
   bool Matches(const char* s) const;
-  bool Matches(const string& s) const {
+  bool Matches(const std::string& s) const {
     return Matches(s.c_str());
   }
+  /** Returns if the std::string matches - assumes no error in the regexp.  */
+  bool MatchesNoErr(const char* s) const;
+  bool MatchesNoErr(const std::string& s) const {
+    return MatchesNoErr(s.c_str());
+  }
 
-  bool MatchNext(const char* s, string* ret);
-  bool MatchNext(const string& s, string* ret) {
+  /** Matches the expression and advances past it in the return string ret. */
+  bool MatchNext(const char* s, std::string* ret);
+  bool MatchNext(const std::string& s, std::string* ret) {
     return MatchNext(s.c_str(), ret);
   }
-  void MatchEnd() {
+  /** Resets the state for MatchNext */
+  void Reset() {
     match_begin_ = true;
     match_.rm_eo = 0;
   }
+  /** Matches and returns the first group. Empty  */
+  std::string GroupMatch(const std::string& s) const;
+  /** Matches a set of groups in out, as instructed by num. */
+  bool GroupMatches(const std::string& s, std::vector<std::string>* out, size_t num) const;
 
-  bool Replace(const char* s, const char* r, string& out);
-  bool Replace(const string& s, const string& r, string& out);
+  bool Replace(const char* s, const char* r, std::string& out) const;
+  bool Replace(const std::string& s, const std::string& r, std::string& out) const;
 
   bool HasError() const { return err_ != 0; }
   int err() const { return err_; }
@@ -73,13 +87,14 @@ class RE {
 
  private:
   // the original expression
-  const string regex_;
+  const std::string regex_;
   // the compiled expression
   regex_t reg_;
   int err_;
   regmatch_t match_;
   bool match_begin_;
 };
-}
+}  // namespace re
+}  // namespace whisper
 
 #endif  // __WHISPERLIB_BASE_RE_H__

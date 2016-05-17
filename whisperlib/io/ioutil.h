@@ -32,22 +32,24 @@
 #ifndef __WHISPERLIB_IO_IOUTIL_H__
 #define __WHISPERLIB_IO_IOUTIL_H__
 
-#include <whisperlib/base/core_config.h>
+// #if defined(__APPLE__) && __WORDSIZE == 64
+#define _DARWIN_USE_64_BIT_INODE
+// #endif
+
+#include <map>
+#include <string>
+#include <vector>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/strutil.h"
 
 #ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
 
-// #if defined(__APPLE__) && __WORDSIZE == 64
-#define _DARWIN_USE_64_BIT_INODE
-// #endif
+using std::string;
 
-#include <vector>
-#include <string>
-#include <map>
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/strutil.h>
-#include <whisperlib/base/re.h>
+namespace whisper {
+namespace re { class RE; }
 
 namespace io {
 
@@ -60,6 +62,7 @@ bool Exists(const char* path);
 bool Exists(const string& path);
 int64 GetFileSize(const char* name);
 int64 GetFileSize(const string& name);
+// Returns file timestamp in seconds!
 int64 GetFileMtime(const char* name);
 int64 GetFileMtime(const string& name);
 bool SetFileMtime(const char* name, int64 t);
@@ -82,7 +85,7 @@ enum DirListAttributes {
 };
 bool DirList(const string& dir, uint32 list_attr,
              const re::RE* regex,
-             vector<string>* out);
+             std::vector<string>* out);
 
 
 bool CreateRecursiveDirs(
@@ -97,13 +100,13 @@ bool CreateRecursiveDirs(
 // We return C() when not found, and we update path to reflect the path
 // that triggerd the found object
 template<class C>
-C FindPathBased(const map<string, C>* data, string& path, char separator = PATH_SEPARATOR) {
+    C FindPathBased(const std::map<string, C>* data, string& path, char separator = PATH_SEPARATOR) {
   if ( data->empty() ) {
     return C();
   }
   string to_search(path);
   while ( !to_search.empty() ) {
-    const typename map<string, C>::const_iterator it = data->find(to_search);
+    const typename std::map<string, C>::const_iterator it = data->find(to_search);
     if ( it != data->end() ) {
       path = to_search;
       return it->second;
@@ -119,7 +122,7 @@ C FindPathBased(const map<string, C>* data, string& path, char separator = PATH_
       }
     }
   }
-  const typename map<string, C>::const_iterator it = data->find(to_search);
+  const typename std::map<string, C>::const_iterator it = data->find(to_search);
   if ( it != data->end() ) {
     path = to_search;
     return it->second;
@@ -129,9 +132,9 @@ C FindPathBased(const map<string, C>* data, string& path, char separator = PATH_
 
 // Same as above, but adds all matching paths
 template<class C>
-int FindAllPathBased(const map<string, C>* data,
+int FindAllPathBased(const std::map<string, C>* data,
                      const string& path,
-                     map<string, C>* matches,
+                     std::map<string, C>* matches,
                      char separator = PATH_SEPARATOR) {
   if ( data->empty() ) {
     return 0;
@@ -139,7 +142,7 @@ int FindAllPathBased(const map<string, C>* data,
   string to_search(path);
   int num_found = 0;
   while ( !to_search.empty() ) {
-    const typename map<string, C>::const_iterator it = data->find(to_search);
+    const typename std::map<string, C>::const_iterator it = data->find(to_search);
     if ( it != data->end() ) {
       ++num_found;
       matches->insert(make_pair(to_search, it->second));
@@ -155,7 +158,7 @@ int FindAllPathBased(const map<string, C>* data,
       }
     }
   }
-  const typename map<string, C>::const_iterator it = data->find(to_search);
+  const typename std::map<string, C>::const_iterator it = data->find(to_search);
   if ( it != data->end() ) {
     ++num_found;
     matches->insert(make_pair(to_search, it->second));
@@ -172,8 +175,8 @@ bool Rm(const string& path);
 // Fails if the target directory is not empty.
 bool Rmdir(const string& path);
 
-// Removes all files under the given directory (NOTE: just the files if all is false)
-bool RmFilesUnder(const string& path, const re::RE* pattern = NULL, bool all = false);
+// Removes all files under the given directory (NOTE: just the files if rm_dirs is false)
+bool RmFilesUnder(const string& path, const re::RE* pattern = NULL, bool rm_dirs = false);
 
 // Move file or directory to destination directory.
 // If a directory with the same name already exists, the source directory
@@ -210,6 +213,24 @@ string MakeAbsolutePath(const char* path);
 //  >=0 : success
 int32 GetLastNumberedFile(const string& dir, re::RE* re, int32 file_num_size);
 
-}
+// Reads the given file line by line and returns the read lines.
+// comment_char: if not 0 this character marks the start of a line comment (which is ignored)
+// trim_spaces: remove spaces on each line
+// trim_empty_lines: do not return empty lines
+// Returns success status.
+bool ReadFileLines(const string& filepath,
+                   char comment_char,
+                   bool trim_spaces,
+                   bool trim_empty_lines,
+                   std::vector<string>* out);
+
+// Copies the file to the destination.
+bool Copy(const string& source,
+          const string& dest,
+          mode_t mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+
+}  // namespace io
+}  // namespace whisper
+
 
 #endif  // __WHISPERLIB_IO_IOUTIL_H__

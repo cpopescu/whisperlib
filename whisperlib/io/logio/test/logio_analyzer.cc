@@ -35,16 +35,16 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/timer.h>
-#include <whisperlib/base/system.h>
-#include <whisperlib/sync/thread.h>
-#include <whisperlib/base/gflags.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/timer.h"
+#include "whisperlib/base/system.h"
+#include "whisperlib/sync/thread.h"
+#include "whisperlib/base/gflags.h"
 
-#include <whisperlib/io/buffer/memory_stream.h>
-#include <whisperlib/io/ioutil.h>
-#include <whisperlib/io/logio/logio.h>
+#include "whisperlib/io/buffer/memory_stream.h"
+#include "whisperlib/io/ioutil.h"
+#include "whisperlib/io/logio/logio.h"
 
 //////////////////////////////////////////////////////////////////////
 
@@ -74,7 +74,7 @@ DEFINE_bool(log_records_inline,
 //////////////////////////////////////////////////////////////////////
 
 int main(int argc, char* argv[]) {
-  common::Init(argc, argv);
+  whisper::common::Init(argc, argv);
 
   //////////////////////////////////////////////////////////////////////////
   // auto-detect part
@@ -84,9 +84,9 @@ int main(int argc, char* argv[]) {
   if ( file_base == "" || block_size == 0 || blocks_per_file == 0 ) {
     string f;
     int32 bs, bpf;
-    if ( !io::DetectLogSettings(FLAGS_dir, &f, &bs, &bpf) ) {
+    if ( !whisper::io::DetectLogSettings(FLAGS_dir, &f, &bs, &bpf) ) {
       LOG_ERROR << "DetectLogSettings failed for dir: [" << FLAGS_dir << "]";
-      common::Exit(1);
+      whisper::common::Exit(1);
     }
     if ( file_base == "" ) {
       file_base = f;
@@ -105,18 +105,18 @@ int main(int argc, char* argv[]) {
     LOG_ERROR << "Invalid settings, file_base: [" << file_base << "]"
                  ", block_size: " << block_size
               << ", blocks_per_file: " << blocks_per_file;
-    common::Exit(1);
+    whisper::common::Exit(1);
   }
   ::sleep(2);
   //////////////////////////////////////////////////////////////////////////
 
 
-  io::LogReader reader(FLAGS_dir, file_base, block_size, blocks_per_file);
+  whisper::io::LogReader reader(FLAGS_dir, file_base, block_size, blocks_per_file);
   uint64 num_records = 0;
 
   while ( true ) {
-    io::LogPos pos = reader.Tell();
-    io::MemoryStream rec;
+    whisper::io::LogPos pos = reader.Tell();
+    whisper::io::MemoryStream rec;
     if ( !reader.GetNextRecord(&rec) ) {
       break;
     }
@@ -141,5 +141,5 @@ int main(int argc, char* argv[]) {
   }
   LOG_INFO << "Done. #" << num_records << " records found.";
 
-  common::Exit(0);
+  whisper::common::Exit(0);
 }

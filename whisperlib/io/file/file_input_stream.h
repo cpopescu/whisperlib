@@ -34,9 +34,10 @@
 
 #include <vector>
 #include <string>
-#include <whisperlib/io/input_stream.h>
-#include <whisperlib/io/file/file.h>
+#include "whisperlib/io/input_stream.h"
+#include "whisperlib/io/file/file.h"
 
+namespace whisper {
 namespace io {
 
 class FileInputStream : public InputStream {
@@ -44,10 +45,10 @@ class FileInputStream : public InputStream {
   FileInputStream(File* file);
   virtual ~FileInputStream();
 
-  static string ReadFileOrDie(const char* filename);
-  static string ReadFileOrDie(const string& filename);
-  static bool TryReadFile(const char* filename, string* content);
-  static bool TryReadFile(const string& filename, string* content);
+  static std::string ReadFileOrDie(const char* filename);
+  static std::string ReadFileOrDie(const std::string& filename);
+  static bool TryReadFile(const char* filename, std::string* content);
+  static bool TryReadFile(const std::string& filename, std::string* content);
 
   int32 Read(io::MemoryStream* ms, int32 len);
 
@@ -69,10 +70,11 @@ class FileInputStream : public InputStream {
 
  private:
   File* const file_;
-  vector<int64> read_mark_positions_;
+  std::vector<int64> read_mark_positions_;
 
   DISALLOW_EVIL_CONSTRUCTORS(FileInputStream);
 };
-}
+}  // namespace io
+}  // namespace whisper
 
 #endif  // __COMMON_IO_FILE_FILE_INPUT_STREAM_H__

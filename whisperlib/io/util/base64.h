@@ -40,8 +40,11 @@
 
 #include <string>
 #include <vector>
-#include <whisperlib/base/types.h>
+#include "whisperlib/base/types.h"
 
+using std::string;
+
+namespace whisper {
 namespace base64 {
 
 //////////////////////////////////////////////////////////////////////
@@ -98,7 +101,7 @@ struct Encoder {
 };
 
 string EncodeString(const string& s);
-string EncodeVector(const vector<uint8>& v);
+string EncodeVector(const std::vector<uint8>& v);
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -150,5 +153,6 @@ struct Decoder {
   }
 };
 }  // namespace base64
+}  // namespace whisper
 
 #endif  // BASE64_ENCODE_H

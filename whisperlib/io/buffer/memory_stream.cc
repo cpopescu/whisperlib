@@ -32,6 +32,9 @@
 #include "whisperlib/io/buffer/memory_stream.h"
 #include "whisperlib/base/scoped_ptr.h"
 
+using namespace std;
+
+namespace whisper {
 namespace io {
 
 MemoryStream::MemoryStream(BlockSize block_size)
@@ -550,4 +553,5 @@ void MemoryStream::AppendNewBlock(DataBlock* data,
 #endif  // __APPEND_BLOCK_WITH_PARTIAL_BLOCK_REUSE__
   }
 }
-}
+}  // namespace io
+}  // namespace whisper

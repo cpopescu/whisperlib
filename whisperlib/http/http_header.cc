@@ -36,6 +36,9 @@
 #include "whisperlib/base/strutil.h"
 #include "whisperlib/io/util/base64.h"
 
+using namespace std;
+
+namespace whisper {
 namespace http {
 Header::Header(bool is_strict)
   : is_strict_(is_strict) {
@@ -716,4 +719,5 @@ int64 Header::DefaultBodyLen() const {
   }
   return 0;
 }
-}
+}  // namespace http
+}  // namespace whisper

@@ -47,9 +47,10 @@
 #define __COMMON_IO_LOGIO_RECORDIO_H__
 
 #include <zlib.h>
-#include <whisperlib/io/buffer/memory_stream.h>
-#include <whisperlib/io/zlib/zlibwrapper.h>
+#include "whisperlib/io/buffer/memory_stream.h"
+#include "whisperlib/io/zlib/zlibwrapper.h"
 
+namespace whisper {
 namespace io {
 
 static const int32 kDefaultRecordBlockSize = 65536;
@@ -88,6 +89,9 @@ class RecordWriter {
 
   int32 leftover() const {
     return content_.Size();
+  }
+  void Clear() {
+    prev_block_crc_ = 0;
   }
  private:
   bool AppendRecord(io::MemoryStream* in, io::MemoryStream* out,
@@ -135,6 +139,7 @@ class RecordReader {
   void Clear() {
     temp_.Clear();
     content_.Clear();
+    prev_block_crc_ = 0;
   }
  private:
   void SkipRecord();
@@ -156,6 +161,7 @@ class RecordReader {
 
   DISALLOW_EVIL_CONSTRUCTORS(RecordReader);
 };
-}
+}  // namespace io
+}  // namespace whisper
 
 #endif  // __COMMON_IO_LOGIO_RECORDIO_H__

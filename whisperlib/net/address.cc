@@ -36,6 +36,10 @@
 #include "whisperlib/net/address.h"
 #include "whisperlib/base/strutil.h"
 
+using namespace std;
+
+namespace whisper {
+
 namespace net {
 
 const uint8 IpAddress::kInvalidIpV6[16] = {
@@ -201,4 +205,5 @@ bool IpV4Filter::Matches(const IpAddress& ip) const {
            first_it->first <= ip.ipv4() &&
            (first_it->second == MARK_BEGIN || first_it->first == ip.ipv4()) );
 }
-}
+} // namespace net
+} // namespace whisper

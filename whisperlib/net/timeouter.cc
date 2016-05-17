@@ -31,6 +31,9 @@
 
 #include "whisperlib/net/timeouter.h"
 
+using namespace std;
+
+namespace whisper {
 namespace net {
 
 void Timeouter::SetTimeout(int64 timeout_id, int64 timeout_in_ms) {
@@ -65,4 +68,5 @@ void Timeouter::UnsetAllTimeouts() {
   }
   timeout_closures_.clear();
 }
-}
+}  // namespace net
+}  // namespace whisper

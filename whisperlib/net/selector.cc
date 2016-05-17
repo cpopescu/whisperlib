@@ -39,11 +39,13 @@
 #include <sys/eventfd.h>
 #endif
 
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/core_errno.h>
-#include <whisperlib/base/timer.h>
-#include <whisperlib/base/gflags.h>
-#include <whisperlib/net/selectable.h>
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/core_errno.h"
+#include "whisperlib/base/timer.h"
+#include "whisperlib/base/gflags.h"
+#include "whisperlib/net/selectable.h"
+
+using namespace std;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -68,10 +70,13 @@ DEFINE_int32(debug_check_long_callbacks_ms,
 namespace {
 void StopSignal() {
 }
-Closure* glb_stop_signal = NewPermanentCallback(&StopSignal);
+whisper::Closure* glb_stop_signal = whisper::NewPermanentCallback(&StopSignal);
+#ifdef __USE_LEAN_SELECTOR__
 static const int kCallbackQueueSize = 10000;
+#endif
 }
 
+namespace whisper {
 namespace net {
 
 Selector::Selector()
@@ -150,9 +155,11 @@ void Selector::Loop() {
         ++run_count;
     }
 #else          // __USE_LEAN_SELECTOR__
+    mutex_.Lock();
     if ( !to_run_.empty() ) {
       to_sleep_ms = 0;
     }
+    mutex_.Unlock();
     events.clear();
     if (!base_->LoopStep(to_sleep_ms, &events)) {
       LOG_ERROR << "ERROR in select loop step. Exiting Loop.";
@@ -195,7 +202,7 @@ void Selector::Loop() {
       const int64 processing_end = timer::TicksMsec();
       if ( processing_end - processing_begin >
            FLAGS_debug_check_long_callbacks_ms ) {
-        LOG_ERROR << this << " ====>> Unexpectedly long event processing: "
+        LOG_WARN << this << " ====>> Unexpectedly long event processing: "
                   << " time spent:  "
                   << processing_end - processing_begin
                   << " num events: " << events.size();
@@ -240,7 +247,7 @@ void Selector::Loop() {
         const int64 processing_end = timer::TicksMsec();
         if ( processing_end - processing_begin >
              FLAGS_debug_check_long_callbacks_ms ) {
-          LOG_ERROR << this << " ====>> Unexpectedly long alarm processing: "
+          LOG_WARN << this << " ====>> Unexpectedly long alarm processing: "
                     << " callback: " << closure
                     << " time spent:  "
                     << processing_end - processing_begin;
@@ -249,7 +256,7 @@ void Selector::Loop() {
 #endif
     }
     if ( run_count > 2 * FLAGS_selector_num_closures_per_event ) {
-      LOG_ERROR << this << " We run to many closures per event: " << run_count;
+      LOG_WARN << this << " We run to many closures per event: " << run_count;
     }
   }
 
@@ -269,7 +276,9 @@ void Selector::Loop() {
     LOG_INFO << "Running closures on shutdown, count: " << run_count;
   }
 #ifndef __USE_LEAN_SELECTOR__
+  mutex_.Lock();
   CHECK(to_run_.empty());
+  mutex_.Unlock();
 #endif
 
   // Run remaining alarms
@@ -285,11 +294,11 @@ void Selector::Loop() {
     alarms_.erase(alarms_.begin());
   }
   if ( !alarms_.empty() ) {
-    LOG_ERROR << "Now: " << now_ << " ms";
+    LOG_WARN << "Now: " << now_ << " ms";
   }
   for ( AlarmSet::const_iterator it = alarms_.begin(); it != alarms_.end();
         ++it ) {
-    LOG_ERROR << "Leaking alarm, run at: " << it->first
+    LOG_WARN << "Leaking alarm, run at: " << it->first
               << " ms, due in: " << (it->first - now_) << " ms";
   }
 
@@ -340,7 +349,7 @@ void Selector::RegisterAlarm(Closure* callback, int64 timeout_in_ms) {
   CHECK(timeout_in_ms < 0 || timeout_in_ms <= wake_up_time)
     << "Overflow, timeout_in_ms: " << timeout_in_ms << " is too big";
 
-  pair<ReverseAlarmsMap::iterator, bool> result =
+  std::pair<ReverseAlarmsMap::iterator, bool> result =
       reverse_alarms_.insert(make_pair(callback, wake_up_time));
   if ( result.second ) {
     // New alarm inserted; Now add to alarms_ too.
@@ -380,7 +389,7 @@ void Selector::CleanAndCloseAll() {
   }
 }
 
-int Selector::RunClosures(int num_closures) {
+int Selector::RunClosures(int /*num_closures*/) {
 #ifdef __USE_LEAN_SELECTOR__
     int run_count = 0;
     while (run_count < num_closures) {
@@ -431,7 +440,7 @@ int Selector::RunClosures(int num_closures) {
       const int64 processing_end = timer::TicksMsec();
       if ( processing_end - processing_begin >
            FLAGS_debug_check_long_callbacks_ms ) {
-        LOG_ERROR << this << " ====>> Unexpectedly long callback processing: "
+        LOG_WARN << this << " ====>> Unexpectedly long callback processing: "
                   << " callback: " << closure
                   << " time spent:  "
                   << processing_end - processing_begin;
@@ -448,12 +457,12 @@ void Selector::SendWakeSignal() {
 #ifdef HAVE_EVENTFD_H
   uint64 value = 1ULL;
   if ( sizeof(value) != ::write(event_fd_, &value, sizeof(value)) ) {
-    LOG_ERROR << "Error writing a wake-up byte in selector event_fd_";
+    LOG_WARN << "Error writing a wake-up byte in selector event_fd_";
   }
 #else
   int8 byte = 0;
   if ( sizeof(byte) != ::write(signal_pipe_[1], &byte, sizeof(byte)) ) {
-    LOG_ERROR << "Error writing a wake-up byte in selector signal pipe";
+    LOG_WARN << "Error writing a wake-up byte in selector signal pipe";
   }
 #endif
 #endif  // __USE_LEAN_SELECTOR__
@@ -519,4 +528,7 @@ void Selector::UpdateDesire(Selectable* s, bool enable, int32 desire) {
 }
 
 //////////////////////////////////////////////////////////////////////
-}
+
+}  // namespace net
+
+}  // namespace whisper

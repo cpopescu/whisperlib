@@ -36,17 +36,20 @@
 #include <pthread.h>
 #include <deque>
 #include <vector>
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/timer.h>
-#include <whisperlib/sync/mutex.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/timer.h"
+#include "whisperlib/sync/mutex.h"
 
+using std::vector;
+
+namespace whisper {
 namespace synch {
 
 template<typename C>
 class ProducerConsumerQueue {
  public:
-    explicit ProducerConsumerQueue(int max_size, bool fifo_policy = true)
+    explicit ProducerConsumerQueue(size_t max_size, bool fifo_policy = true)
         : max_size_(max_size),
           fifo_policy_(fifo_policy) {
     CHECK_SYS_FUN(pthread_mutex_init(&mutex_, NULL), 0);
@@ -54,22 +57,25 @@ class ProducerConsumerQueue {
     CHECK_SYS_FUN(pthread_cond_init(&cond_empty_, NULL), 0);
   }
   ~ProducerConsumerQueue() {
-    CHECK_SYS_FUN(pthread_mutex_destroy(&mutex_), 0);
-    CHECK_SYS_FUN(pthread_cond_destroy(&cond_full_), 0);
-    CHECK_SYS_FUN(pthread_cond_destroy(&cond_empty_), 0);
+    DCHECK_SYS_FUN(pthread_mutex_destroy(&mutex_), 0);
+    DCHECK_SYS_FUN(pthread_cond_destroy(&cond_full_), 0);
+    DCHECK_SYS_FUN(pthread_cond_destroy(&cond_empty_), 0);
   }
   pthread_mutex_t mutex() {
         return mutex_;
   }
-  deque<C>* data() {
+  std::deque<C>* data() {
       return &data_;
   }
   void Put(C p) {
+    PutAt(p, fifo_policy_);
+  }
+  void PutAt(C p, bool at_back) {
     CHECK_SYS_FUN(pthread_mutex_lock(&mutex_), 0);
-    while ( data_.size() >= max_size_ ) {
+    while ( max_size_ && data_.size() >= max_size_ ) {
       CHECK_SYS_FUN(pthread_cond_wait(&cond_empty_, &mutex_), 0);
     }
-    if (fifo_policy_) {
+    if (at_back) {
         data_.push_back(p);
     } else {
         data_.push_front(p);
@@ -78,22 +84,25 @@ class ProducerConsumerQueue {
     CHECK_SYS_FUN(pthread_mutex_unlock(&mutex_), 0);
   }
   bool Put(C p, uint32 timeout_in_ms) {
+    return PutAt(p, timeout_in_ms, fifo_policy_);
+  }
+  bool PutAt(C p, uint32 timeout_in_ms, bool at_back) {
     if ( kInfiniteWait == timeout_in_ms ) {
       Put(p);
       return true;
     }
     CHECK_SYS_FUN(pthread_mutex_lock(&mutex_), 0);
-    if ( timeout_in_ms && data_.size() >= max_size_ ) {
+    if ( timeout_in_ms && max_size_ && data_.size() >= max_size_ ) {
       struct timespec ts = timer::TimespecAbsoluteMsec(timeout_in_ms);
       const int result = pthread_cond_timedwait(&cond_empty_, &mutex_, &ts);
       CHECK(result == 0 || result == ETIMEDOUT)
         << " Invalid result: " << result;
     }
-    if ( data_.size() >= max_size_ ) {
+    if ( max_size_ && data_.size() >= max_size_ ) {
       CHECK_SYS_FUN(pthread_mutex_unlock(&mutex_), 0);
       return false;
     }
-    if (fifo_policy_) {
+    if (at_back) {
         data_.push_back(p);
     } else {
         data_.push_front(p);
@@ -149,8 +158,9 @@ class ProducerConsumerQueue {
     CHECK_SYS_FUN(pthread_mutex_unlock(&mutex_), 0);
   }
   bool IsFull() {
+    if (!max_size_) return false;
     CHECK_SYS_FUN(pthread_mutex_lock(&mutex_), 0);
-    const bool is_full (data_.size() >= max_size_);
+    const bool is_full(data_.size() >= max_size_);
     CHECK_SYS_FUN(pthread_mutex_unlock(&mutex_), 0);
     return is_full;
   }
@@ -168,13 +178,14 @@ class ProducerConsumerQueue {
   pthread_cond_t cond_full_;   // triggered when is some element in queue
   pthread_cond_t cond_empty_;  // triggered when is some free space in queue
 
-  const int max_size_;
-  const int fifo_policy_;
-  deque<C> data_;
+  const size_t max_size_;
+  const bool fifo_policy_;
+  std::deque<C> data_;
 
  private:
   DISALLOW_EVIL_CONSTRUCTORS(ProducerConsumerQueue);
 };
-}
+}  // namespace synch
+}  // namespace whisper
 
 #endif  //  __COMMON_PRODUCER_CONSUMER_QUEUR_H__

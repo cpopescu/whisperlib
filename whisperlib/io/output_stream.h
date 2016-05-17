@@ -32,23 +32,17 @@
 #ifndef __WHISPERLIB_IO_OUTPUT_STREAM_H__
 #define __WHISPERLIB_IO_OUTPUT_STREAM_H__
 
+#include <string.h>             // strlen
 #include <string>
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/system.h>
+#include "whisperlib/base/types.h"
 
-#include <whisperlib/io/input_stream.h>
-#include <whisperlib/io/stream_base.h>
-#include <whisperlib/io/iomarker.h>
-#include <whisperlib/io/seeker.h>
-
+namespace whisper {
 namespace io {
 
-class OutputStream : public StreamBase {
+class InputStream;
+class OutputStream {
  public:
-  OutputStream() : StreamBase() {
-  }
-  OutputStream(IoMarker* marker, Seeker* seeker)
-    : StreamBase(marker, seeker) {
+  OutputStream() {
   }
   virtual ~OutputStream() {
   }
@@ -76,14 +70,15 @@ class OutputStream : public StreamBase {
   }
 
   // Convenience function for a string
-  int32 WriteString(const string& s) {
+  int32 WriteString(const std::string& s) {
     return Write(s.data(), s.size());
   }
-  int32 Write(const string& s) {
+  int32 Write(const std::string& s) {
     return Write(s.data(), s.size());
   }
  private:
   DISALLOW_EVIL_CONSTRUCTORS(OutputStream);
 };
-}
+}  // namespace io
+}  // namespace whisper
 #endif  // __WHISPERLIB_IO_OUTPUT_STREAM_H__

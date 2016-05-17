@@ -33,11 +33,12 @@
 #define __NET_BASE_TIMEOUTER_H__
 
 #include <map>
-#include <whisperlib/net/selector.h>
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/callback.h>
+#include "whisperlib/net/selector.h"
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/callback.h"
 
+namespace whisper {
 namespace net {
 
 class Timeouter {
@@ -79,9 +80,10 @@ class Timeouter {
   TimeoutCallback* const callback_;
 
   // Timeout callbacks - use them w/ SetTimeout/Unset
-  typedef map<int64, Closure*> ClosureMap;
+  typedef std::map<int64, Closure*> ClosureMap;
   ClosureMap timeout_closures_;
 };
-}
+}  // namespace net
+}  // namespace whisper
 
 #endif  // __NET_BASE_TIMEOUTER_H__

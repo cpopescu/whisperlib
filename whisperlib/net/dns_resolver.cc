@@ -35,48 +35,44 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
-#include <whisperlib/base/gflags.h>
-#include <whisperlib/base/strutil.h>
-#include <whisperlib/base/scoped_ptr.h>
-#include <whisperlib/base/cache.h>
-#include <whisperlib/sync/thread.h>
-#include <whisperlib/sync/producer_consumer_queue.h>
-#include <whisperlib/net/dns_resolver.h>
+#include "whisperlib/base/gflags.h"
+#include "whisperlib/base/strutil.h"
+#include "whisperlib/base/scoped_ptr.h"
+#include "whisperlib/base/cache.h"
+#include "whisperlib/sync/thread.h"
+#include "whisperlib/sync/producer_consumer_queue.h"
+#include "whisperlib/net/dns_resolver.h"
 
-DEFINE_int32(dns_timeout_ms, 10000,
-             "Timeout for DNS queries.");
+using namespace std;
+
+DEFINE_int32(dns_timeout_ms, 10000, "Timeout for DNS queries.");
 
 
 namespace {
-void CloseThread(thread::Thread** t) {
-    (*t)->Join();
-    delete *t;
-    delete t;
-}
 
 class DnsResolver {
  private:
   struct Query {
-    net::Selector* selector_;
+    whisper::net::Selector* selector_;
     string hostname_;
-    net::DnsResultHandler* result_handler_;
-    Query(net::Selector* selector, const string& hostname,
-        net::DnsResultHandler* result_handler)
+    whisper::net::DnsResultHandler* result_handler_;
+    Query(whisper::net::Selector* selector, const string& hostname,
+        whisper::net::DnsResultHandler* result_handler)
       : selector_(selector),
         hostname_(hostname),
         result_handler_(result_handler) {
     }
   };
-  typedef map<net::DnsResultHandler*, Query*> QueryMap;
+  typedef std::map<whisper::net::DnsResultHandler*, Query*> QueryMap;
 
-  static const uint32 kQueryQueueMaxSize = 1000;
+//  static const uint32 kQueryQueueMaxSize = 1000;
   static const uint32 kCacheSize = 100;
   static const int64 kCacheTimeout = 24*3600*1000LL; // 1 day
 
  public:
   DnsResolver()
     : query_map_(),
-      cache_(util::CacheBase::LRU, kCacheSize, kCacheTimeout, NULL, NULL) {
+      cache_(whisper::util::CacheBase::LRU, kCacheSize, kCacheTimeout, NULL, NULL) {
   }
   virtual ~DnsResolver() {
     Stop();
@@ -108,15 +104,16 @@ class DnsResolver {
       return true;  // thread_ != NULL;
   }
 
-  void Resolve(net::Selector* selector, const string& hostname,
-               net::DnsResultHandler* result_handler) {
-    CHECK_NOT_NULL(selector);
-    CHECK_NOT_NULL(result_handler);
+  void Resolve(whisper::net::Selector* selector, const string& hostname,
+               whisper::net::DnsResultHandler* result_handler) {
+    CHECK(selector);
+    CHECK(result_handler);
     CHECK(result_handler->is_permanent());
     DCHECK(IsRunning());
 
-    synch::MutexLocker lock(&mutex_);
-    scoped_ref<net::DnsHostInfo> info = cache_.Get(hostname);
+    whisper::synch::MutexLocker lock(&mutex_);
+
+    scoped_ref<whisper::net::DnsHostInfo> info = cache_.Get(hostname);
     if ( info.get() != NULL ) {
       if (!info->is_expired()) {
           VLOG(5) << "Cache hit for hostname: [" << hostname << "]";
@@ -141,18 +138,19 @@ class DnsResolver {
         it->second->push_back(query);
     }
     if (start_thread) {
-        thread::Thread** p = new thread::Thread*;
-        *p = new thread::Thread(NewCallback(this, &DnsResolver::Run, query, p));
-        // TODO(mihai): This is not the right way to do it - use a thread pool or something -
-        // arbitrarily limiting the stack on various platforms is not a wise thing to do
-        //(*p)->SetStackSize(65536);
-        (*p)->Start();
+        whisper::thread::Thread* t =
+            new whisper::thread::Thread(
+                whisper::NewCallback(this, &DnsResolver::Run, query));
+        t->SetJoinable(false);
+        t->set_self_delete();
+        t->Start();
     }
 
     // query_queue_.Put(query);
   }
-  void Cancel(net::DnsResultHandler* result_handler) {
-    synch::MutexLocker lock(&mutex_);
+  void Cancel(whisper::net::DnsResultHandler* result_handler) {
+    whisper::synch::MutexLocker lock(&mutex_);
+
     QueryMap::iterator it = query_map_.find(result_handler);
     if ( it == query_map_.end() ) {
       return;
@@ -161,27 +159,28 @@ class DnsResolver {
   }
 
  private:
-  void Run(Query* query, thread::Thread** t) {
+    void Run(Query* query) {
       // a NULL result_handler means a Canceled query
       if ( query->result_handler_ == NULL ) {
-          synch::MutexLocker lock(&mutex_);
+          whisper::synch::MutexLocker lock(&mutex_);
           if (waiting_queries_[query->hostname_]->size() == 1) {
               delete waiting_queries_[query->hostname_];
               waiting_queries_.erase(query->hostname_);
           }
           delete query;
-          query->selector_->RunInSelectLoop(NewCallback(&CloseThread, t));
+          // TODO(cosmin): This is not needed if the thread is not joinable, it will auto-delete
+          // query->selector_->RunInSelectLoop(NewCallback(&CloseThread, t));
           return;
       }
       // blocking resolve
-      scoped_ref<net::DnsHostInfo> info =
-          net::DnsBlockingResolve(query->hostname_);
+      scoped_ref<whisper::net::DnsHostInfo> info =
+          whisper::net::DnsBlockingResolve(query->hostname_);
 
-       // copy here as query may disappear
-      net::Selector* selector = query->selector_;
+      // copy here as query may disappear
+      // whisper::net::Selector* selector = query->selector_;
       string hostname(query->hostname_);
       {
-        synch::MutexLocker lock(&mutex_);
+        whisper::synch::MutexLocker lock(&mutex_);
         cache_.Add(hostname, info);
         for (int i = 0; i < waiting_queries_[hostname]->size(); ++i) {
             Query* q = waiting_queries_[hostname]->at(i);
@@ -194,21 +193,22 @@ class DnsResolver {
         delete waiting_queries_[hostname];
         waiting_queries_.erase(hostname);
       }
-      selector->RunInSelectLoop(NewCallback(&CloseThread, t));
+      // TODO(cosmin): This is not needed if the thread is not joinable, it will auto-delete
+      // selector->RunInSelectLoop(NewCallback(&CloseThread, t));
   }
 
-  void Return(net::Selector* selector, net::DnsResultHandler* handler,
-                scoped_ref<net::DnsHostInfo> info) {
-    selector->RunInSelectLoop(NewCallback(this, &DnsResolver::Return,
+  void Return(whisper::net::Selector* selector, whisper::net::DnsResultHandler* handler,
+                scoped_ref<whisper::net::DnsHostInfo> info) {
+    selector->RunInSelectLoop(whisper::NewCallback(this, &DnsResolver::Return,
         handler, info));
   }
-  void Return(net::DnsResultHandler* handler, scoped_ref<net::DnsHostInfo> info) {
+  void Return(whisper::net::DnsResultHandler* handler, scoped_ref<whisper::net::DnsHostInfo> info) {
     handler->Run(info);
   }
 
  private:
   // synchronize access to query_map_, cache_
-  synch::Mutex mutex_;
+  whisper::synch::Mutex mutex_;
 
   // map by DnsResultHandler, useful when we want to Cancel a query
   QueryMap query_map_;
@@ -218,37 +218,57 @@ class DnsResolver {
   WaitingMap waiting_queries_;
 
   // cache of solved queries
-  util::Cache<string, scoped_ref<net::DnsHostInfo> > cache_;
+  whisper::util::Cache<string, scoped_ref<whisper::net::DnsHostInfo> > cache_;
 };
 
 DnsResolver* g_dns_resolver = NULL;
-static synch::Mutex g_dns_mutex;
-
-static const int kDnsMutexPoolSize = 11;
-static synch::MutexPool g_mutex_pool(kDnsMutexPoolSize);
+static whisper::synch::Mutex g_dns_mutex;
 
 }
 
+namespace whisper {
 namespace net {
+
+#if __cplusplus >= 201103L      // C++11
+struct DnsStarter : public DnsResolver {
+    DnsStarter() { Start(); }
+    ~DnsStarter() { Stop(); }
+};
+DnsResolver* DnsInstance() {
+    // https://en.wikipedia.org/wiki/Double-checked_locking#Usage_in_C.2B.2B11
+    static DnsStarter dns_instance;
+    return &dns_instance;
+}
+
+void DnsInit() {}   // NO-OP since DnsInstance provides static instance
+
+#else   // not C++11
+DnsResolver* DnsInstance() {
+    if (g_dns_resolver == NULL) {   // NOT thread-safe (Double Check Locking)
+        DnsInit();
+    }
+    return g_dns_resolver;
+}
 
 void DnsInit() {
   synch::MutexLocker l(&g_dns_mutex);
   if (g_dns_resolver) {
-    LOG_ERROR << "DNS Resolver already initialized!";
+    static int cnt = 0;
+    if (++cnt == 1)  LOG_WARNING << "DNS Resolver already initialized!";
     return;
   }
-  g_dns_resolver = new DnsResolver();
-  g_dns_resolver->Start();
+  DnsResolver* dns = new DnsResolver();
+  dns->Start();
+  g_dns_resolver = dns;
 }
+#endif
 
-void DnsResolve(net::Selector* selector, const string& hostname,
+void DnsResolve(whisper::net::Selector* selector, const string& hostname,
                 DnsResultHandler* result_handler) {
-  CHECK_NOT_NULL(g_dns_resolver) << "DNS Resolver not initialized!";
-  g_dns_resolver->Resolve(selector, hostname, result_handler);
+  DnsInstance()->Resolve(selector, hostname, result_handler);
 }
 void DnsCancel(DnsResultHandler* result_handler) {
-  CHECK_NOT_NULL(g_dns_resolver) << "DNS Resolver not initialized!";
-  g_dns_resolver->Cancel(result_handler);
+  DnsInstance()->Cancel(result_handler);
 }
 
 synch::Mutex glb_dns_exit_mutex;
@@ -276,9 +296,9 @@ scoped_ref<DnsHostInfo> DnsBlockingResolve(const string& hostname) {
   struct addrinfo* result = NULL;
   const int error = ::getaddrinfo(hostname.c_str(), NULL, NULL, &result);
   if ( error != 0 ) {
-    LOG_ERROR << "Error resolving hostname: [" << hostname << "]"
+    LOG_WARNING << "Error resolving hostname: [" << hostname << "]"
         ", error: " << ::gai_strerror(error);
-    return new DnsHostInfo(hostname, &g_mutex_pool);
+    return new DnsHostInfo(hostname);
   }
   set<IpAddress> ipv4, ipv6;
   for (struct addrinfo* res = result; res != NULL; res = res->ai_next) {
@@ -302,9 +322,10 @@ scoped_ref<DnsHostInfo> DnsBlockingResolve(const string& hostname) {
     }
     LOG_WARNING << "Don't know how to handle ss_family: " << ss->ss_family;
   }
-  ::freeaddrinfo(result);
-
-  DnsHostInfo* info = new DnsHostInfo(hostname, ipv4, ipv6, &g_mutex_pool);
+  if ( result ) {
+      ::freeaddrinfo(result);
+  }
+  DnsHostInfo* const info = new DnsHostInfo(hostname, ipv4, ipv6);
   LOG_WARNING << "Resolved: [" << hostname << "] to: " << info->ToString();
   return info;
 #else
@@ -313,4 +334,5 @@ scoped_ref<DnsHostInfo> DnsBlockingResolve(const string& hostname) {
 #endif
 }
 
-}
+}  // namespace net
+}  // namespace whisper

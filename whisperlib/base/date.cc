@@ -40,6 +40,8 @@
 
 #include "whisperlib/base/date.h"
 
+using namespace std;
+namespace whisper {
 namespace timer {
 
 const char* Date::MonthName(int month_number) {
@@ -81,13 +83,17 @@ int64 Date::Now() {
 
   int result = ::gettimeofday(&tv, &tz);
   if ( result != 0 ) {
-    LOG_ERROR << "gettimeofday failed: " << GetLastSystemErrorDescription();
+    LOG_WARNING << "gettimeofday failed: " << GetLastSystemErrorDescription();
     return 0;
   }
 
   return ((static_cast<int64>(tv.tv_sec)) * static_cast<int64>(1000) +
           tv.tv_usec / static_cast<int64>(1000));
 }
+time_t Date::NowSec() {
+    return Now()/1000;
+}
+
 //static
 int64 Date::ShiftDay(int64 time, int32 days, bool is_utc) {
   int64 shift_time = time + 24LL * 3600 * 1000 * days;
@@ -152,32 +158,32 @@ bool Date::Set(int year, int month, int day,
                int hour, int minute, int second, int milisecond,
                bool is_utc) {
   if (year < 1900) {
-    LOG_ERROR << "invalid year " << year << ". Should be greater than 1900.";
+    LOG_WARNING << "invalid year " << year << ". Should be greater than 1900.";
     return false;
   }
   if ( month > 11 || month < 0 ) {
-    LOG_ERROR << "invalid month " << month << ". Should be in range 0...11.";
+    LOG_WARNING << "invalid month " << month << ". Should be in range 0...11.";
     return false;
   }
   if ( day > 31 || day < 1 ) {
-    LOG_ERROR << "invalid day " << day << ". Should be in range 1...31.";
+    LOG_WARNING << "invalid day " << day << ". Should be in range 1...31.";
     return false;
   }
   if ( hour > 23 ||  hour < 0 ) {
-    LOG_ERROR << "invalid hour " << hour << ". Should be in range 0...23.";
+    LOG_WARNING << "invalid hour " << hour << ". Should be in range 0...23.";
     return false;
   }
   if ( minute > 59 || minute < 0 ) {
-    LOG_ERROR << "invalid minute " << minute << ". Should be in range 0...59.";
+    LOG_WARNING << "invalid minute " << minute << ". Should be in range 0...59.";
     return false;
   }
   if ( second > 59 || second < 0 ) {
-    LOG_ERROR << "invalid second " << second << ". Should be in range 0...60.";
+    LOG_WARNING << "invalid second " << second << ". Should be in range 0...60.";
     return false;
   }
   if ( milisecond > 999 || milisecond < 0 ) {
-    LOG_ERROR << "invalid milisecond " << milisecond
-              << ". Should be in range 0...999.";
+    LOG_WARNING << "invalid milisecond " << milisecond
+                << ". Should be in range 0...999.";
     return false;
   }
 
@@ -191,7 +197,7 @@ bool Date::Set(int year, int month, int day,
   t.tm_isdst = -1;
   time_t tt = ::mktime(&t);  // mktime always treats t as localtime
   if ( tt == -1 ) {
-    LOG_ERROR << "mktime() failed: " << GetLastSystemErrorDescription();
+    LOG_WARNING << "mktime() failed: " << GetLastSystemErrorDescription();
     return false;
   }
   // tt = seconds since Epoch until t as localtime
@@ -201,8 +207,8 @@ bool Date::Set(int year, int month, int day,
     struct tm asLocalTime;
     struct tm * result = ::localtime_r(&tt, &asLocalTime);
     if ( result == NULL ) {
-      LOG_ERROR << "localtime_r() failed: "
-                << GetLastSystemErrorDescription();
+      LOG_WARNING << "localtime_r() failed: "
+                  << GetLastSystemErrorDescription();
       return false;
     }
 
@@ -241,8 +247,8 @@ void Date::SetTime(int64 time) {
                                  ::localtime_r(&tt, &broken_down_time_);
   if ( result == NULL ) {
     has_errors_ = true;
-    LOG_ERROR << (IsUTC() ? "gmtime_r()" : "localtime_r()") << " failed: "
-              << GetLastSystemErrorDescription();
+    LOG_WARNING << (IsUTC() ? "gmtime_r()" : "localtime_r()") << " failed: "
+                << GetLastSystemErrorDescription();
   } else {
     has_errors_ = false;
   }
@@ -334,4 +340,5 @@ string Date::ToString() const {
 ostream& operator<<(ostream& os, const Date& date) {
   return os << date.ToString();
 }
-}
+}  // namespace timer
+}  // namespace whisper

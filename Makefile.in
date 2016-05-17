@@ -96,6 +96,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/ax_check_gflags.m4 \
 	$(top_srcdir)/m4/ax_check_icu.m4 \
 	$(top_srcdir)/m4/ax_check_protobuf.m4 \
 	$(top_srcdir)/m4/ax_check_zlib.m4 \
+	$(top_srcdir)/m4/ax_cxx_compile_stdcxx_11.m4 \
 	$(top_srcdir)/m4/ax_pthread.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -159,11 +160,12 @@ am__whisperlib_libwhisperlib_a_SOURCES_DIST =  \
 	whisperlib/url/google-url/url_parse.cc \
 	whisperlib/url/google-url/url_parse_file.cc \
 	whisperlib/url/google-url/url_util.cc \
+	whisperlib/rpc/RpcStats.pb.cc \
 	whisperlib/rpc/rpc_http_client.cc \
 	whisperlib/rpc/rpc_http_server.cc \
 	whisperlib/rpc/rpc_controller.cc whisperlib/base/log.cc \
 	whisperlib/base/app.cc whisperlib/base/date.cc \
-	whisperlib/base/errno.cc whisperlib/base/re.cc \
+	whisperlib/base/core_errno.cc whisperlib/base/re.cc \
 	whisperlib/base/signal_handlers.cc \
 	whisperlib/base/stringprintf.cc whisperlib/base/strutil.cc \
 	whisperlib/base/strutil_format.cc whisperlib/base/system.cc \
@@ -175,10 +177,6 @@ am__whisperlib_libwhisperlib_a_SOURCES_DIST =  \
 	whisperlib/http/http_server_protocol.cc \
 	whisperlib/io/buffer/data_block.cc \
 	whisperlib/io/buffer/memory_stream.cc \
-	whisperlib/io/checkpoint/checkpoint_tool.cc \
-	whisperlib/io/checkpoint/checkpointing.cc \
-	whisperlib/io/checkpoint/state_keeper.cc \
-	whisperlib/io/checkpoint/state_keeper_tool.cc \
 	whisperlib/io/file/aio_file.cc \
 	whisperlib/io/file/buffer_manager.cc whisperlib/io/file/fd.cc \
 	whisperlib/io/file/fd_input_stream.cc \
@@ -218,6 +216,7 @@ am__dirstamp = $(am__leading_dot)dirstamp
 @HAVE_ICU_TRUE@	whisperlib/url/google-url/url_parse_file.$(OBJEXT) \
 @HAVE_ICU_TRUE@	whisperlib/url/google-url/url_util.$(OBJEXT)
 @HAVE_PROTOBUF_TRUE@am__objects_2 =  \
+@HAVE_PROTOBUF_TRUE@	whisperlib/rpc/RpcStats.pb.$(OBJEXT) \
 @HAVE_PROTOBUF_TRUE@	whisperlib/rpc/rpc_http_client.$(OBJEXT) \
 @HAVE_PROTOBUF_TRUE@	whisperlib/rpc/rpc_http_server.$(OBJEXT) \
 @HAVE_PROTOBUF_TRUE@	whisperlib/rpc/rpc_controller.$(OBJEXT)
@@ -225,7 +224,8 @@ am__dirstamp = $(am__leading_dot)dirstamp
 am_whisperlib_libwhisperlib_a_OBJECTS = $(am__objects_1) \
 	$(am__objects_2) $(am__objects_3) \
 	whisperlib/base/app.$(OBJEXT) whisperlib/base/date.$(OBJEXT) \
-	whisperlib/base/errno.$(OBJEXT) whisperlib/base/re.$(OBJEXT) \
+	whisperlib/base/core_errno.$(OBJEXT) \
+	whisperlib/base/re.$(OBJEXT) \
 	whisperlib/base/signal_handlers.$(OBJEXT) \
 	whisperlib/base/stringprintf.$(OBJEXT) \
 	whisperlib/base/strutil.$(OBJEXT) \
@@ -240,10 +240,6 @@ am_whisperlib_libwhisperlib_a_OBJECTS = $(am__objects_1) \
 	whisperlib/http/http_server_protocol.$(OBJEXT) \
 	whisperlib/io/buffer/data_block.$(OBJEXT) \
 	whisperlib/io/buffer/memory_stream.$(OBJEXT) \
-	whisperlib/io/checkpoint/checkpoint_tool.$(OBJEXT) \
-	whisperlib/io/checkpoint/checkpointing.$(OBJEXT) \
-	whisperlib/io/checkpoint/state_keeper.$(OBJEXT) \
-	whisperlib/io/checkpoint/state_keeper_tool.$(OBJEXT) \
 	whisperlib/io/file/aio_file.$(OBJEXT) \
 	whisperlib/io/file/buffer_manager.$(OBJEXT) \
 	whisperlib/io/file/fd.$(OBJEXT) \
@@ -303,8 +299,6 @@ am__EXEEXT_4 = whisperlib/base/test/lru_cache_test$(EXEEXT) \
 	whisperlib/http/test/http_header_test$(EXEEXT) \
 	whisperlib/io/buffer/test/data_block_test$(EXEEXT) \
 	whisperlib/io/buffer/test/memory_stream_test$(EXEEXT) \
-	whisperlib/io/checkpoint/test/checkpointing_test$(EXEEXT) \
-	whisperlib/io/checkpoint/test/state_keeper_test$(EXEEXT) \
 	whisperlib/net/test/address_test$(EXEEXT) \
 	whisperlib/net/test/dns_resolver_test$(EXEEXT) \
 	whisperlib/net/test/selector_test$(EXEEXT) \
@@ -371,20 +365,6 @@ whisperlib_io_buffer_test_memory_stream_test_OBJECTS =  \
 	whisperlib/io/buffer/test/memory_stream_test.$(OBJEXT)
 whisperlib_io_buffer_test_memory_stream_test_LDADD = $(LDADD)
 whisperlib_io_buffer_test_memory_stream_test_DEPENDENCIES =  \
-	whisperlib/libwhisperlib.a $(am__DEPENDENCIES_1)
-whisperlib_io_checkpoint_test_checkpointing_test_SOURCES =  \
-	whisperlib/io/checkpoint/test/checkpointing_test.cc
-whisperlib_io_checkpoint_test_checkpointing_test_OBJECTS =  \
-	whisperlib/io/checkpoint/test/checkpointing_test.$(OBJEXT)
-whisperlib_io_checkpoint_test_checkpointing_test_LDADD = $(LDADD)
-whisperlib_io_checkpoint_test_checkpointing_test_DEPENDENCIES =  \
-	whisperlib/libwhisperlib.a $(am__DEPENDENCIES_1)
-whisperlib_io_checkpoint_test_state_keeper_test_SOURCES =  \
-	whisperlib/io/checkpoint/test/state_keeper_test.cc
-whisperlib_io_checkpoint_test_state_keeper_test_OBJECTS =  \
-	whisperlib/io/checkpoint/test/state_keeper_test.$(OBJEXT)
-whisperlib_io_checkpoint_test_state_keeper_test_LDADD = $(LDADD)
-whisperlib_io_checkpoint_test_state_keeper_test_DEPENDENCIES =  \
 	whisperlib/libwhisperlib.a $(am__DEPENDENCIES_1)
 whisperlib_io_logio_test_logio_test_SOURCES =  \
 	whisperlib/io/logio/test/logio_test.cc
@@ -496,8 +476,6 @@ SOURCES = $(whisperlib_libwhisperlib_a_SOURCES) \
 	whisperlib/http/test/http_server_test.cc \
 	whisperlib/io/buffer/test/data_block_test.cc \
 	whisperlib/io/buffer/test/memory_stream_test.cc \
-	whisperlib/io/checkpoint/test/checkpointing_test.cc \
-	whisperlib/io/checkpoint/test/state_keeper_test.cc \
 	whisperlib/io/logio/test/logio_test.cc \
 	whisperlib/io/logio/test/recordio_test.cc \
 	whisperlib/net/test/address_test.cc \
@@ -518,8 +496,6 @@ DIST_SOURCES = $(am__whisperlib_libwhisperlib_a_SOURCES_DIST) \
 	whisperlib/http/test/http_server_test.cc \
 	whisperlib/io/buffer/test/data_block_test.cc \
 	whisperlib/io/buffer/test/memory_stream_test.cc \
-	whisperlib/io/checkpoint/test/checkpointing_test.cc \
-	whisperlib/io/checkpoint/test/state_keeper_test.cc \
 	whisperlib/io/logio/test/logio_test.cc \
 	whisperlib/io/logio/test/recordio_test.cc \
 	whisperlib/net/test/address_test.cc \
@@ -564,8 +540,6 @@ am__nobase_include_HEADERS_DIST = whisperlib/base/core_config.h \
 	whisperlib/io/buffer/data_block.h \
 	whisperlib/io/buffer/memory_stream.h \
 	whisperlib/io/buffer/protobuf_stream.h \
-	whisperlib/io/checkpoint/checkpointing.h \
-	whisperlib/io/checkpoint/state_keeper.h \
 	whisperlib/io/file/aio_file.h \
 	whisperlib/io/file/buffer_manager.h whisperlib/io/file/fd.h \
 	whisperlib/io/file/fd_input_stream.h whisperlib/io/file/file.h \
@@ -846,6 +820,7 @@ ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 GREP = @GREP@
+HAVE_CXX11 = @HAVE_CXX11@
 ICU_CFLAGS = @ICU_CFLAGS@
 ICU_CONFIG = @ICU_CONFIG@
 ICU_CPPFLAGS = @ICU_CPPFLAGS@
@@ -977,6 +952,7 @@ LDADD = whisperlib/libwhisperlib.a $(ICU_LIBS)
 @HAVE_ICU_TRUE@  whisperlib/url/google-url/url_util.h
 
 @HAVE_PROTOBUF_TRUE@rpc_protobuf_sources = \
+@HAVE_PROTOBUF_TRUE@  whisperlib/rpc/RpcStats.pb.cc \
 @HAVE_PROTOBUF_TRUE@  whisperlib/rpc/rpc_http_client.cc \
 @HAVE_PROTOBUF_TRUE@  whisperlib/rpc/rpc_http_server.cc \
 @HAVE_PROTOBUF_TRUE@  whisperlib/rpc/rpc_controller.cc
@@ -996,7 +972,7 @@ whisperlib_libwhisperlib_a_SOURCES = \
   $(whisperlib_log_sources) \
   whisperlib/base/app.cc \
   whisperlib/base/date.cc \
-  whisperlib/base/errno.cc \
+  whisperlib/base/core_errno.cc \
   whisperlib/base/re.cc \
   whisperlib/base/signal_handlers.cc \
   whisperlib/base/stringprintf.cc \
@@ -1013,10 +989,6 @@ whisperlib_libwhisperlib_a_SOURCES = \
   whisperlib/http/http_server_protocol.cc \
   whisperlib/io/buffer/data_block.cc \
   whisperlib/io/buffer/memory_stream.cc \
-  whisperlib/io/checkpoint/checkpoint_tool.cc \
-  whisperlib/io/checkpoint/checkpointing.cc \
-  whisperlib/io/checkpoint/state_keeper.cc \
-  whisperlib/io/checkpoint/state_keeper_tool.cc \
   whisperlib/io/file/aio_file.cc \
   whisperlib/io/file/buffer_manager.cc \
   whisperlib/io/file/fd.cc \
@@ -1091,8 +1063,6 @@ nobase_include_HEADERS = \
   whisperlib/io/buffer/data_block.h \
   whisperlib/io/buffer/memory_stream.h \
   whisperlib/io/buffer/protobuf_stream.h \
-  whisperlib/io/checkpoint/checkpointing.h \
-  whisperlib/io/checkpoint/state_keeper.h \
   whisperlib/io/file/aio_file.h \
   whisperlib/io/file/buffer_manager.h \
   whisperlib/io/file/fd.h \
@@ -1163,8 +1133,6 @@ standalone_test_programs = \
   whisperlib/http/test/http_header_test \
   whisperlib/io/buffer/test/data_block_test \
   whisperlib/io/buffer/test/memory_stream_test \
-  whisperlib/io/checkpoint/test/checkpointing_test \
-  whisperlib/io/checkpoint/test/state_keeper_test \
   whisperlib/net/test/address_test \
   whisperlib/net/test/dns_resolver_test \
   whisperlib/net/test/selector_test \
@@ -1331,6 +1299,8 @@ whisperlib/rpc/$(am__dirstamp):
 whisperlib/rpc/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) whisperlib/rpc/$(DEPDIR)
 	@: > whisperlib/rpc/$(DEPDIR)/$(am__dirstamp)
+whisperlib/rpc/RpcStats.pb.$(OBJEXT): whisperlib/rpc/$(am__dirstamp) \
+	whisperlib/rpc/$(DEPDIR)/$(am__dirstamp)
 whisperlib/rpc/rpc_http_client.$(OBJEXT):  \
 	whisperlib/rpc/$(am__dirstamp) \
 	whisperlib/rpc/$(DEPDIR)/$(am__dirstamp)
@@ -1352,7 +1322,7 @@ whisperlib/base/app.$(OBJEXT): whisperlib/base/$(am__dirstamp) \
 	whisperlib/base/$(DEPDIR)/$(am__dirstamp)
 whisperlib/base/date.$(OBJEXT): whisperlib/base/$(am__dirstamp) \
 	whisperlib/base/$(DEPDIR)/$(am__dirstamp)
-whisperlib/base/errno.$(OBJEXT): whisperlib/base/$(am__dirstamp) \
+whisperlib/base/core_errno.$(OBJEXT): whisperlib/base/$(am__dirstamp) \
 	whisperlib/base/$(DEPDIR)/$(am__dirstamp)
 whisperlib/base/re.$(OBJEXT): whisperlib/base/$(am__dirstamp) \
 	whisperlib/base/$(DEPDIR)/$(am__dirstamp)
@@ -1409,24 +1379,6 @@ whisperlib/io/buffer/data_block.$(OBJEXT):  \
 whisperlib/io/buffer/memory_stream.$(OBJEXT):  \
 	whisperlib/io/buffer/$(am__dirstamp) \
 	whisperlib/io/buffer/$(DEPDIR)/$(am__dirstamp)
-whisperlib/io/checkpoint/$(am__dirstamp):
-	@$(MKDIR_P) whisperlib/io/checkpoint
-	@: > whisperlib/io/checkpoint/$(am__dirstamp)
-whisperlib/io/checkpoint/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) whisperlib/io/checkpoint/$(DEPDIR)
-	@: > whisperlib/io/checkpoint/$(DEPDIR)/$(am__dirstamp)
-whisperlib/io/checkpoint/checkpoint_tool.$(OBJEXT):  \
-	whisperlib/io/checkpoint/$(am__dirstamp) \
-	whisperlib/io/checkpoint/$(DEPDIR)/$(am__dirstamp)
-whisperlib/io/checkpoint/checkpointing.$(OBJEXT):  \
-	whisperlib/io/checkpoint/$(am__dirstamp) \
-	whisperlib/io/checkpoint/$(DEPDIR)/$(am__dirstamp)
-whisperlib/io/checkpoint/state_keeper.$(OBJEXT):  \
-	whisperlib/io/checkpoint/$(am__dirstamp) \
-	whisperlib/io/checkpoint/$(DEPDIR)/$(am__dirstamp)
-whisperlib/io/checkpoint/state_keeper_tool.$(OBJEXT):  \
-	whisperlib/io/checkpoint/$(am__dirstamp) \
-	whisperlib/io/checkpoint/$(DEPDIR)/$(am__dirstamp)
 whisperlib/io/file/$(am__dirstamp):
 	@$(MKDIR_P) whisperlib/io/file
 	@: > whisperlib/io/file/$(am__dirstamp)
@@ -1638,26 +1590,6 @@ whisperlib/io/buffer/test/memory_stream_test.$(OBJEXT):  \
 whisperlib/io/buffer/test/memory_stream_test$(EXEEXT): $(whisperlib_io_buffer_test_memory_stream_test_OBJECTS) $(whisperlib_io_buffer_test_memory_stream_test_DEPENDENCIES) $(EXTRA_whisperlib_io_buffer_test_memory_stream_test_DEPENDENCIES) whisperlib/io/buffer/test/$(am__dirstamp)
 	@rm -f whisperlib/io/buffer/test/memory_stream_test$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(whisperlib_io_buffer_test_memory_stream_test_OBJECTS) $(whisperlib_io_buffer_test_memory_stream_test_LDADD) $(LIBS)
-whisperlib/io/checkpoint/test/$(am__dirstamp):
-	@$(MKDIR_P) whisperlib/io/checkpoint/test
-	@: > whisperlib/io/checkpoint/test/$(am__dirstamp)
-whisperlib/io/checkpoint/test/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) whisperlib/io/checkpoint/test/$(DEPDIR)
-	@: > whisperlib/io/checkpoint/test/$(DEPDIR)/$(am__dirstamp)
-whisperlib/io/checkpoint/test/checkpointing_test.$(OBJEXT):  \
-	whisperlib/io/checkpoint/test/$(am__dirstamp) \
-	whisperlib/io/checkpoint/test/$(DEPDIR)/$(am__dirstamp)
-
-whisperlib/io/checkpoint/test/checkpointing_test$(EXEEXT): $(whisperlib_io_checkpoint_test_checkpointing_test_OBJECTS) $(whisperlib_io_checkpoint_test_checkpointing_test_DEPENDENCIES) $(EXTRA_whisperlib_io_checkpoint_test_checkpointing_test_DEPENDENCIES) whisperlib/io/checkpoint/test/$(am__dirstamp)
-	@rm -f whisperlib/io/checkpoint/test/checkpointing_test$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(whisperlib_io_checkpoint_test_checkpointing_test_OBJECTS) $(whisperlib_io_checkpoint_test_checkpointing_test_LDADD) $(LIBS)
-whisperlib/io/checkpoint/test/state_keeper_test.$(OBJEXT):  \
-	whisperlib/io/checkpoint/test/$(am__dirstamp) \
-	whisperlib/io/checkpoint/test/$(DEPDIR)/$(am__dirstamp)
-
-whisperlib/io/checkpoint/test/state_keeper_test$(EXEEXT): $(whisperlib_io_checkpoint_test_state_keeper_test_OBJECTS) $(whisperlib_io_checkpoint_test_state_keeper_test_DEPENDENCIES) $(EXTRA_whisperlib_io_checkpoint_test_state_keeper_test_DEPENDENCIES) whisperlib/io/checkpoint/test/$(am__dirstamp)
-	@rm -f whisperlib/io/checkpoint/test/state_keeper_test$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(whisperlib_io_checkpoint_test_state_keeper_test_OBJECTS) $(whisperlib_io_checkpoint_test_state_keeper_test_LDADD) $(LIBS)
 whisperlib/io/logio/test/$(am__dirstamp):
 	@$(MKDIR_P) whisperlib/io/logio/test
 	@: > whisperlib/io/logio/test/$(am__dirstamp)
@@ -1762,8 +1694,6 @@ mostlyclean-compile:
 	-rm -f whisperlib/io/*.$(OBJEXT)
 	-rm -f whisperlib/io/buffer/*.$(OBJEXT)
 	-rm -f whisperlib/io/buffer/test/*.$(OBJEXT)
-	-rm -f whisperlib/io/checkpoint/*.$(OBJEXT)
-	-rm -f whisperlib/io/checkpoint/test/*.$(OBJEXT)
 	-rm -f whisperlib/io/file/*.$(OBJEXT)
 	-rm -f whisperlib/io/logio/*.$(OBJEXT)
 	-rm -f whisperlib/io/logio/test/*.$(OBJEXT)
@@ -1783,8 +1713,8 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/base/$(DEPDIR)/app.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@whisperlib/base/$(DEPDIR)/core_errno.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/base/$(DEPDIR)/date.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@whisperlib/base/$(DEPDIR)/errno.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/base/$(DEPDIR)/log.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/base/$(DEPDIR)/re.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/base/$(DEPDIR)/signal_handlers.Po@am__quote@
@@ -1813,12 +1743,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/io/buffer/$(DEPDIR)/memory_stream.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/io/buffer/test/$(DEPDIR)/data_block_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/io/buffer/test/$(DEPDIR)/memory_stream_test.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@whisperlib/io/checkpoint/$(DEPDIR)/checkpoint_tool.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@whisperlib/io/checkpoint/$(DEPDIR)/checkpointing.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@whisperlib/io/checkpoint/$(DEPDIR)/state_keeper.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@whisperlib/io/checkpoint/$(DEPDIR)/state_keeper_tool.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@whisperlib/io/checkpoint/test/$(DEPDIR)/checkpointing_test.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@whisperlib/io/checkpoint/test/$(DEPDIR)/state_keeper_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/io/file/$(DEPDIR)/aio_file.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/io/file/$(DEPDIR)/buffer_manager.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/io/file/$(DEPDIR)/fd.Po@am__quote@
@@ -1849,6 +1773,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/net/test/$(DEPDIR)/selectable_filereader_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/net/test/$(DEPDIR)/selector_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/net/test/$(DEPDIR)/udp_connection_test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@whisperlib/rpc/$(DEPDIR)/RpcStats.pb.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/rpc/$(DEPDIR)/rpc_controller.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/rpc/$(DEPDIR)/rpc_http_client.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/rpc/$(DEPDIR)/rpc_http_server.Po@am__quote@
@@ -2173,20 +2098,6 @@ whisperlib/io/buffer/test/memory_stream_test.log: whisperlib/io/buffer/test/memo
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-whisperlib/io/checkpoint/test/checkpointing_test.log: whisperlib/io/checkpoint/test/checkpointing_test$(EXEEXT)
-	@p='whisperlib/io/checkpoint/test/checkpointing_test$(EXEEXT)'; \
-	b='whisperlib/io/checkpoint/test/checkpointing_test'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-whisperlib/io/checkpoint/test/state_keeper_test.log: whisperlib/io/checkpoint/test/state_keeper_test$(EXEEXT)
-	@p='whisperlib/io/checkpoint/test/state_keeper_test$(EXEEXT)'; \
-	b='whisperlib/io/checkpoint/test/state_keeper_test'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
 whisperlib/net/test/address_test.log: whisperlib/net/test/address_test$(EXEEXT)
 	@p='whisperlib/net/test/address_test$(EXEEXT)'; \
 	b='whisperlib/net/test/address_test'; \
@@ -2466,10 +2377,6 @@ distclean-generic:
 	-rm -f whisperlib/io/buffer/$(am__dirstamp)
 	-rm -f whisperlib/io/buffer/test/$(DEPDIR)/$(am__dirstamp)
 	-rm -f whisperlib/io/buffer/test/$(am__dirstamp)
-	-rm -f whisperlib/io/checkpoint/$(DEPDIR)/$(am__dirstamp)
-	-rm -f whisperlib/io/checkpoint/$(am__dirstamp)
-	-rm -f whisperlib/io/checkpoint/test/$(DEPDIR)/$(am__dirstamp)
-	-rm -f whisperlib/io/checkpoint/test/$(am__dirstamp)
 	-rm -f whisperlib/io/file/$(DEPDIR)/$(am__dirstamp)
 	-rm -f whisperlib/io/file/$(am__dirstamp)
 	-rm -f whisperlib/io/logio/$(DEPDIR)/$(am__dirstamp)
@@ -2509,7 +2416,7 @@ clean-am: clean-checkPROGRAMS clean-generic clean-libLIBRARIES \
 
 distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
-	-rm -rf whisperlib/base/$(DEPDIR) whisperlib/base/test/$(DEPDIR) whisperlib/http/$(DEPDIR) whisperlib/http/test/$(DEPDIR) whisperlib/io/$(DEPDIR) whisperlib/io/buffer/$(DEPDIR) whisperlib/io/buffer/test/$(DEPDIR) whisperlib/io/checkpoint/$(DEPDIR) whisperlib/io/checkpoint/test/$(DEPDIR) whisperlib/io/file/$(DEPDIR) whisperlib/io/logio/$(DEPDIR) whisperlib/io/logio/test/$(DEPDIR) whisperlib/io/util/$(DEPDIR) whisperlib/io/zlib/$(DEPDIR) whisperlib/net/$(DEPDIR) whisperlib/net/test/$(DEPDIR) whisperlib/rpc/$(DEPDIR) whisperlib/rpc/codec/$(DEPDIR) whisperlib/rpc/test/$(DEPDIR) whisperlib/sync/$(DEPDIR) whisperlib/url/$(DEPDIR) whisperlib/url/google-url/$(DEPDIR) whisperlib/url/test/$(DEPDIR)
+	-rm -rf whisperlib/base/$(DEPDIR) whisperlib/base/test/$(DEPDIR) whisperlib/http/$(DEPDIR) whisperlib/http/test/$(DEPDIR) whisperlib/io/$(DEPDIR) whisperlib/io/buffer/$(DEPDIR) whisperlib/io/buffer/test/$(DEPDIR) whisperlib/io/file/$(DEPDIR) whisperlib/io/logio/$(DEPDIR) whisperlib/io/logio/test/$(DEPDIR) whisperlib/io/util/$(DEPDIR) whisperlib/io/zlib/$(DEPDIR) whisperlib/net/$(DEPDIR) whisperlib/net/test/$(DEPDIR) whisperlib/rpc/$(DEPDIR) whisperlib/rpc/codec/$(DEPDIR) whisperlib/rpc/test/$(DEPDIR) whisperlib/sync/$(DEPDIR) whisperlib/url/$(DEPDIR) whisperlib/url/google-url/$(DEPDIR) whisperlib/url/test/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-tags
@@ -2557,7 +2464,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
-	-rm -rf whisperlib/base/$(DEPDIR) whisperlib/base/test/$(DEPDIR) whisperlib/http/$(DEPDIR) whisperlib/http/test/$(DEPDIR) whisperlib/io/$(DEPDIR) whisperlib/io/buffer/$(DEPDIR) whisperlib/io/buffer/test/$(DEPDIR) whisperlib/io/checkpoint/$(DEPDIR) whisperlib/io/checkpoint/test/$(DEPDIR) whisperlib/io/file/$(DEPDIR) whisperlib/io/logio/$(DEPDIR) whisperlib/io/logio/test/$(DEPDIR) whisperlib/io/util/$(DEPDIR) whisperlib/io/zlib/$(DEPDIR) whisperlib/net/$(DEPDIR) whisperlib/net/test/$(DEPDIR) whisperlib/rpc/$(DEPDIR) whisperlib/rpc/codec/$(DEPDIR) whisperlib/rpc/test/$(DEPDIR) whisperlib/sync/$(DEPDIR) whisperlib/url/$(DEPDIR) whisperlib/url/google-url/$(DEPDIR) whisperlib/url/test/$(DEPDIR)
+	-rm -rf whisperlib/base/$(DEPDIR) whisperlib/base/test/$(DEPDIR) whisperlib/http/$(DEPDIR) whisperlib/http/test/$(DEPDIR) whisperlib/io/$(DEPDIR) whisperlib/io/buffer/$(DEPDIR) whisperlib/io/buffer/test/$(DEPDIR) whisperlib/io/file/$(DEPDIR) whisperlib/io/logio/$(DEPDIR) whisperlib/io/logio/test/$(DEPDIR) whisperlib/io/util/$(DEPDIR) whisperlib/io/zlib/$(DEPDIR) whisperlib/net/$(DEPDIR) whisperlib/net/test/$(DEPDIR) whisperlib/rpc/$(DEPDIR) whisperlib/rpc/codec/$(DEPDIR) whisperlib/rpc/test/$(DEPDIR) whisperlib/sync/$(DEPDIR) whisperlib/url/$(DEPDIR) whisperlib/url/google-url/$(DEPDIR) whisperlib/url/test/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -2600,6 +2507,9 @@ uninstall-am: uninstall-dist_docDATA uninstall-libLIBRARIES \
 
 
 @HAVE_GLOG_TRUE@whisperlib/rpc/test/rpc_test_proto.pb.cc: whisperlib/rpc/test/rpc_test_proto.proto
+@HAVE_GLOG_TRUE@	protoc $< --cpp_out=.
+
+@HAVE_GLOG_TRUE@whisperlib/rpc/RpcStats.pb.cc: whisperlib/rpc/RpcStats.proto
 @HAVE_GLOG_TRUE@	protoc $< --cpp_out=.
 
 clean-local:

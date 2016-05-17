@@ -1,9 +1,14 @@
-
 #ifndef __WHISPERLIB_BASE_TYPES_H
 #define __WHISPERLIB_BASE_TYPES_H
 #pragma once
 
 #include <whisperlib/base/core_config.h>
+
+#if !defined(USE_WAF) && defined(__has_include)
+#if __has_include("ext/have_includes.h")
+#include "ext/have_includes.h"
+#endif
+#endif
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
@@ -11,6 +16,61 @@
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+
+#if defined(HAVE_NAMESER8_COMPAT_H)
+#include <nameser8_compat.h>
+#elif defined(HAVE_ENDIAN_H)
+#include <endian.h>
+#elif defined(HAVE_MACHINE_ENDIAN_H)
+#include <machine/endian.h>
+#endif
+
+namespace whisper {
+namespace common {
+// considering int value 0x01020304
+enum ByteOrder {
+  BIGENDIAN,  // written as: 0x01, 0x02, 0x03, 0x04 ;
+              //                     PowerPC, SGI Origin, Sun Sparc
+  LILENDIAN,  // written as: 0x04, 0x03, 0x02, 0x01 ; Intel x86, Alpha AXP
+  PDPENDIAN,  // written as: 0x03, 0x04, 0x01, 0x02 ; ARM -- NO SUPPORTED
+  UNKNOWNENDIAN
+};
+
+// returns:
+//  the name of the given byte order
+const char* ByteOrderName(ByteOrder order);
+
+//////////////////////////////////////////////////////////////////////
+//
+// Determine byte order at compile time
+//
+#ifdef BYTE_ORDER
+# if defined BYTE_ORDER && defined LITTLE_ENDIAN && defined BIG_ENDIAN
+#   if BYTE_ORDER == LITTLE_ENDIAN
+#      define LOCAL_MACHINE_BYTE_ORDER_DEFINED
+const ByteOrder kByteOrder = LILENDIAN;
+#   elif BYTE_ORDER == BIG_ENDIAN
+#     define LOCAL_MACHINE_BYTE_ORDER_DEFINED
+const ByteOrder kByteOrder = BIGENDIAN;
+#   endif
+# endif
+#else
+# if defined __BYTE_ORDER && defined __LITTLE_ENDIAN && defined __BIG_ENDIAN
+#   if __BYTE_ORDER == __LITTLE_ENDIAN
+#      define LOCAL_MACHINE_BYTE_ORDER_DEFINED
+const ByteOrder kByteOrder = LILENDIAN;
+#   elif __BYTE_ORDER == __BIG_ENDIAN
+#     define LOCAL_MACHINE_BYTE_ORDER_DEFINED
+const ByteOrder kByteOrder = BIGENDIAN;
+#   endif
+# endif
+#endif
+
+# if !defined LOCAL_MACHINE_BYTE_ORDER_DEFINED
+#   error "We should have the byteorder defined at compile time"
+# endif
+}  // namespace common
+}  // namespace whisper
 
 #ifdef __GNUC__
   #define GCC_VER (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
@@ -32,10 +92,18 @@
 
 #include <limits.h>         // So we can set the bounds of our types
 #include <stddef.h>         // For size_t
-#include <string.h>         // for memcpy
+#include <stdint.h>
+// #include <string.h>         // for memcpy
+
+#ifdef COMPILER_MSVC
+#define GG_LONGLONG(x) x##I64
+#define GG_ULONGLONG(x) x##UI64
+#else
+#define GG_LONGLONG(x) x##LL
+#define GG_ULONGLONG(x) x##ULL
+#endif
 
 #ifdef HAVE_STDINT_H
-#include <stdint.h>
 
 // for PRId64 , PRIu64 , ...
 #ifndef __STDC_FORMAT_MACROS
@@ -50,14 +118,6 @@
 // found in the LICENSE file.
 
 #include <stdarg.h>
-
-#ifdef COMPILER_MSVC
-#define GG_LONGLONG(x) x##I64
-#define GG_ULONGLONG(x) x##UI64
-#else
-#define GG_LONGLONG(x) x##LL
-#define GG_ULONGLONG(x) x##ULL
-#endif
 
 // Per C99 7.8.14, define __STDC_CONSTANT_MACROS before including <stdint.h>
 // to get the INTn_C and UINTn_C macros for integer constants.  It's difficult
@@ -159,7 +219,7 @@ typedef unsigned short     uint16;
 // obsolete/protypes.h in the Gecko SDK.
 #ifndef _UINT32
 #define _UINT32
-typedef unsigned int       uint32;
+#typedef unsigned int       uint32;
 #endif
 
 // See the comment above about NSPR and 64-bit.
@@ -440,7 +500,15 @@ template <class Dest, class Source>
 inline Dest bit_cast(const Source& source) {
   // Compile time assertion: sizeof(Dest) == sizeof(Source)
   // A compile error here means your Dest and Source have different sizes.
+
+#ifndef __has_feature
+#define __has_feature(x) 0  // Compatibility with non-clang compilers.
+#endif
+#if __has_feature(cxx_static_assert)
+  static_assert(sizeof(Dest) == sizeof(Source), "sizeof(Source) and Dest differs");
+#else
   typedef char VerifySizesAreEqual [sizeof(Dest) == sizeof(Source) ? 1 : -1];
+#endif
 
   Dest dest;
   memcpy(&dest, &source, sizeof(dest));
@@ -525,87 +593,19 @@ static const uint64 kMaxUInt64 = (static_cast<uint64>(0xffffffffffffffffLL));
 
 //////////////////////////////////////////////////////////////////////
 
+typedef uint32 fourcc_t;
+
+#define FOURCC(a, b, c, d) \
+  (((uint32)(a) << 24) | ((uint32)(b) << 16) | ((uint32)(c) << 8) | (uint32)(d))
+
+static const fourcc_t kInvalidFourCC = FOURCC('\0','\0','\0','\0');
+
+//////////////////////////////////////////////////////////////////////
+
 #define CONSIDER(cond) case cond: return #cond;
 #define NUMBEROF(things) arraysize(things)
 
 #define INVALID_FD_VALUE (-1)
 
-//////////////////////////////////////////////////////////////////////
-
-// we accept 'std' and '__gnu_cxx' namespaces without full specification
-// to reduce the clutter
-namespace std {
-namespace tr1 { }
-}
-namespace  __gnu_cxx { }
-using namespace std;
-// using namespace std::tr1;
-using namespace __gnu_cxx;
-
-//////////////////////////////////////////////////////////////////////
-
-// determine hash map includes
-
-// For C++11: >= 201103;  For C98: == 199711
-#if __cplusplus >= 201103       // c++11
- #if GCC_VER > 40500  // || CLANG_VER > 30000
-   #define HAVE_UNORDERED_SET
-   #define HAVE_UNORDERED_MAP
-   #undef HAVE_TR1_UNORDERED_SET
-   #undef HAVE_TR1_UNORDERED_MAP
- #endif
-#endif // c++11
-
-#if defined(HAVE_UNORDERED_SET)
-#  define WHISPER_HASH_SET_HEADER <unordered_set>
-#  define hash_set unordered_set
-#elif defined(HAVE_TR1_UNORDERED_SET)
-#  define WHISPER_HASH_SET_HEADER <tr1/unordered_set>
-#  define hash_set tr1::unordered_set
-#elif defined(HAVE_EXT_HASH_SET)
-#  define WHISPER_HASH_SET_HEADER <ext/hash_set>
-#else
-#  error "Cannot find hash_set include"
-#endif
-
-#if defined(HAVE_UNORDERED_MAP)
-#  define WHISPER_HASH_MAP_HEADER <unordered_map>
-#  define hash_map unordered_map
-#  define hash_multimap unordered_multimap
-
-#  if defined(HAVE_FUNCTIONAL_HASH_H)
-#    define WHISPER_HASH_FUN_HEADER <functional_hash.h>
-#  elif defined(HAVE_FUNCTIONAL)
-#    define WHISPER_HASH_FUN_HEADER <functional>
-#  else
-#    error "Unknown functional hash header"
-#  endif
-#  define WHISPER_HASH_FUN_NAMESPACE_BEGIN namespace std {
-#  define WHISPER_HASH_FUN_NAMESPACE_END }
-#  define WHISPER_HASH_FUN_NAMESPACE std
-
-#elif defined(HAVE_TR1_UNORDERED_MAP)
-#  define WHISPER_HASH_MAP_HEADER <tr1/unordered_map>
-#  define hash_map tr1::unordered_map
-#  define hash_multimap tr1::unordered_multimap
-#  define WHISPER_HASH_FUN_HEADER <tr1/functional_hash.h>
-#  define WHISPER_HASH_FUN_NAMESPACE_BEGIN namespace std { namespace tr1 {
-#  define WHISPER_HASH_FUN_NAMESPACE_END } }
-#  define WHISPER_HASH_FUN_NAMESPACE std::tr1
-
-#elif defined(HAVE_EXT_HASH_MAP)
-#  define WHISPER_HASH_MAP_HEADER <ext/hash_map>
-#  ifdef (HAVE_EXT_HASH_FUN_H)
-#     define WHISPER_HASH_FUN_HEADER <ext/hash_fun.h>
-#  else
-#     error "Unknown hash function header"
-#  endif
-#  define WHISPER_HASH_FUN_NAMESPACE_BEGIN namespace __gnu_cxx {
-#  define WHISPER_HASH_FUN_NAMESPACE_END }
-#  define WHISPER_HASH_FUN_NAMESPACE __gnu_cxx
-
-#else
-#  error "Cannot find hash_map include"
-#endif
 
 #endif   // __WHISPERLIB_BASE_TYPES_H

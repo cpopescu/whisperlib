@@ -1,3 +1,4 @@
+// -*- c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil; coding: utf-8 -*-
 // Copyright (c) 2009, Whispersoft s.r.l.
 // All rights reserved.
 //
@@ -36,12 +37,16 @@
 #include <vector>
 #include <deque>
 
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/callback.h>
-#include <whisperlib/http/http_client_protocol.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/callback.h"
+#include "whisperlib/http/http_client_protocol.h"
+#include "whisperlib/base/hash.h"
 #include WHISPER_HASH_MAP_HEADER
 
+using std::string;
+using std::vector;
 
+namespace whisper {
 namespace http {
 //
 // This is a class that accepts a set of servers to connect to and
@@ -77,6 +82,13 @@ class FailSafeClient {
   const vector<net::HostPort>& servers() const {
     return servers_;
   }
+  std::string server_names() const {
+    std::string s;
+    for (const auto& server: servers_) {
+      s += server.ToString() + "/";
+    }
+    return s;
+  }
   int num_retries() const {
     return num_retries_;
   }
@@ -94,6 +106,7 @@ class FailSafeClient {
   }
   void Reset() const;
 
+
   void StartRequest(ClientRequest* request,
                     Closure* completion_callback) {
       StartRequestWithUrgency(request, completion_callback, false);
@@ -102,6 +115,8 @@ class FailSafeClient {
   void StartRequestWithUrgency(ClientRequest* request,
                                Closure* completion_callback,
                                bool is_urgent);
+
+
 
   // Cancels the provided request. We own the request from now on (as it may be
   // in download process), and we will delete it when done (together w/ the completion
@@ -117,10 +132,18 @@ class FailSafeClient {
   // to cleanup your caller before this failsafe client gets deleted
   void ForceCloseAll();
 
- private:
+  // Creates a new client protocol - to be used as desired (released w/ ClearClient).
+  ClientProtocol* CreateClient(size_t ndx);
+
+  // Creates a new stream receiving client protocol - to be used as desired.
+  ClientStreamReceiverProtocol* CreateStreamReceiveClient(size_t ndx);
+
+  // Closes a previously created client
+  void ClearClient(ClientProtocol* client);
+
+private:
   void WriteStatusLog() const;
   void StatusString(string* s) const;
-  void ClearClient(ClientProtocol* client);
 
   struct PendingStruct {
     int64 start_time_;
@@ -164,16 +187,17 @@ class FailSafeClient {
   vector<ClientProtocol*> clients_;
   vector<int64> death_time_;
 
-  typedef deque<PendingStruct*> PendingQueue;
+  typedef std::deque<PendingStruct*> PendingQueue;
   PendingQueue* pending_requests_;
   typedef hash_map<ClientRequest*, PendingStruct*> PendingMap;
   PendingMap* pending_map_;
 
-  deque< pair<int64, string> > completion_events_;
+  std::deque< std::pair<int64, string> > completion_events_;
 
   bool closing_;
   Closure* requeue_pending_callback_;
 };
-}
+}  // namespace http
+}  // namespace whisper
 
 #endif

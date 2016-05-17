@@ -1,71 +1,59 @@
-// Copyright: 1618labs, Inc. 2013 onwards.
+// Copyright: Urban Engines, Inc. 2012 onwards.
 // All rights reserved.
-// cp@1618labs.com
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-// * Redistributions of source code must retain the above copyright
-// notice, this list of conditions and the following disclaimer.
-// * Redistributions in binary form must reproduce the above
-// copyright notice, this list of conditions and the following disclaimer
-// in the documentation and/or other materials provided with the
-// distribution.
-// * Neither the name of Whispersoft s.r.l. nor the names of its
-// contributors may be used to endorse or promote products derived from
-// this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//
-//
+// cp@urbanengines.com
 
-#include <whisperlib/rpc/server_base.h>
+#include "whisperlib/rpc/server_base.h"
+#include "whisperlib/rpc/rpc_http_server.h"
 
+#ifdef USE_OPENSSL
+#include <openssl/ssl.h>
+#endif
+
+using namespace std;
+
+namespace whisper {
 namespace rpc {
-ServerBase::ServerBase(int argc, char** argv,
-                       const string& name)
+ServerBase::ServerBase(int& argc, char**& argv, const string& name)
     : app::App(argc, argv),
       name_(name),
       num_threads_(0),
       port_(0),
+      max_concurrent_requests_(300),
+      rpc_path_("/rpc"),
       selector_(NULL),
       net_factory_(NULL),
-      http_server_(NULL) {
+      http_server_(NULL),
+      rpc_server_(NULL) {
 }
 
 ServerBase::~ServerBase() {
     CHECK_NULL(selector_);
     CHECK_NULL(net_factory_);
     CHECK_NULL(http_server_);
+    CHECK_NULL(rpc_server_);
     CHECK(working_threads_.empty());
 }
 
 int ServerBase::Initialize() {
+    if (selector_)  return 0;   // already initialized
+#ifdef USE_OPENSSL
+    SSL_library_init();
+#endif
     selector_ = new net::Selector();
 
-    for ( int i = 0; i < num_threads_; ++i ) {
+    for (int i = 0; i < num_threads_; ++i) {
         working_threads_.push_back(new net::SelectorThread());
         working_threads_.back()->Start();
     }
     net_factory_ = new net::NetFactory(selector_);
     acceptor_params_.set_client_threads(&working_threads_);
     net_factory_->SetTcpParams(acceptor_params_);
-    server_params_.max_reply_buffer_size_ = 1 << 20;
-    http_server_ = new http::Server(name_.c_str(), selector_, *net_factory_,
-                                    server_params_);
+    http_server_ = new http::Server(name_.c_str(), selector_, *net_factory_, http_params_);
     http_server_->AddAcceptor(net::PROTOCOL_TCP, net::HostPort(0, port_));
     selector_->RunInSelectLoop(NewCallback(http_server_, &http::Server::StartServing));
+
+    rpc_server_ = new rpc::HttpServer(
+        http_server_, NULL, rpc_path_, true, max_concurrent_requests_, "");
 
     return 0;
 }
@@ -86,12 +74,15 @@ void ServerBase::StopInSelectThread() {
         selector_->RunInSelectLoop(NewCallback(http_server_,
                                                &http::Server::StopServing));
     }
+    StopServicesInSelectThread();
     selector_->RunInSelectLoop(NewCallback(selector_,
                                            &net::Selector::MakeLoopExit));
     selector_ = NULL;
 }
 
 void ServerBase::Shutdown() {
+    delete rpc_server_;
+    rpc_server_ = NULL;
     delete http_server_;
     http_server_ = NULL;
     for (int i = 0; i < working_threads_.size(); ++i) {
@@ -127,4 +118,5 @@ void ServerBase::ToDebugHtmlTable(int64 id_val,
         http_req->request()->server_data()->Write("</table></html>");
 }
 
-}
+}  // namespace rpc
+}  // namespace whisper

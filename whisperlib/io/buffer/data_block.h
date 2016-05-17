@@ -46,15 +46,13 @@
 #endif
 
 #include <string>
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/callback.h>
-#include <whisperlib/io/input_stream.h>
-#include <whisperlib/io/output_stream.h>
-#include <whisperlib/io/iomarker.h>
-#include <whisperlib/io/seeker.h>
-#include <whisperlib/sync/mutex.h>
-#include <whisperlib/base/ref_counted.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/callback.h"
+#include "whisperlib/io/input_stream.h"
+#include "whisperlib/io/output_stream.h"
+#include "whisperlib/base/ref_counted.h"
 
+namespace whisper {
 namespace io {
 
 typedef int32 BlockId;
@@ -73,10 +71,10 @@ class DataBlock;
 #ifdef __USE_VECTOR_FOR_BLOCK_DQUEUE__
 
 const int32 kResizeThreshold = 25;
-class BlockDqueue : public vector<DataBlock*> {
+class BlockDqueue : public std::vector<DataBlock*> {
  public:
   BlockDqueue()
-    : vector<DataBlock*>(),
+    : std::vector<DataBlock*>(),
       begin_id_(0),
       correction_(0) {
     // This reserve would make the performance slightly worse in whispercast
@@ -92,13 +90,13 @@ class BlockDqueue : public vector<DataBlock*> {
     return begin_id_ + correction_;
   }
   BlockId end_id() const {
-    return vector<DataBlock*>::size() + correction_;
+    return std::vector<DataBlock*>::size() + correction_;
   }
   void pop_front() {
     begin_id_++;
   }
   BlockDqueue::const_iterator buffer_it(BlockId id) const {
-    return vector<DataBlock*>::begin() + (id - correction_);
+    return std::vector<DataBlock*>::begin() + (id - correction_);
   }
   const DataBlock* front() const {
     return *begin();
@@ -107,19 +105,19 @@ class BlockDqueue : public vector<DataBlock*> {
     return *begin();
   }
   BlockDqueue::const_iterator begin() const {
-    return vector<DataBlock*>::begin() + begin_id_;
+    return std::vector<DataBlock*>::begin() + begin_id_;
   }
   BlockDqueue::iterator begin() {
-    return vector<DataBlock*>::begin() + begin_id_;
+    return std::vector<DataBlock*>::begin() + begin_id_;
   }
   int32 size() const {
-    return vector<DataBlock*>::size() - begin_id_;
+    return std::vector<DataBlock*>::size() - begin_id_;
   }
   bool empty() const {
-    return begin_id_ == vector<DataBlock*>::size();
+    return begin_id_ == std::vector<DataBlock*>::size();
   }
   void clear() {
-    vector<DataBlock*>::clear();
+    std::vector<DataBlock*>::clear();
     correction_ += begin_id_;
     begin_id_ = 0;
   }
@@ -133,12 +131,12 @@ class BlockDqueue : public vector<DataBlock*> {
   void correct_buffer() {
     const int32 elem_size = size();
     if ( begin_id_ > kResizeThreshold && begin_id_ > elem_size ) {
-      vector<DataBlock*>::iterator it = vector<DataBlock*>::begin();
+      std::vector<DataBlock*>::iterator it = std::vector<DataBlock*>::begin();
       for ( int32 i = 0; i < elem_size; ++i ) {
         *it = *(it + begin_id_);
         ++it;
       }
-      vector<DataBlock*>::resize(elem_size);
+      std::vector<DataBlock*>::resize(elem_size);
       correction_ += begin_id_;
       begin_id_ = 0;
     }
@@ -236,16 +234,6 @@ class DataBlock : public RefCounted {
   }
 
  private:
-
-// This should be big on the servers, but on client, just to avoid
-// contention between several threads.
-#ifdef WHISPER_DATA_MUTEX_POOL_SIZE
-  static const int kNumMutexes = WHISPER_DATA_MUTEX_POOL_SIZE;
-#else
-  static const int kNumMutexes = 1024;
-#endif
-  static synch::MutexPool mutex_pool_;
-
   // The beginning of the writable memory buffer (normally, if writable,
   // writable_buffer_ == readable_buffer_
   char* writable_buffer_;
@@ -387,25 +375,25 @@ class DataBlockPointer {
   BlockSize ReadData(char* buffer, BlockSize len);
 
   // Reads at most len bytes into s (Same as above)
-  BlockSize ReadStringData(string* s, BlockSize len);
+  BlockSize ReadStringData(std::string* s, BlockSize len);
 
   // Reads the entire available data to given string
-  void ReadToString(string* s);
+  void ReadToString(std::string* s);
 
   // Utility to read from the pointer to a CRLF. Will leave the pointer
   // after the CRLF or at the start position. Returns true (and reads)
   // a line if found. On true, s will contain the line *and* the CRLF
-  bool ReadCRLFLine(string* s) {
+  bool ReadCRLFLine(std::string* s) {
     return ReadToChars('\n', '\r', s);
   }
 
   // Same as above, but looks only for \n
-  bool ReadLFLine(string* s) {
+  bool ReadLFLine(std::string* s) {
     return ReadToChars('\n', '\0', s);
   }
 
   // Utility to read a token from a string.
-  TokenReadError ReadNextAsciiToken(string* s, int* len_covered);
+  TokenReadError ReadNextAsciiToken(std::string* s, int* len_covered);
 
   // This will return in buffer and len the acutal block pointer and size in
   // the underneath data list.
@@ -419,17 +407,18 @@ class DataBlockPointer {
   // Helper to read from the pointer into s until the two chars are
   // found: fin at the end and prev before that. (If prev == '\0'
   // then the prev condition is ignored).
-  bool ReadToChars(char fin, char prev, string* s);
+  bool ReadToChars(char fin, char prev, std::string* s);
 
   const BlockDqueue* const owner_;  // which container owns the iterator ?
   BlockId block_id_;                // points to the block in owner
   BlockSize pos_;                   // the position in the *
 };
 
-inline ostream& operator<<(ostream& os, const DataBlockPointer& dbp) {
+inline std::ostream& operator<<(std::ostream& os, const DataBlockPointer& dbp) {
   return os << "[DBP " << dbp.block_id() << ":" << dbp.pos() << "]";
 }
 
 //////////////////////////////////////////////////////////////////////
-}
+}  // namespace io
+}  // namespace whisper
 #endif  // __WHISPERLIB_IO_BUFFER_DATA_BUFFER_H__

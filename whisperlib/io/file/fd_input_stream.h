@@ -32,14 +32,15 @@
 #ifndef __COMMON_IO_FILE_FD_INPUT_STREAM_H__
 #define __COMMON_IO_FILE_FD_INPUT_STREAM_H__
 
-#include <whisperlib/io/input_stream.h>
-#include <whisperlib/io/file/fd.h>
+#include "whisperlib/io/input_stream.h"
+#include "whisperlib/io/file/fd.h"
 
 //
 // An Input Stream which reads data from a generic file descriptor with
 // no SEEK capabilities.
 //
 
+namespace whisper {
 namespace io {
 
 class FDInputStream : public InputStream {
@@ -49,7 +50,7 @@ class FDInputStream : public InputStream {
 
   // Input Stream interface
   virtual int32 Read(void* buffer, int32 len);
-  virtual int32 Peek(void* buffer, int32 len) {
+  virtual int32 Peek(void* /*buffer*/, int32 /*len*/) {
     return 0;  // unsupported
   }
   virtual int64 Skip(int64 len);
@@ -65,6 +66,7 @@ class FDInputStream : public InputStream {
 
   DISALLOW_EVIL_CONSTRUCTORS(FDInputStream);
 };
-}
+}  // namespace io
+}  // namespace whisper
 
 #endif  // __COMMON_IO_FILE_FD_INPUT_STREAM_H__

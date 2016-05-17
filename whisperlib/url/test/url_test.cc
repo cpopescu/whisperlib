@@ -28,11 +28,14 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 
-#include <whisperlib/url/url.h>
+#include "whisperlib/url/url.h"
 
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/system.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/system.h"
+
+using namespace std;
+using namespace whisper;
 
 void LogUrl(const char* surl) {
   URL url(surl);

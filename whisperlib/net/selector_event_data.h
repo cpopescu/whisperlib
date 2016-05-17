@@ -32,6 +32,7 @@
 #ifndef __NET_BASE_SELECTOR_EVENT_DATA_H__
 #define __NET_BASE_SELECTOR_EVENT_DATA_H__
 
+namespace whisper {
 namespace net {
 
 struct SelectorEventData {
@@ -47,6 +48,7 @@ struct SelectorEventData {
   }
 };
 
-}
+}  // namespace net
+}  // namespace whisper
 
 #endif

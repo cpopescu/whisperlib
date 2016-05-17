@@ -33,10 +33,11 @@
 #include "whisperlib/base/core_errno.h"
 #include "whisperlib/base/gflags.h"
 
-DEFINE_bool(http_log_detail_errors,
-            true,
-            "Log internal http errors");
+using namespace std;
 
+DEFINE_bool(http_log_detail_errors, true, "Log internal http errors");
+
+namespace whisper {
 namespace http {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -54,6 +55,7 @@ Request::Request(bool strict_headers,
     gzip_state_begin_(true),
     gzip_zwrapper_(NULL),
     server_use_gzip_encoding_(true),
+    server_gzip_drain_buffer_(true),
     compress_option_(COMPRESS_NONE) {
 }
 
@@ -107,6 +109,8 @@ void Request::AppendClientRequest(io::MemoryStream* out, int64 max_chunk_size) {
     client_header_.ClearField(kHeaderAcceptEncoding);
   }
 
+  const int32 out_size = out->Size();
+  const int32 client_data_size = client_data_.Size();
   if ( client_header_.IsChunkedTransfer() ) {
     in_chunk_encoding_ = true;
     CHECK_GE(client_header_.http_version(), VERSION_1_1);
@@ -155,6 +159,8 @@ void Request::AppendClientRequest(io::MemoryStream* out, int64 max_chunk_size) {
       delete source;
     }
   }
+  stats_.client_raw_size_ += out->Size() - out_size;
+  stats_.client_size_ += client_data_size - client_data_.Size();
 }
 
 void Request::AppendServerReply(io::MemoryStream* out,
@@ -194,6 +200,8 @@ void Request::AppendServerReply(io::MemoryStream* out,
     compress_option_ = COMPRESS_NONE;
   }
 
+  const int32 out_size = out->Size();
+  const int32 server_data_size = server_data_.Size();
   if ( streaming ) {
     if (do_chunks && client_header_.http_version() >= VERSION_1_1) {
       server_header_.SetChunkedTransfer(true);
@@ -229,8 +237,10 @@ void Request::AppendServerReply(io::MemoryStream* out,
       break;
     }
     // Set the content length from the compressed stuff.
-    if ( !( (code >= 100 && code < 200) ||
-            code == NO_CONTENT || code == NOT_MODIFIED) ) {
+    if ( (code < 100 || code >= 200) &&
+         code != NO_CONTENT &&
+         code != NOT_MODIFIED &&
+         client_header_.method() != http::METHOD_HEAD) {
       server_header_.AddField(kHeaderContentLength,
                               strutil::IntToString(source->Size()),
                               true);  // replace !
@@ -241,6 +251,8 @@ void Request::AppendServerReply(io::MemoryStream* out,
             << server_header_.ToString();
     out->AppendStream(source);
   }
+  stats_.server_raw_size_ += out->Size() - out_size;
+  stats_.server_size_ += server_data_size - server_data_.Size();
 }
 
 namespace {
@@ -278,7 +290,7 @@ bool Request::AppendServerChunk(io::MemoryStream* out,
                            max_chunk_size);
 }
 
-bool Request::AppendChunkHelper(const http::Header* src_header,
+bool Request::AppendChunkHelper(const http::Header* /*src_header*/,
                                 io::MemoryStream* src_data,
                                 io::MemoryStream* out,
                                 bool add_decorations,
@@ -292,8 +304,9 @@ bool Request::AppendChunkHelper(const http::Header* src_header,
         gzip_state_begin_ = false;
       }
       gzip_zwrapper_->ContinueEncoding(src_data, &tmp);
-      if ( is_empty ) {
+      if ( is_empty || server_gzip_drain_buffer_ ) {
         gzip_zwrapper_->EndEncoding(&tmp);
+        gzip_state_begin_ = true;
       }
     } else {
       int32 size = src_data->Size();
@@ -351,7 +364,7 @@ bool Request::AppendChunkHelper(const http::Header* src_header,
 ////////////////////////////////////////////////////////////////////////////////
 
 #define LOG_HTTP LOG_INFO_IF(dlog_level_) << name() << ": "
-#define LOG_HTTP_ERR LOG_ERROR_IF(FLAGS_http_log_detail_errors)  \
+#define LOG_HTTP_ERR LOG_WARNING_IF(FLAGS_http_log_detail_errors)  \
   << name() << ": "
 
 RequestParser::RequestParser(
@@ -1088,7 +1101,7 @@ int32 RequestParser::ParseChunksInternal(io::MemoryStream* in,
 //
 int32 RequestParser::ParseTrailHeader(io::MemoryStream* in,
                                       http::Header* header,
-                                      io::MemoryStream* out) {
+                                      io::MemoryStream* /*out*/) {
   CHECK_EQ(parse_state_, STATE_LAST_CHUNK_READ);
   if ( !trail_header_.ReadHeaderFields(in) ) {
     if ( trail_header_.bytes_parsed() + in->Size() > max_header_size_ ) {
@@ -1154,4 +1167,5 @@ bool RequestParser::IsKnownTransferEncoding(const http::Header* header) {
   LOG_WARNING << " Unknown Transfer Encoding found: [" << s_trim << "].";
   return false;
 }
-}
+}  // namespace http
+}  // namespace whisper

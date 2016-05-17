@@ -1,8 +1,8 @@
 // -*- c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil; coding: utf-8 -*-
 //
-// (c) Copyright 2011, 1618labs
+// (c) Copyright 2011, Urban Engines
 // All rights reserved.
-// Author: Catalin Popescu (cp@1618labs.com)
+// Author: Catalin Popescu (cp@urbanengines.com)
 //
 
 #include "whisperlib/url/simple_url.h"
@@ -19,14 +19,14 @@ int URL::IntPort() const {
   return port;
 }
 
-string URL::PathForRequest() const {
+std::string URL::PathForRequest() const {
   if (!is_valid()) {
     return "";
   }
   if (!has_query() && !has_ref()) {
     return path_;
   }
-  string path;
+  std::string path;
   if (path_.empty()) {
     path.append("/");
   } else {
@@ -56,8 +56,8 @@ void URL::Invalidate() {
   ref_.clear();
 }
 
-inline string space2plus(const string& s) {
-  string ret;
+inline std::string space2plus(const std::string& s) {
+  std::string ret;
   ret.reserve(s.size());
   for (int ndx = 0; ndx < s.size(); ++ndx) {
     if (s[ndx] == ' ') {
@@ -69,7 +69,7 @@ inline string space2plus(const string& s) {
   return ret;
 }
 
-const string& URL::Reassemble() {
+const std::string& URL::Reassemble() {
   spec_ = scheme_ + "://";
   if (!user_.empty()) {
     spec_ += user_;
@@ -103,7 +103,7 @@ void URL::ParseSpec() {
   is_valid_ = true;
   const size_t scheme_pos = spec_.find("://");
   size_t next_pos = 0;
-  if (scheme_pos == string::npos) {
+  if (scheme_pos == std::string::npos) {
     Invalidate();
     return;
   }
@@ -114,7 +114,7 @@ void URL::ParseSpec() {
     return;
   }
   const size_t host_port_pos = spec_.find("/", next_pos);
-  if (host_port_pos != string::npos) {
+  if (host_port_pos != std::string::npos) {
     ParseHostPort(spec_.substr(next_pos, host_port_pos - next_pos));
   } else {
     Invalidate();
@@ -122,21 +122,28 @@ void URL::ParseSpec() {
   }
 
   const size_t query_pos = spec_.find("?", host_port_pos);
-  if (query_pos == string::npos) {
+  if (query_pos == std::string::npos) {
     const size_t ref_pos = spec_.find("#", host_port_pos);
-    if (ref_pos == string::npos) {
-      path_ = UrlEscape(UrlUnescape(spec_.substr(host_port_pos)));
+    if (ref_pos == std::string::npos) {
+      // TODO(mihai): Clarify this...
+      // path_ = UrlEscape(UrlUnescape(spec_.substr(host_port_pos)));
+      path_ = spec_.substr(host_port_pos);
       return;
     }
-    path_ = UrlEscape(UrlUnescape(
-                        spec_.substr(host_port_pos, ref_pos - host_port_pos)));
+    // TODO(mihai): Clarify this...
+    // path_ = UrlEscape(UrlUnescape(
+    //                    spec_.substr(host_port_pos, ref_pos - host_port_pos)));
+    path_ = spec_.substr(host_port_pos, ref_pos - host_port_pos);
     ref_ = spec_.substr(ref_pos + 1);
     return;
   }
-  path_ = UrlEscape(UrlUnescape(
-                      spec_.substr(host_port_pos, query_pos - host_port_pos)));
+  // TODO(mihai): Clarify this...
+  // path_ = UrlEscape(UrlUnescape(
+  //                    spec_.substr(host_port_pos, query_pos - host_port_pos)));
+  path_ = spec_.substr(host_port_pos, query_pos - host_port_pos);
+
   const size_t ref_pos = spec_.find("#", query_pos);
-  if (ref_pos == string::npos) {
+  if (ref_pos == std::string::npos) {
     query_ = space2plus(spec_.substr(query_pos + 1));
     return;
   }
@@ -144,16 +151,16 @@ void URL::ParseSpec() {
   ref_ = spec_.substr(ref_pos + 1);
 }
 
-void URL::ParseHostPort(const string& host_port) {
+void URL::ParseHostPort(const std::string& host_port) {
   const size_t user_pos = host_port.find('@');
   const size_t port_pos = host_port.rfind(':');
-  if (user_pos != string::npos) {
+  if (user_pos != std::string::npos) {
     user_ = host_port.substr(0, user_pos);
     host_ = host_port.substr(user_pos + 1, port_pos);
   } else {
     host_ = host_port.substr(0, port_pos);
   }
-  if (port_pos != string::npos) {
+  if (port_pos != std::string::npos) {
     port_ = host_port.substr(port_pos + 1);
   }
 }
@@ -169,13 +176,13 @@ const unsigned char kCharLookup[0x100] = {
 //   control chars...
      ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,
 //   ' '      !        "        #        $        %        &        '        (        )        *        +        ,        -        .        /
-     ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  PASS,    ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  PASS,    PASS,    PASS,    PASS,
+     ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  PASS,    PASS,    ESCAPE,
 //   0        1        2        3        4        5        6        7        8        9        :        ;        <        =        >        ?
-     PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,
+     PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,
 //   @        A        B        C        D        E        F        G        H        I        J        K        L        M        N        O
      PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,
 //   P        Q        R        S        T        U        V        W        X        Y        Z        [        \        ]        ^        _
-     PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    ESCAPE,  PASS,    ESCAPE,  PASS,
+     PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  PASS,
 //   `        a        b        c        d        e        f        g        h        i        j        k        l        m        n        o
      ESCAPE,  PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,    PASS,
 //   p        q        r        s        t        u        v        w        x        y        z        {        |        }        ~        <NBSP>
@@ -191,9 +198,9 @@ const unsigned char kCharLookup[0x100] = {
      ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE};
 
 
-string URL::UrlEscape(const char* spec, int len) {
+std::string URL::UrlEscape(const char* spec, int len) {
   int ndx = 0;
-  string s;
+  std::string s;
   while ( ndx < len ) {
     const char c = spec[ndx];
     if ( kCharLookup[uint8(c)] == ESCAPE ) {
@@ -208,7 +215,7 @@ string URL::UrlEscape(const char* spec, int len) {
   return s;
 }
 
-string URL::UrlUnescape(const char* spec, int len) {
+std::string URL::UrlUnescape(const char* spec, int len) {
   scoped_array<char> dest(new char[len + 1]);
   char* d = dest.get();
   const char* p = spec;
@@ -241,10 +248,10 @@ string URL::UrlUnescape(const char* spec, int len) {
     }
     ++p;
   }
-  return string(dest.get(), d - dest.get());
+  return std::string(dest.get(), d - dest.get());
 }
-int URL::GetQueryParameters(vector<pair<string,string> >* out, bool unescape) {
-  vector<string> q_params;
+int URL::GetQueryParameters(std::vector<std::pair<std::string,std::string> >* out, bool unescape) const {
+  std::vector<std::string> q_params;
   strutil::SplitString(query_, "&", &q_params);
   for (uint32 i = 0; i < q_params.size(); i++) {
     if (unescape) {

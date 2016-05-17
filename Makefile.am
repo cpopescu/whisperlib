@@ -47,6 +47,7 @@ endif
 
 if HAVE_PROTOBUF
 rpc_protobuf_sources = \
+  whisperlib/rpc/RpcStats.pb.cc \
   whisperlib/rpc/rpc_http_client.cc \
   whisperlib/rpc/rpc_http_server.cc \
   whisperlib/rpc/rpc_controller.cc
@@ -71,7 +72,7 @@ whisperlib_libwhisperlib_a_SOURCES = \
   $(whisperlib_log_sources) \
   whisperlib/base/app.cc \
   whisperlib/base/date.cc \
-  whisperlib/base/errno.cc \
+  whisperlib/base/core_errno.cc \
   whisperlib/base/re.cc \
   whisperlib/base/signal_handlers.cc \
   whisperlib/base/stringprintf.cc \
@@ -88,10 +89,6 @@ whisperlib_libwhisperlib_a_SOURCES = \
   whisperlib/http/http_server_protocol.cc \
   whisperlib/io/buffer/data_block.cc \
   whisperlib/io/buffer/memory_stream.cc \
-  whisperlib/io/checkpoint/checkpoint_tool.cc \
-  whisperlib/io/checkpoint/checkpointing.cc \
-  whisperlib/io/checkpoint/state_keeper.cc \
-  whisperlib/io/checkpoint/state_keeper_tool.cc \
   whisperlib/io/file/aio_file.cc \
   whisperlib/io/file/buffer_manager.cc \
   whisperlib/io/file/fd.cc \
@@ -166,8 +163,6 @@ nobase_include_HEADERS = \
   whisperlib/io/buffer/data_block.h \
   whisperlib/io/buffer/memory_stream.h \
   whisperlib/io/buffer/protobuf_stream.h \
-  whisperlib/io/checkpoint/checkpointing.h \
-  whisperlib/io/checkpoint/state_keeper.h \
   whisperlib/io/file/aio_file.h \
   whisperlib/io/file/buffer_manager.h \
   whisperlib/io/file/fd.h \
@@ -237,6 +232,8 @@ whisperlib_rpc_test_rpc_test_server_LDADD = whisperlib/rpc/test/rpc_test_proto.p
 whisperlib/rpc/test/rpc_test_proto.pb.cc: whisperlib/rpc/test/rpc_test_proto.proto
 	protoc $< --cpp_out=.
 
+whisperlib/rpc/RpcStats.pb.cc: whisperlib/rpc/RpcStats.proto
+	protoc $< --cpp_out=.
 endif
 
 TEST_EXTENSIONS = .sh
@@ -250,8 +247,6 @@ standalone_test_programs = \
   whisperlib/http/test/http_header_test \
   whisperlib/io/buffer/test/data_block_test \
   whisperlib/io/buffer/test/memory_stream_test \
-  whisperlib/io/checkpoint/test/checkpointing_test \
-  whisperlib/io/checkpoint/test/state_keeper_test \
   whisperlib/net/test/address_test \
   whisperlib/net/test/dns_resolver_test \
   whisperlib/net/test/selector_test \

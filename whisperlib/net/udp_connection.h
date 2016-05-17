@@ -35,15 +35,16 @@
 
 #include <string>
 #include <list>
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/log.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/log.h"
 
-#include <whisperlib/io/buffer/memory_stream.h>
+#include "whisperlib/io/buffer/memory_stream.h"
 
-#include <whisperlib/net/address.h>
-#include <whisperlib/net/selectable.h>
-#include <whisperlib/net/timeouter.h>
+#include "whisperlib/net/address.h"
+#include "whisperlib/net/selectable.h"
+#include "whisperlib/net/timeouter.h"
 
+namespace whisper {
 namespace net {
 
 class UdpConnection : private Selectable {
@@ -179,12 +180,10 @@ class UdpConnection : private Selectable {
   }
  private:
   bool InvokeReadHandler() {
-    CHECK_NOT_NULL(read_handler_) << "no read_handler found";
-    return read_handler_->Run();
+    return CHECK_NOT_NULL(read_handler_)->Run();
   }
   bool InvokeWriteHandler() {
-    CHECK_NOT_NULL(write_handler_) << "no write_handler found";
-    return write_handler_->Run();
+    return CHECK_NOT_NULL(write_handler_)->Run();
   }
   void InvokeCloseHandler(int err) {
     if ( !close_handler_ ) {
@@ -247,7 +246,7 @@ class UdpConnection : private Selectable {
   uint8* data_buffer_;
   uint32 data_buffer_size_;
 
-  typedef list<Datagram*> DatagramQueue;
+  typedef std::list<Datagram*> DatagramQueue;
   // list of datagrams to send to the network
   DatagramQueue out_queue_;
   // list of datagrams to send to application
@@ -260,6 +259,7 @@ class UdpConnection : private Selectable {
   int64 count_datagrams_read_;
 };
 
-} // namespace net
+}  // namespace net
+}  // namespace whisper
 
 #endif // __NET_BASE_UDP_CONNECTION_H__

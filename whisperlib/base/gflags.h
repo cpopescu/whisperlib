@@ -11,18 +11,17 @@
 #define GFLAGS_NAMESPACE google
 #endif
 
-#if defined(HAVE_GFLAGS) || defined(HAVE_GFLAGS_GFLAGS_H)
+#if defined(USE_GFLAGS)
 // We have real flags
 #include <gflags/gflags.h>
 
-#else  // ! HAVE_GFLAGS
+#else  // ! USE_GFLAGS
 
-#if (defined(HAVE_GLOG) || defined(HAVE_GLOG_LOGGING_H)) && defined(USE_GLOG_LOGGING)
+#if defined(USE_GLOG_LOGGING) && defined(HAVE_GLOG)
 #error "If you enable glog, you cannot disable gflags."
 #endif
 
 #include <string>
-#include <whisperlib/base/types.h>
 // Flags definitions - no flags - just global variable placeholders
 
 #define DEFINE_VARIABLE(type, shorttype, name, value)                   \
@@ -36,13 +35,13 @@ using fL##shorttype::FLAGS_##name;                                      \
     DEFINE_VARIABLE(bool, B, name, val)
 
 #define DEFINE_int32(name, val, txt)            \
-    DEFINE_VARIABLE(int32, I, name, val)
+    DEFINE_VARIABLE(int32_t, I, name, val)
 
 #define DEFINE_int64(name, val, txt)            \
-    DEFINE_VARIABLE(int64, I64, name, val)
+    DEFINE_VARIABLE(int64_t, I64, name, val)
 
 #define DEFINE_uint64(name, val, txt)           \
-    DEFINE_VARIABLE(uint64, U64, name, val)
+    DEFINE_VARIABLE(uint64_t, U64, name, val)
 
 #define DEFINE_double(name, val, txt)           \
     DEFINE_VARIABLE(double, D, name, val)
@@ -85,6 +84,5 @@ using fLS::FLAGS_##name
 
 #define ParseCommandLineFlags(argc, argv, t)
 
-#endif  // HAVE_GFLAGS
-
+#endif  // USE_GFLAGS
 #endif  // __WHISPERLIB_BASE_GFLAGS_H

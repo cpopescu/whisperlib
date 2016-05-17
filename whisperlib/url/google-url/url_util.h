@@ -32,8 +32,8 @@
 
 #include <string>
 
-#include <whisperlib/url/google-url/url_parse.h>
-#include <whisperlib/url/google-url/url_canon.h>
+#include "whisperlib/url/google-url/url_parse.h"
+#include "whisperlib/url/google-url/url_canon.h"
 
 namespace url_util {
 

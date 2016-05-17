@@ -33,13 +33,13 @@
 #define __NET_RPC_LIB_CODEC_RPC_DECODER_H__
 
 #include <list>
-#include <vector>
 
-#include <whisperlib/base/types.h>
-#include <whisperlib/io/buffer/memory_stream.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/io/buffer/memory_stream.h"
 
-#include <whisperlib/rpc/codec/rpc_decode_result.h>
+#include "whisperlib/rpc/codec/rpc_decode_result.h"
 
+namespace whisper {
 namespace codec {
 
 class Decoder {
@@ -85,18 +85,18 @@ class Decoder {
   virtual DECODE_RESULT DecodeBody(int64& out) = 0;
   virtual DECODE_RESULT DecodeBody(uint64& out) = 0;
   virtual DECODE_RESULT DecodeBody(double& out) = 0;
-  virtual DECODE_RESULT DecodeBody(string& out) = 0;
+  virtual DECODE_RESULT DecodeBody(std::string& out) = 0;
 
-#define DECODE_VERIFY(dec_op)                           \
-  do {                                                  \
-    const codec::DECODE_RESULT result = dec_op;           \
-    if ( result != codec::DECODE_RESULT_SUCCESS ) {       \
-      return result;                                    \
-    }                                                   \
+#define DECODE_VERIFY(dec_op)                                   \
+    do {                                                        \
+      const whisper::codec::DECODE_RESULT result = dec_op;      \
+      if ( result != whisper::codec::DECODE_RESULT_SUCCESS ) {  \
+          return result;                                        \
+      }                                                         \
   } while ( false )
 
   template <typename T>
-  DECODE_RESULT DecodeBody(vector<T>& out) {
+  DECODE_RESULT DecodeBody(std::vector<T>& out) {
     // decode array items count
     uint32 count;
     DECODE_VERIFY(DecodeArrayStart(count));
@@ -118,7 +118,7 @@ class Decoder {
       CHECK(!has_more);
       return DECODE_RESULT_SUCCESS;
     }
-    list<T> tmp;
+    std::list<T> tmp;
 
     // decode elements in a temporary list
     bool has_more = false;
@@ -136,7 +136,7 @@ class Decoder {
     //
     out.resize(tmp.size());
     uint32 i = 0;
-    for ( typename list<T>::iterator it = tmp.begin();
+    for ( typename std::list<T>::iterator it = tmp.begin();
           it != tmp.end(); ++it, ++i ) {
       out[i] = *it;
     }
@@ -144,7 +144,7 @@ class Decoder {
   }
 
   template <typename K, typename V>
-  DECODE_RESULT DecodeBody(map<K, V>& out) {
+  DECODE_RESULT DecodeBody(std::map<K, V>& out) {
     // decode map pairs count
     //
     uint32 count;
@@ -209,25 +209,44 @@ class Decoder {
     return DecodeBody(out);
   }
 
+  // After DecodeStructStart, you can use these methods to decode standard attributes
+  // "name": 1
+  // "name": "value"
+  // "name": ["val1", "val2", ...]
+  // "name": [1, 2, ...]
+  DECODE_RESULT DecodeStructAttrName(std::string* out_name) {
+      DECODE_VERIFY(DecodeStructAttribStart());
+      DECODE_VERIFY(DecodeBody(*out_name));
+      DECODE_VERIFY(DecodeStructAttribMiddle());
+      return DECODE_RESULT_SUCCESS;
+  }
+  template<typename T>
+  DECODE_RESULT DecodeStructAttrValue(T* out_value, bool *out_more_attr) {
+      DECODE_VERIFY(DecodeBody(*out_value));
+      DECODE_VERIFY(DecodeStructAttribEnd());
+      DECODE_VERIFY(DecodeStructContinue(*out_more_attr));
+      return DECODE_RESULT_SUCCESS;
+  }
+
 protected:
   io::MemoryStream& in_;
 
   DISALLOW_EVIL_CONSTRUCTORS(Decoder);
 };
 }
-
+}
 
 #define DECODE_EXPECTED_FIELD(dec, expected)                            \
   do {                                                                  \
-    string out;                                                         \
-    codec::DECODE_RESULT res = (dec)->Decode(out);                      \
-    if ( res != codec::DECODE_RESULT_SUCCESS ) {                        \
+    std::string out;                                                    \
+    whisper::codec::DECODE_RESULT res = (dec)->Decode(out);             \
+    if ( res != whisper::codec::DECODE_RESULT_SUCCESS ) {                        \
       return res;                                                       \
     }                                                                   \
     if ( expected != out ) {                                            \
       DLOG_ERROR << " JsonDecoder Expecting " << expected << " got: "   \
                  << res << ": " << out;                                 \
-      return codec::DECODE_RESULT_ERROR;                                \
+      return whisper::codec::DECODE_RESULT_ERROR;                                \
     }                                                                   \
   } while (false)                                                       \
 
@@ -237,7 +256,7 @@ protected:
     DECODE_VERIFY((dec)->DecodeStructContinue(more_attribs));           \
     if ( !more_attribs ) {                                              \
       DLOG_ERROR << "Expected more attributes, but found struct end. in_"; \
-      return codec::DECODE_RESULT_ERROR;                                       \
+      return whisper::codec::DECODE_RESULT_ERROR;                                       \
     }                                                                   \
   } while ( false )
 
@@ -247,7 +266,7 @@ protected:
     DECODE_VERIFY((dec)->DecodeStructContinue(more_attribs));           \
     if ( more_attribs ) {                                               \
       DLOG_ERROR << "Expected structure end, but found more attributes. "; \
-      return codec::DECODE_RESULT_ERROR;                              \
+      return whisper::codec::DECODE_RESULT_ERROR;                              \
     }                                                                   \
   } while ( false )
 
@@ -257,7 +276,7 @@ protected:
     DECODE_VERIFY((dec)->DecodeArrayContinue(more_attribs));            \
     if ( !more_attribs ) {                                              \
       DLOG_ERROR << "Expected more attributes, but found array end. in_"; \
-      return codec::DECODE_RESULT_ERROR;                                       \
+      return whisper::codec::DECODE_RESULT_ERROR;                                       \
     }                                                                   \
   } while ( false )
 
@@ -267,7 +286,7 @@ protected:
     DECODE_VERIFY((dec)->DecodeArrayContinue(more_attribs));            \
     if ( more_attribs ) {                                               \
       DLOG_ERROR << "Expected array end, but found more attributes. "; \
-      return codec::DECODE_RESULT_ERROR;                              \
+      return whisper::codec::DECODE_RESULT_ERROR;                              \
     }                                                                   \
   } while ( false )
 
@@ -300,7 +319,7 @@ protected:
     DECODE_VERIFY((dec)->DecodeStructAttribMiddle()); \
     DECODE_VERIFY((dec)->DecodeArrayStart(count));    \
     do {                                                                \
-    if ((dec)->DecodeArrayStart(count) == codec::DECODE_RESULT_SUCCESS) {
+    if ((dec)->DecodeArrayStart(count) == whisper::codec::DECODE_RESULT_SUCCESS) {
 
 #define DECODE_END_OB_ARRAY(dec)                                           \
     DECODE_EXPECTED_ARRAY_END(dec);                                     \

@@ -34,12 +34,13 @@
 #define __NET_HTTP_HTTP_HEADER_H__
 
 #include <string>
-#include <vector>
 #include <map>
 #include <algorithm>
 
-#include <whisperlib/base/types.h>
-#include <whisperlib/http/http_consts.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/http/http_consts.h"
+
+using std::string;
 
 // This class can be used to parse and compose HTTP message headers
 // From protocol:
@@ -69,6 +70,8 @@
 // in all forms, we pass for this class all strings (and buffers)
 // with size protection (no C-style strings here ..)
 //
+
+namespace whisper {
 namespace io { class MemoryStream; }
 
 namespace http {
@@ -77,7 +80,7 @@ class Header {
   explicit Header(bool is_strict = true);
   ~Header();
 
-  typedef map<string, string> FieldMap;
+  typedef std::map<string, string> FieldMap;
   // Errors that can appear during parsing. They are more severe as
   // the number increases.
   // In general we can continue parsing in all states, however
@@ -128,6 +131,7 @@ class Header {
   // Things that can appear in the first line..
   HttpVersion http_version() const { return http_version_; }
   HttpMethod method() const { return method_; }
+  const char* method_name() const { return GetHttpMethodName(method()); }
   const string& uri() const { return uri_; }
   HttpReturnCode status_code() const { return status_code_; }
   const string reason() const { return reason_; }
@@ -190,7 +194,7 @@ class Header {
 
   // Removes the field alltogether from the field map
   bool ClearField(const char* field_name, int32 len, bool as_is = false);
-  bool ClearField(const string& field_name, bool as_is = false) {
+  bool ClearField(const string& field_name /*, bool as_is = false*/) {
     return ClearField(field_name.c_str(), field_name.size());
   }
 
@@ -364,7 +368,7 @@ class Header {
  private:
   void set_parse_error(ParseError error) {
     last_parse_error_ = error;
-    parse_error_ = max(error, parse_error_);
+    parse_error_ = std::max(error, parse_error_);
   }
 
   // Parsing helpers:
@@ -414,6 +418,7 @@ class Header {
 
   DISALLOW_EVIL_CONSTRUCTORS(Header);
 };
-}
+}  // namespace http
+}  // namespace whisper
 
 #endif  //  __NET_HTTP_HTTP_HEADER_H__

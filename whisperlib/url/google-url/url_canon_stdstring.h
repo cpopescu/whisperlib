@@ -35,7 +35,7 @@
 #define GOOGLEURL_SRC_URL_CANON_STRING_H__
 
 #include <string>
-#include <whisperlib/url/google-url/url_canon.h>
+#include "whisperlib/url/google-url/url_canon.h"
 
 namespace url_canon {
 

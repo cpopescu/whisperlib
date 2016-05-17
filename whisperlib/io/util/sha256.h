@@ -38,7 +38,7 @@
 #ifndef __SHA256_H__
 #define __SHA256_H__
 
-#include <whisperlib/base/types.h>
+#include "whisperlib/base/types.h"
 
 #ifdef __cplusplus
 #include <string>
@@ -88,7 +88,7 @@ void HmacSha256(const uint8* key, size_t key_len,
 #ifdef  __cplusplus
 }
 
-string WL_SHA256_StringHex(const char* str);
+std::string WL_SHA256_StringHex(const char* str);
 
 #endif /* __cplusplus */
 

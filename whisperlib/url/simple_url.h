@@ -1,8 +1,8 @@
 // -*- c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil; coding: utf-8 -*-
 //
-// (c) Copyright 2011, 1618labs
+// (c) Copyright 2011, Urban Engines
 // All rights reserved.
-// Author: Catalin Popescu (cp@1618labs.com)
+// Author: Catalin Popescu (cp@urbanengines.com)
 //
 // Simple URL implementation -for a system w/o utf8 libraries (as android).
 // Good enough for whisperlib http usage. If utf8 is available, use the
@@ -17,8 +17,8 @@
 #include <vector>
 #include <ostream>
 
-#include <whisperlib/base/strutil.h>
-#include <whisperlib/net/address.h>
+#include "whisperlib/base/strutil.h"
+#include "whisperlib/net/address.h"
 
 class URL {
 public:
@@ -35,7 +35,7 @@ public:
   }
 
   // Requires the url to be Ascii
-  explicit URL(const string& url_string)
+  explicit URL(const std::string& url_string)
     : spec_(url_string) {
     ParseSpec();
   }
@@ -46,7 +46,7 @@ public:
   bool is_empty() const {
     return spec_.empty();
   }
-  const string& spec() const {
+  const std::string& spec() const {
     return spec_;
   }
 
@@ -74,7 +74,7 @@ public:
   //
   // It is an error to resolve a URL relative to an invalid URL. The result
   // will be the empty URL.
-  URL Resolve(const string& relative_path) const {
+  URL Resolve(const std::string& relative_path) const {
     URL url(*this);
     url.path_ = strutil::NormalizeUrlPath(
       strutil::JoinPaths(path_, relative_path));
@@ -108,31 +108,31 @@ public:
     if (!has_host()) {
       return false;
     }
-    net::IpAddress addr(host_);
+    whisper::net::IpAddress addr(host_);
     return !addr.IsInvalid();
   }
 
   // Getters for various components of the URL. The returned string will be
   // empty if the component is empty or is not present.
-  const string& scheme() const {
+  const std::string& scheme() const {
     return scheme_;
   }
-  const string& user() const {
+  const std::string& user() const {
     return user_;
   }
-  const string& host() const {
+  const std::string& host() const {
     return host_;
   }
-  const string& port() const {
+  const std::string& port() const {
     return port_;
   }
-  const string& path() const {
+  const std::string& path() const {
     return path_;
   }
-  const string& query() const {
+  const std::string& query() const {
     return query_;
   }
-  const string& ref() const {
+  const std::string& ref() const {
     return ref_;
   }
 
@@ -164,45 +164,45 @@ public:
 
   // Returns the path that should be sent to the server. This is the path,
   // parameter, and query portions of the URL. It is guaranteed to be ASCII.
-  string PathForRequest() const;
+  std::string PathForRequest() const;
 
   // Utility function that unescapes a % / + encoded url piece to the binary
   // unescaped underneath string.
-  static string UrlUnescape(const char* spec, int len);
-  static string UrlUnescape(const string& s) {
+  static std::string UrlUnescape(const char* spec, int len);
+  static std::string UrlUnescape(const std::string& s) {
     return UrlUnescape(s.c_str(), s.size());
   }
 
   // Utility function that escapes a string to be included in urls
-  static string UrlEscape(const char* spec, int len);
-  static string UrlEscape(const string& s) {
+  static std::string UrlEscape(const char* spec, int len);
+  static std::string UrlEscape(const std::string& s) {
     return UrlEscape(s.c_str(), s.size());
   }
 
-  const string& Reassemble();
+  const std::string& Reassemble();
 
-  int GetQueryParameters(vector<pair<string,string> >* out, bool unescape);
+  int GetQueryParameters(std::vector<std::pair<std::string,std::string> >* out, bool unescape) const;
 
 private:
   void ParseSpec();
-  void ParseHostPort(const string& host_port);
+  void ParseHostPort(const std::string& host_port);
   void Invalidate();
 
-  string spec_;
+  std::string spec_;
 
   bool is_valid_;
 
-  string scheme_;
-  string user_;
-  string host_;
-  string port_;
-  string path_;
-  string query_;
-  string ref_;
+  std::string scheme_;
+  std::string user_;
+  std::string host_;
+  std::string port_;
+  std::string path_;
+  std::string query_;
+  std::string ref_;
 };
 
 // Stream operator so URL can be used in assertion statements.
-inline ostream& operator<<(ostream& out, const URL& url) {
+inline std::ostream& operator<<(std::ostream& out, const URL& url) {
     return out << url.spec();
 }
 

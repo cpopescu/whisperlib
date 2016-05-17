@@ -37,9 +37,10 @@
 
 #include <string>
 
-#include <whisperlib/base/types.h>
-#include <whisperlib/io/buffer/memory_stream.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/io/buffer/memory_stream.h"
 
+namespace whisper {
 namespace io {
 
 class File {
@@ -101,16 +102,16 @@ class File {
   static File* OpenFileOrDie(const char* filename);
   static File* TryOpenFile(const char* filename);
 
-  bool Open(const string& filename, Access access, CreationDisposition cd);
+  bool Open(const std::string& filename, Access access, CreationDisposition cd);
   void Close();
 
-  void Set(const string& filename, int fd);
+  void Set(const std::string& filename, int fd);
 
   bool is_open() const {
     return fd_ != INVALID_FD_VALUE;
   }
 
-  const string& filename() const {
+  const std::string& filename() const {
     return filename_;
   }
   const int fd() const {
@@ -133,6 +134,9 @@ class File {
   //  Returns the new position
   int64 SetPosition(int64 distance, MoveMethod move_method = FILE_SET);
 
+  // Set file pointer to file begin.
+  void Rewind();
+
   // Truncate the file to the given size (expands or shortens the file).
   // The file pointer is left at the end of file.
   // If pos==-1 => truncates at current position.
@@ -146,6 +150,8 @@ class File {
   int32 Read(void* buf, int32 len);
   // Same read, but to memory stream.
   int32 Read(io::MemoryStream* out, int32 len);
+  // Skip bytes.
+  void Skip(int32 len);
 
   // Writes "len" bytes of data from "buf" to file at current file
   // pointer position.
@@ -154,7 +160,7 @@ class File {
   // Returns the number of bytes written. Negative on error
   int32 Write(const void* buf, int32 len);
   // Same write, but from string.
-  int32 Write(const string& s);
+  int32 Write(const std::string& s);
   // Same write, but from memory stream. If len==-1 then all ms data is written.
   int32 Write(io::MemoryStream* ms, int32 len = -1);
 
@@ -162,7 +168,7 @@ class File {
   void Flush();
 
  protected:
-  string filename_;   // name of the opened file
+  std::string filename_;   // name of the opened file
   int fd_;            // file descriptor of the opened file
 
   int64 size_;        // file size
@@ -178,6 +184,7 @@ class File {
 
   DISALLOW_EVIL_CONSTRUCTORS(File);
 };
-}
+}   // namespace io
+}   // namespace whisper
 
 #endif  // __COMMON_IO_FILE_FILE_H__

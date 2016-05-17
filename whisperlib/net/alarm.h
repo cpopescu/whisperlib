@@ -32,10 +32,11 @@
 #ifndef ALARM_H_
 #define ALARM_H_
 
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/callback.h>
-#include <whisperlib/net/selector.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/callback.h"
+#include "whisperlib/net/selector.h"
 
+namespace whisper {
 namespace util {
 
 // A class to run a closure at fixed intervals of time.
@@ -112,6 +113,7 @@ private:
   DISALLOW_EVIL_CONSTRUCTORS(Alarm);
 };
 
-} // namespace util
+}  // namespace util
+}  // namespace whisper
 
 #endif /*ALARM_H_*/

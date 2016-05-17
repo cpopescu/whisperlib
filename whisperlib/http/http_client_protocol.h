@@ -37,17 +37,23 @@
 #include <string>
 #include <vector>
 
-#include <whisperlib/base/types.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/hash.h"
 #include WHISPER_HASH_MAP_HEADER
 
-#include <whisperlib/io/buffer/memory_stream.h>
-#include <whisperlib/http/http_request.h>
-#include <whisperlib/net/selector.h>
-#include <whisperlib/net/timeouter.h>
-#include <whisperlib/net/connection.h>
-#include <whisperlib/net/address.h>
-#include <whisperlib/url/url.h>
+#include "whisperlib/io/buffer/memory_stream.h"
+#include "whisperlib/http/http_request.h"
+#include "whisperlib/net/selector.h"
+#include "whisperlib/net/timeouter.h"
+#include "whisperlib/net/connection.h"
+#include "whisperlib/net/address.h"
+#include "whisperlib/url/url.h"
 
+using std::pair;
+using std::string;
+using std::vector;
+
+namespace whisper {
 namespace http {
 
 //////////////////////////////////////////////////////////////////////
@@ -261,7 +267,7 @@ class BaseClientConnection {
 
   void Connect(const net::HostPort& addr) {
     if ( !net_connection_->Connect(addr) ) {
-      LOG_ERROR << "BaseClientConnection failed to connect to: " << addr;
+      LOG_WARNING << "BaseClientConnection failed to connect to: " << addr;
       ConnectionCloseHandler(net_connection_->last_error_code(),
           net::NetConnection::CLOSE_READ_WRITE);
     }
@@ -412,7 +418,7 @@ class ClientStreamReceiverProtocol : public BaseClientProtocol {
   // we call the provided callback (which should be permanent)
   // *IMPORTANT*  We never own the request or the callback
   void BeginStreamReceiving(ClientRequest* request,
-                            Closure* new_data_callback);
+                            ResultClosure<bool>* new_data_callback);
 
   // INTERNAL FUNCTIONS:
 
@@ -423,7 +429,7 @@ class ClientStreamReceiverProtocol : public BaseClientProtocol {
 
  private:
   ClientRequest* request_;
-  Closure* streaming_callback_;
+  ResultClosure<bool>* streaming_callback_;
 
   DISALLOW_EVIL_CONSTRUCTORS(ClientStreamReceiverProtocol);
 };
@@ -480,6 +486,13 @@ class ClientProtocol : public BaseClientProtocol  {
   string StatusString() const;
 
  private:
+  enum ProcessMoreDataResult {
+      ProcessMoreDataResult_ERROR = 0,
+      ProcessMoreDataResult_NEEDMORE = 1,
+      ProcessMoreDataResult_COMPLETE = 2,
+  };
+  ProcessMoreDataResult ProcessMoreData();
+
   // Finds which active request is currently in reading process (based
   // on the request_id header
   bool IdentifyReadingRequest();
@@ -499,7 +512,7 @@ class ClientProtocol : public BaseClientProtocol  {
   RequestMap active_requests_;
 
   // Requests waiting for processing (to become active)
-  typedef deque<ClientRequest*> RequestsQueue;
+  typedef std::deque<ClientRequest*> RequestsQueue;
   RequestsQueue waiting_requests_;
 
   // What closures to call upon completion
@@ -586,6 +599,7 @@ class ClientRequest  {
 
   DISALLOW_EVIL_CONSTRUCTORS(ClientRequest);
 };
-}
+}  // namespace http
+}  // namespace whisper
 
 #endif  // __NET_HTTP_HTTP_CLIENT_PROTOCOL_H__

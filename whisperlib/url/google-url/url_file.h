@@ -33,7 +33,7 @@
 #ifndef GOOGLEURL_SRC_URL_FILE_H__
 #define GOOGLEURL_SRC_URL_FILE_H__
 
-#include <whisperlib/url/google-url/url_parse_internal.h>
+#include "whisperlib/url/google-url/url_parse_internal.h"
 
 namespace url_parse {
 

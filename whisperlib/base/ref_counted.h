@@ -1,3 +1,5 @@
+// -*- c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil; coding: utf-8 -*-
+//
 // Copyright (c) 2009, Whispersoft s.r.l.
 // All rights reserved.
 //
@@ -32,51 +34,47 @@
 #ifndef __WHISPERLIB_BASE_REF_COUNTED_H__
 #define __WHISPERLIB_BASE_REF_COUNTED_H__
 
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/sync/mutex.h>
-#include <whisperlib/base/callback.h>
+#include <atomic>
+#include <string>
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/callback.h"
 
 // Reference counted through encapsulation.
 // The "ref_counted" contains the object C
 template<class C>
 class ref_counted {
- public:
-  explicit ref_counted(C* data, synch::Mutex* mutex)
-      : data_(data),
-        mutex_(mutex),
-        ref_count_(0),
-        release_cb_(NULL) {
+public:
+  explicit ref_counted(C* data)
+    : data_(data),
+      ref_count_(0),
+      release_cb_(NULL) {
   }
+
   ~ref_counted() {
-#ifndef NDEBUG
-    if (mutex_) { mutex_->Lock(); }
-    DCHECK_EQ(ref_count_, 0);
-    if (mutex_) { mutex_->Unlock(); }
-#endif
-    if (release_cb_) {
-        release_cb_->Run(data_);
+    if (release_cb_ != NULL) {
+      release_cb_->Run(data_);
     } else {
-        delete data_;
+      delete data_;
     }
   }
+
   void IncRef() const {
-    if (mutex_) { mutex_->Lock(); }
-    ++ref_count_;
-    if (mutex_) { mutex_->Unlock(); }
+    ref_count_.fetch_add(1);
   }
-  void DecRef() const {
-    if (mutex_) { mutex_->Lock(); }
-    DCHECK_GT(ref_count_, 0);
-    --ref_count_;
-    const bool do_delete = (ref_count_ == 0);
-    if (mutex_) { mutex_->Unlock(); }
-    if ( do_delete ) {
+
+  // returns: true = this object was deleted.
+  bool DecRef() const {
+    const bool do_delete = 1 == ref_count_.fetch_sub(1);
+    DCHECK_GE(ref_count_.load(), 0);
+    if (do_delete) {
       delete this;
+      return true;
     }
+    return false;
   }
+
   int ref_count() const {
-    return ref_count_;
+    return ref_count_.load();
   }
   C& operator*() const {
     DCHECK(data_ != NULL);
@@ -92,21 +90,19 @@ class ref_counted {
   void clear() {
     data_ = NULL;
   }
-  C* set(C* data) {
-    if (mutex_) { mutex_->Lock(); }
-    C* d = data_;
-    data_ = data;
-    if (mutex_) { mutex_->Unlock(); }
-    return d;
-  }
-  void set_release_cb(Callback1<C*>* release_cb) {
+  void set_release_cb(whisper::Callback1<C*>* release_cb) {
     release_cb_ = release_cb;
   }
+  C* reset(C* data) {
+    C* const d = data_;
+    data_ = data;
+    return d;
+  }
+
  private:
+  mutable std::atomic_int ref_count_;
   C* data_;
-  synch::Mutex* const mutex_;
-  mutable int ref_count_;
-  Callback1<C*>* release_cb_;
+  whisper::Callback1<C*>* release_cb_;
   DISALLOW_EVIL_CONSTRUCTORS(ref_counted);
 };
 
@@ -114,49 +110,32 @@ class ref_counted {
 // The object C derives from RefCounted.
 class RefCounted {
  public:
-  // If you provide a 'mutex', IncRef() and DecRef() will be synchronized
-  // by the given 'mutex'.
-  RefCounted(synch::Mutex* mutex)
-    : ref_count_(0),
-      ref_mutex_(mutex) {
+  RefCounted() : ref_count_(0) {
   }
   virtual ~RefCounted() {
-    DCHECK_EQ(ref_count_, 0);
+    DCHECK_EQ(ref_count_.load(), 0);
   }
+
   int ref_count() const {
-    return ref_count_;
+    return ref_count_.load();
   }
+
   void IncRef() const {
-    if (ref_mutex_ != NULL) ref_mutex_->Lock();
-    IncRefLocked();
-    if (ref_mutex_ != NULL) ref_mutex_->Unlock();
+    ref_count_.fetch_add(1);
   }
+
   // returns: true = this object was deleted.
   bool DecRef() const {
-    if (ref_mutex_ != NULL) ref_mutex_->Lock();
-    const bool do_delete = DecRefLocked();
-    if (ref_mutex_ != NULL) ref_mutex_->Unlock();
-
-    if ( do_delete ) {
+    const bool do_delete = 1 == ref_count_.fetch_sub(1);
+    if (do_delete) {
       delete this;
+      return true;
     }
-    return do_delete;
+    return false;
   }
 
- protected:
-  void IncRefLocked() const {
-    ref_count_++;
-  }
-  bool DecRefLocked() const {
-    DCHECK_GT(ref_count_, 0);
-    ref_count_--;
-    return ref_count_ == 0;
-  }
-
-
-  mutable int ref_count_;
-  synch::Mutex* const ref_mutex_;
-
+ private:
+  mutable std::atomic_int ref_count_;
   DISALLOW_EVIL_CONSTRUCTORS(RefCounted);
 };
 
@@ -224,12 +203,53 @@ public:
     p_ = NULL;
     return ret;
   }
-  string ToString() const {
+  std::string ToString() const {
     return p_ == NULL ? "NULL" : p_->ToString();
   }
 
 private:
   REF_COUNTED* p_;
 };
+
+//////////////////////////////////////////////////////////////////////
+
+#ifndef NDEBUG
+template<typename T>
+class InstanceCounterT {
+public:
+    explicit InstanceCounterT(const char* token) :
+        token_(token),
+        instances_(0) {
+    }
+    ~InstanceCounterT() {
+        LOG_WARNING_IF(instances_ != 0) << token_ << " instances leaked " << instances_;
+    }
+
+public:
+    void inc() {
+        instances_.fetch_add(1);
+    }
+    void dec() {
+        instances_.fetch_sub(1);
+    }
+
+private:
+    const std::string token_;
+    std::atomic_int instances_;
+};
+#else // NDEBUG
+template<typename T>
+class InstanceCounterT {
+public:
+    InstanceCounterT(const char* /*token*/)  {
+    }
+    ~InstanceCounterT() {
+    }
+
+public:
+    void inc() {}
+    void dec() {}
+};
+#endif // NDEBUG
 
 #endif  // __WHISPERLIB_BASE_REF_COUNTED_H__

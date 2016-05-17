@@ -32,11 +32,13 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <whisperlib/base/strutil.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/core_errno.h>
-#include <whisperlib/io/logio/logio.h>
-#include <whisperlib/io/ioutil.h>
+#include "whisperlib/base/strutil.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/core_errno.h"
+#include "whisperlib/io/logio/logio.h"
+#include "whisperlib/io/ioutil.h"
+
+using namespace std;
 
 namespace {
 //////////////////////////////////////////////////////////////////////
@@ -52,6 +54,7 @@ const string ComposeFileName(const string& log_dir,
 
 //////////////////////////////////////////////////////////////////////
 
+namespace whisper {
 namespace io {
 
 LogWriter::LogWriter(const string& log_dir,
@@ -136,6 +139,11 @@ bool LogWriter::Initialize() {
   return OpenNextLog();
 }
 
+LogReader* LogWriter::NewReader() const {
+  return new LogReader(log_dir_, file_base_, block_size_, blocks_per_file_);
+}
+
+
 bool LogWriter::WriteRecord(io::MemoryStream* in) {
   if ( !file_.is_open() && !OpenNextLog() ) {
     return false;
@@ -156,12 +164,12 @@ bool LogWriter::WriteRecord(const char* buffer, int32 size) {
   return true;
 }
 
-bool LogWriter::Flush() {
+bool LogWriter::Flush(bool sync_to_disk) {
   recorder_.FinalizeContent(&buf_);
   if ( buf_.IsEmpty() ) {
     return true;
   }
-  return WriteBuffer(true);
+  return WriteBuffer(sync_to_disk);
 }
 
 string LogWriter::ComposeFileName(bool temp) const {
@@ -171,9 +179,67 @@ string LogWriter::ComposeFileName(bool temp) const {
                            file_base_, block_size_, file_num_);
 }
 
+bool LogWriter::TruncateAt(const LogPos& pos)  {
+  if (temporary_incomplete_file_) {
+    LOG_ERROR << " Cannot truncate logs with temporary files.";
+    return false;
+  }
+  if (pos.record_num_ > 0) {
+    LOG_ERROR << " Cannot truncate log files at record_num non zero: " << pos.ToString();
+  }
+  LOG_INFO << " Truncating log: " << log_dir_ << " / " << file_base_ << " at " << pos.ToString();
+  DCHECK(file_.is_open()) << "Did you Initialize()?";
+  DCHECK(file_.Position() % block_size_ == 0) << "Illegal file position: "
+      << file_.Position() << ", block_size_: " << block_size_;
+  recorder_.FinalizeContent(&buf_);
+  WriteBuffer(false);
+  // close last file
+  CloseLog();
+
+  vector<string> files;
+  GetLogFiles(&files, log_dir_, file_base_, block_size_);
+  int32 start_delete = pos.block_num_ == 0 ? pos.file_num_ : pos.file_num_ + 1;
+
+  sort(files.begin(), files.end());
+  size_t num_deleted = 0;
+  for ( int32 i = 0; i < files.size(); ++i ) {
+    CHECK_GT(files[i].size(), 10);
+    errno = 0;  // essential as strtol would not set a 0 errno
+    const int32 file_num = strtol(files[i].c_str() + files[i].size() - 10, NULL, 10);
+    if ( errno || file_num < 0 ) {
+      LOG_ERROR << "FileNum: " << file_num <<  " for [" << files[i] << "]";
+      continue;
+    }
+    if ( file_num >= start_delete ) {
+        const string filename = ::ComposeFileName(log_dir_, file_base_, block_size_, file_num);
+        if ( !io::Rm(filename) ) {
+            LOG_ERROR << "Cannot delete file: [" << filename << "]";
+            continue;
+        }
+        ++num_deleted;
+    }
+  }
+  bool success = true;
+  if (pos.block_num_ > 0) {
+      const string filename = ::ComposeFileName(log_dir_, file_base_, block_size_, pos.file_num_);
+      io::File last_file;
+      if ( !last_file.Open(filename, io::File::GENERIC_WRITE, io::File::OPEN_ALWAYS) ) {
+          LOG_ERROR << "Error opening file : [" << filename << "]";
+          success = false;
+      } else {
+          const int64 truncate_len = pos.block_num_ * block_size_;
+          LOG_INFO << "Truncating file " << filename << " w/ size: " << last_file.Size()
+                   << " to " << truncate_len;
+          last_file.Truncate(truncate_len);
+      }
+  }
+  file_num_ = pos.file_num_ < 0 ? 0 : pos.file_num_;
+  return OpenNextLog();
+}
+
 LogPos LogWriter::Tell() const {
-  CHECK(file_.is_open()) << "Did you Initialize()?";
-  CHECK(file_.Position() % block_size_ == 0) << "Illegal file position: "
+  DCHECK(file_.is_open()) << "Did you Initialize()?";
+  DCHECK(file_.Position() % block_size_ == 0) << "Illegal file position: "
       << file_.Position() << ", block_size_: " << block_size_;
   if ( file_.Position()  == blocks_per_file_ * block_size_ ) {
     // current file is full
@@ -270,6 +336,7 @@ bool LogWriter::OpenNextLog() {
     CloseLog();
     ++file_num_;
   }
+  recorder_.Clear();
   const string filename = ComposeFileName(temporary_incomplete_file_);
   if ( io::IsReadableFile(filename) ) {
     DLOG_INFO << "Continue log file: " << filename
@@ -306,7 +373,7 @@ void LogWriter::CloseLog() {
     return;
   }
   string filename = file_.filename();
-
+  recorder_.Clear();
   // close file
   file_.Close();
   if ( temporary_incomplete_file_ ) {
@@ -351,11 +418,14 @@ bool LogReader::Seek(const LogPos& log_pos) {
     Rewind();
     return true;
   }
+  LogPos to_seek = log_pos;
   if ( log_pos.block_num_ == 0 && log_pos.record_num_ == 0 &&
        log_pos.file_num_ > 0 &&
-       io::IsReadableFile(ComposeFileName(log_pos.file_num_ - 1)) ) {
+       io::IsReadableFile(ComposeFileName(log_pos.file_num_ - 1)) &&
+       !io::IsReadableFile(ComposeFileName(log_pos.file_num_)) ) {
     // seeking to the beginning of a file. The previous file exists or current
     // file is 0. Current file may not exist (i.e. log_pos is log end)
+    CloseInternal(false);
     file_num_ = log_pos.file_num_;
     record_num_ = 0;
     return true;
@@ -461,6 +531,9 @@ void LogReader::CloseInternal(bool on_error) {
 }
 
 bool LogReader::OpenFile(int32 file_num) {
+  if (file_num_ == file_num && file_.is_open()) {
+    return true;
+  }
   // go to uninitialized state
   CloseInternal(false);
   // file_num_ is set to current file. If we don't succeed, next
@@ -469,7 +542,7 @@ bool LogReader::OpenFile(int32 file_num) {
   const string filename = ComposeFileName(file_num);
   // early check file existence (just to avoid the LOG_ERROR in file_.Open())
   if ( !io::IsReadableFile(filename) ) {
-    DLOG_INFO << "Cannot open, no such file: [" << filename << "]";
+    LOG_ERROR << "Cannot open, no such file: [" << filename << "]";
     return false;
   }
   if ( !file_.Open(filename, io::File::GENERIC_READ,
@@ -550,21 +623,35 @@ bool LogReader::ReadBlock() {
 
 //////////////////////////////////////////////////////////////////////
 
-uint32 CleanLog(const string& log_dir, const string& file_base,
-                LogPos first_pos, int32 block_size) {
-  re::RE re(strutil::StringPrintf("^%s_%010d"
-      "_[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$",
-      file_base.c_str(), block_size));
-  vector<string> files;
-  if ( !DirList(log_dir, LIST_FILES, &re, &files) ) {
-    return 0;
+void GetLogFiles(vector<string>* files,
+                 const string& log_dir, const string& file_base,
+                 int32 block_size) {
+  files->clear();
+  if (io::IsDir(log_dir)) {
+      re::RE re(strutil::StringPrintf(
+                    "^%s_%010d"
+                    "_[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$",
+                    file_base.c_str(), block_size));
+      DirList(log_dir, LIST_FILES, &re, files);
   }
+}
+
+size_t CountLogFiles(const string& log_dir, const string& file_base,
+                     int32 block_size) {
+  vector<string> files;
+  GetLogFiles(&files, log_dir, file_base, block_size);
+  return files.size();
+}
+size_t CleanLog(const string& log_dir, const string& file_base,
+                LogPos first_pos, int32 block_size) {
+  vector<string> files;
+  GetLogFiles(&files, log_dir, file_base, block_size);
   if ( files.empty() ) {
     return 0;
   }
   sort(files.begin(), files.end());
 
-  uint32 num_deleted = 0;
+  size_t num_deleted = 0;
   for ( int32 i = 0; i < files.size(); ++i ) {
     CHECK_GT(files[i].size(), 10);
     errno = 0;  // essential as strtol would not set a 0 errno
@@ -648,5 +735,12 @@ int64 LogFileTime(const string& dir, const string& file_base, int32 block_size, 
     return io::GetFileMtime(ComposeFileName(dir, file_base, block_size, file_num));
 }
 
-
+int64 CountLogRecords(LogReader* reader) {
+    int64 count = 0;
+    while (reader->GetNextRecord(NULL)) { count++; }
+    reader->Rewind();
+    return count;
 }
+
+}  // namespace io
+}  // namespace whisper

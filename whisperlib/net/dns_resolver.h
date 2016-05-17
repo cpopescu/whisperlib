@@ -34,15 +34,18 @@
 
 #include <string>
 #include <vector>
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/ref_counted.h>
-#include <whisperlib/base/callback/callback1.h>
-#include <whisperlib/base/strutil.h>
-#include <whisperlib/base/timer.h>
-#include <whisperlib/net/address.h>
-#include <whisperlib/net/selector.h>
-#include <whisperlib/sync/mutex.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/ref_counted.h"
+#include "whisperlib/base/callback/callback1.h"
+#include "whisperlib/base/strutil.h"
+#include "whisperlib/base/timer.h"
+#include "whisperlib/net/address.h"
+#include "whisperlib/net/selector.h"
+#include "whisperlib/sync/mutex.h"
 
+using std::string;
+
+namespace whisper {
 namespace net {
 
 // Asynchronous DNS resolver.
@@ -60,15 +63,14 @@ struct DnsHostInfo : public RefCounted {
   bool valid_;
   string hostname_;
   int64 time_;
-  vector<IpAddress> ipv4_;
-  vector<IpAddress> ipv6_;
-    DnsHostInfo(const string& hostname, synch::MutexPool* mutex_pool)
-    : RefCounted(mutex_pool->GetMutex(this)),
+  std::vector<IpAddress> ipv4_;
+  std::vector<IpAddress> ipv6_;
+    DnsHostInfo(const string& hostname)
+    : RefCounted(),
       valid_(false), hostname_(hostname), time_(timer::TicksNsec()){
   }
-  DnsHostInfo(const string& hostname, set<IpAddress> ipv4, set<IpAddress> ipv6,
-              synch::MutexPool* mutex_pool)
-    : RefCounted(mutex_pool->GetMutex(this)),
+  DnsHostInfo(const string& hostname, std::set<IpAddress> ipv4, std::set<IpAddress> ipv6)
+    : RefCounted(),
       valid_(true),
       hostname_(hostname),
       time_(timer::TicksNsec()),
@@ -109,6 +111,7 @@ void DnsExit();
 // Synchronous DNS query.
 scoped_ref<DnsHostInfo> DnsBlockingResolve(const string& hostname);
 
-}
+}  // namespace net
+}  // namespace whisper
 
 #endif // __NET_BASE_DNS_RESOLVER_H__

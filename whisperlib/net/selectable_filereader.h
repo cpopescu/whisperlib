@@ -32,11 +32,12 @@
 #ifndef __NET_BASE_SELECTABLE_FILEREADER_H__
 #define __NET_BASE_SELECTABLE_FILEREADER_H__
 
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/callback.h>
-#include <whisperlib/io/buffer/memory_stream.h>
-#include <whisperlib/net/selectable.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/callback.h"
+#include "whisperlib/io/buffer/memory_stream.h"
+#include "whisperlib/net/selectable.h"
 
+namespace whisper {
 namespace net {
 
 class SelectableFilereader : public Selectable {
@@ -71,6 +72,7 @@ class SelectableFilereader : public Selectable {
   DataCallback* data_callback_;
   Closure* close_callback_;
 };
-}
+}  // namespace net
+}  // namespace whisper
 
 #endif  // __NET_BASE_SELECTABLE_FILEREADER_H__

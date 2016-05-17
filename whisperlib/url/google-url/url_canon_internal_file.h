@@ -39,8 +39,8 @@
 #ifndef GOOGLEURL_SRC_URL_CANON_INTERNAL_FILE_H__
 #define GOOGLEURL_SRC_URL_CANON_INTERNAL_FILE_H__
 
-#include <whisperlib/url/google-url/url_file.h>
-#include <whisperlib/url/google-url/url_parse_internal.h>
+#include "whisperlib/url/google-url/url_file.h"
+#include "whisperlib/url/google-url/url_parse_internal.h"
 
 using namespace url_canon;
 

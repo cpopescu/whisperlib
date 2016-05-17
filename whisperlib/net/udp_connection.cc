@@ -29,14 +29,13 @@
 //
 // Authors: Cosmin Tudorache
 //
-
-#include <whisperlib/base/core_config.h>
-
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <unistd.h>
 #include <fcntl.h>
+
+#include "whisperlib/base/types.h"
 
 #ifdef LINUX_TYPES_H
 #include <linux/types.h>
@@ -56,13 +55,13 @@
 #endif
 
 
-#include <whisperlib/base/core_errno.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/scoped_ptr.h>
-#include <whisperlib/base/timer.h>
-#include <whisperlib/base/gflags.h>
+#include "whisperlib/base/core_errno.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/scoped_ptr.h"
+#include "whisperlib/base/timer.h"
+#include "whisperlib/base/gflags.h"
 
-#include <whisperlib/net/udp_connection.h>
+#include "whisperlib/net/udp_connection.h"
 
 DECLARE_bool(net_connection_debug);
 #define IF_NET_DEBUG if ( !FLAGS_net_connection_debug ); else
@@ -70,10 +69,10 @@ DECLARE_bool(net_connection_debug);
 #define DCONNLOG  IF_NET_DEBUG DLOG_INFO << this->PrefixInfo()
 #define ICONNLOG  IF_NET_DEBUG LOG_INFO << this->PrefixInfo()
 #define WCONNLOG  IF_NET_DEBUG LOG_WARNING << this->PrefixInfo()
-#define ECONNLOG               LOG_ERROR << this->PrefixInfo()
+#define ECONNLOG               LOG_WARNING << this->PrefixInfo()
 #define FCONNLOG               LOG_FATAL << this->PrefixInfo()
 
-
+namespace whisper {
 namespace net {
 
 UdpConnection::UdpConnection(Selector* selector)
@@ -95,7 +94,7 @@ UdpConnection::UdpConnection(Selector* selector)
     count_bytes_read_(0),
     count_datagrams_sent_(0),
     count_datagrams_read_(0) {
-  CHECK_NOT_NULL(data_buffer_) << " Out of memory";
+  CHECK(data_buffer_) << " Out of memory";
 }
 UdpConnection::~UdpConnection() {
   InternalClose(0, true);
@@ -104,7 +103,7 @@ UdpConnection::~UdpConnection() {
   DetachAllHandlers();
   ClearInQueue();
   ClearOutQueue();
-  delete data_buffer_;
+  delete [] data_buffer_;
   data_buffer_ = NULL;
 }
 
@@ -305,7 +304,7 @@ void UdpConnection::InternalClose(int err, bool call_close_handler) {
   }
 }
 
-bool UdpConnection::HandleReadEvent(const SelectorEventData& event) {
+bool UdpConnection::HandleReadEvent(const SelectorEventData& /*event*/) {
   CHECK(state() != DISCONNECTED) << "Invalid state: " << StateName();
 
   // Read from network into inbuf_
@@ -348,7 +347,7 @@ bool UdpConnection::HandleReadEvent(const SelectorEventData& event) {
   }
   return true;
 }
-bool UdpConnection::HandleWriteEvent(const SelectorEventData& event) {
+bool UdpConnection::HandleWriteEvent(const SelectorEventData& /*event*/) {
   CHECK(state() != DISCONNECTED) << "Invalid state: " << StateName();
   if ( !InvokeWriteHandler() ) {
     WCONNLOG << "Closing because write_handler_ said so";
@@ -426,4 +425,5 @@ void UdpConnection::Close() {
   InternalClose(0, true);
 }
 
-} // namespace net
+}  // namespace net
+}  // namespace whisper

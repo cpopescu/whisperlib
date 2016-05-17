@@ -1,4 +1,4 @@
-// Copyright (c) 2012, 1618labs
+// Copyright (c) 2012, Urban Engines
 // All rights reserved.
 //
 // Author: Catalin Popescu
@@ -10,10 +10,11 @@
 // Wrappers for io::MemoryStream to expose a google::protobuf::io::ZeroCopyXXXStream
 // interface.
 //
-#include <whisperlib/io/buffer/memory_stream.h>
+#include "whisperlib/io/buffer/memory_stream.h"
 #include <google/protobuf/io/zero_copy_stream.h>
 #include <google/protobuf/message_lite.h>
 
+namespace whisper {
 namespace io {
 
 //////////////////////////////////////////////////////////////////////
@@ -33,9 +34,10 @@ namespace io {
 
 class ProtobufReadStream : public google::protobuf::io::ZeroCopyInputStream {
 public:
-    explicit ProtobufReadStream(MemoryStream* stream)
+    explicit ProtobufReadStream(MemoryStream* stream, int limit = 0)
         : stream_(stream),
-          position_(0) {
+          position_(0),
+          limit_(limit ? position_ + limit : 0) {
         stream_->MarkerSet();
     }
     virtual ~ProtobufReadStream() {
@@ -43,6 +45,12 @@ public:
     }
     virtual bool Next(const void** data, int* size) {
         *size = 0;
+        if (limit_) {
+            if (limit_ == position_) {
+                return false;
+            }
+            *size = limit_ - position_;
+        }
         const bool ret =  stream_->ReadNext(reinterpret_cast<const char**>(data), size);
         position_ += *size;
         return ret;
@@ -55,29 +63,34 @@ public:
         stream_->Skip(position_);
     }
     virtual bool Skip(int count) {
-        const int skipped = stream_->Skip(count);
+        int to_skip = count;
+        if (limit_ && to_skip > (limit_ - position_)) {
+            to_skip = (limit_ - position_);
+        }
+        const int skipped = stream_->Skip(to_skip);
         position_ += skipped;
         return skipped == count;
     }
-    virtual int64 ByteCount() const {
+    virtual google::protobuf::int64 ByteCount() const {
         return position_;
     }
 
 private:
     MemoryStream* const stream_;
     int position_;
+    const int limit_;
 
     DISALLOW_EVIL_CONSTRUCTORS(ProtobufReadStream);
 };
 
 inline bool ParseProto(google::protobuf::MessageLite* message,
-                       io::MemoryStream* ms) {
-    io::ProtobufReadStream stream(ms);
+                       io::MemoryStream* ms, int limit = 0) {
+    io::ProtobufReadStream stream(ms, limit);
     return message->ParseFromZeroCopyStream(&stream);
 }
 inline bool ParsePartialProto(google::protobuf::MessageLite* message,
-                              io::MemoryStream* ms) {
-    io::ProtobufReadStream stream(ms);
+                              io::MemoryStream* ms, int limit = 0) {
+    io::ProtobufReadStream stream(ms, limit);
     return message->ParsePartialFromZeroCopyStream(&stream);
 }
 
@@ -127,7 +140,7 @@ public:
         last_scratch_size_ = 0;
     }
 
-    virtual int64 ByteCount() const {
+    virtual google::protobuf::int64 ByteCount() const {
         return position_;
     }
  private:
@@ -148,6 +161,7 @@ inline bool SerializePartialProto(const google::protobuf::MessageLite* message,
     io::ProtobufWriteStream stream(ms);
     return message->SerializePartialToZeroCopyStream(&stream);
 }
-}
+}  // namespace io
+}  // namespace whisper
 
 #endif  // __WHISPERLIB_IO_PROTOBUF_STREAM_H__

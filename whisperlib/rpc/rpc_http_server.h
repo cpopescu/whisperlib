@@ -33,9 +33,9 @@
 //
 // Protobuf adaptation:
 //
-// (c) Copyright 2011, 1618labs
+// (c) Copyright 2011, Urban Engines
 // All rights reserved.
-// Author: Catalin Popescu (cp@1618labs.com)
+// Author: Catalin Popescu (cp@urbanengines.com)
 //
 // TODO(cpopescu): implement cancel request - client -> server
 //
@@ -44,28 +44,40 @@
 
 #include <map>
 #include <string>
-#include <whisperlib/base/types.h>
-#include <whisperlib/sync/mutex.h>
-#include <whisperlib/net/address.h>
-
+#include <set>
+#include <deque>
+#include "whisperlib/base/types.h"
+#include "whisperlib/sync/mutex.h"
+#include "whisperlib/net/address.h"
+#include "whisperlib/io/buffer/memory_stream.h"
+#include "whisperlib/base/hash.h"
 #include WHISPER_HASH_SET_HEADER
 
-#include <whisperlib/net/user_authenticator.h>
+#include "whisperlib/net/user_authenticator.h"
 
 namespace google { namespace protobuf {
 class Service;
 class Message;
 class MethodDescriptor;
 } }
+
+namespace whisper {
+
 namespace http {
 class Server;
 class ServerRequest;
 }
 namespace net {
 class IpClassifier;
+class Selector;
 }
 namespace rpc {
 class Controller;
+namespace pb {
+class RequestStats;
+class ServerStats;
+class MachineStats;
+}
 
 //////////////////////////////////////////////////////////////////////
 
@@ -102,19 +114,70 @@ class HttpServer {
 
   static net::HostPort GetRemoteAddress(http::ServerRequest* req);
 
+
+  bool stream_proto_error_close() const {
+    return stream_proto_error_close_;
+  }
+  void set_stream_proto_error_close(bool value) {
+    stream_proto_error_close_ = value;
+  }
+  http::Server* http_server() const {
+    return http_server_;
+  }
+  const net::UserAuthenticator* authenticator() const {
+    return authenticator_;
+  }
+  void set_authenticator(net::UserAuthenticator* auth) {
+    CHECK(authenticator_ == NULL);
+    authenticator_ = auth;
+  }
+
+  void set_stats_msg_text_size(size_t sz) {
+    stats_msg_text_size_ = sz;
+  }
+  void set_stats_msg_history_size(size_t sz) {
+    stats_msg_history_size_ = sz;
+  }
+
+  void GetServerStats(pb::ServerStats* stats) const;
+  void GetMachineStats(pb::MachineStats* stats) const;
+
+  // Processes a statusz request
+  void ProcessRpcStatusRequest(http::ServerRequest* req);
 protected:
+  pb::RequestStats* BuildErrorStats(http::ServerRequest* req,
+                                    const net::HostPort& remote_address,
+                                    const std::string& error);
   struct RpcData {
     RpcData(http::ServerRequest* req,
             rpc::Controller* controller,
             const google::protobuf::Message* request,
-            google::protobuf::Message* response)
-      : req_(req), controller_(controller), request_(request), response_(response) {
-    }
+            google::protobuf::Message* response,
+            const net::HostPort& remote_address,
+            size_t stats_limit_print);
     ~RpcData();
+
+    void RunStreamingCallback();
+    pb::RequestStats* GrabStats(size_t limit_print);
+
     http::ServerRequest* req_;
     rpc::Controller* controller_;
     const google::protobuf::Message* request_;
     google::protobuf::Message* response_;
+    const std::string xid_;
+
+    synch::Spin* streaming_mutex_;
+    bool streaming_scheduled_;
+    bool streaming_sent_response_;
+    bool streaming_message_sent_size_;
+    bool stream_ended_;
+    int64 streaming_heartbeat_ms_;
+    io::MemoryStream* streaming_message_;
+
+    Closure* streaming_req_close_callback_;
+    Closure* streaming_heartbeat_callback_;
+
+    pb::RequestStats* stats_;
   };
 
 
@@ -143,13 +206,47 @@ protected:
                       rpc::Controller* controller,   // can be null
                       const char* error_reason);     // can be null
 
+  // Streaming callbacks / utils
+
+  // Callback from the implementation (called multiple times)
+  void RpcStreamCallback(RpcData* data);
+
+  // Tries to push some data on the wire (if available).
+  void RpcStreamSomeData(RpcData* data);
+
+  // Callback when the network request ended
+  void RpcStreamClosed(RpcData* data);
+
+  // Sends a heartbeat to client
+  void RpcStreamHeartbeat(RpcData* data);
+
+  // Helper to send the ball in the networking's court after
+  // some data is put in the request out buffer.
+  void RpcStreamContinue(RpcData* data);
+
+  // Pulls the next message to be sent for streaming
+  bool RpcStreamPopMessageDataLocked(RpcData* data);
+
+  // Completes a data - deletes & registers stats.
+  void RpcCompleteData(RpcData* data, net::Selector* net_selector);
+
+  // Utilities for preparing and sending the rpc answers.
+  void PrepareForResponse(http::ServerRequest* req,
+                          rpc::Controller* controller,
+                          const char* error_reason);
+  void SendResponse(http::ServerRequest* req, int status);
+
+  // Registers stats for an error.
+  void RegisterErrorRequest(const std::string& reason,
+                            http::ServerRequest* req,
+                            const net::HostPort& peer_address);
 
   //////////////////////////////////////////////////////////////////////
 
-  synch::Mutex mutex_;
+  mutable synch::Mutex mutex_;
 
   // If this is set empty we require for our users to be authenticated
-  net::UserAuthenticator* const authenticator_;
+  net::UserAuthenticator* authenticator_;
 
   // If not null accept clients only from guys identified under this class
   net::IpClassifier* const accepted_clients_;
@@ -160,11 +257,22 @@ protected:
   // We do not accept more then these concurrent requests
   int max_concurrent_requests_;
 
+  // What to do when we fail to serialize a message to the client ?
+  // True - close the connection with an error
+  // False - skip the message, log and continue.
+  bool stream_proto_error_close_;
+
+  // Save at most these many bytes from response / reply
+  size_t stats_msg_text_size_;
+  size_t stats_msg_history_size_;
+
   // Current statistics
-  int current_requests_;
+  int num_current_requests_;
+  std::set<RpcData*> current_requests_;
+  std::deque<pb::RequestStats*> completed_requests_;
 
   // What services we provide ..
-  typedef map<string, google::protobuf::Service*> ServicesMap;
+  typedef std::map<string, google::protobuf::Service*> ServicesMap;
   ServicesMap services_;
 
   http::Server* http_server_;
@@ -181,5 +289,7 @@ protected:
  private:
   DISALLOW_EVIL_CONSTRUCTORS(HttpServer);
 };
-}
+}  // namespace rpc
+}  // namespace whisper
+
 #endif  // __NET_RPC_LIBS_SERVER_RPC_HTTP_SERVER_H__

@@ -32,10 +32,11 @@
 #ifndef __NET_BASE_SELECTABLE_H__
 #define __NET_BASE_SELECTABLE_H__
 
-#include <whisperlib/io/buffer/memory_stream.h>
-#include <whisperlib/net/selector.h>
-#include <whisperlib/net/selector_event_data.h>
+#include "whisperlib/io/buffer/memory_stream.h"
+#include "whisperlib/net/selector.h"
+#include "whisperlib/net/selector_event_data.h"
 
+namespace whisper {
 namespace net {
 
 class Selectable {
@@ -68,21 +69,21 @@ class Selectable {
   // its registered fd.
   // Return true if the events should be contiued to be processesd w/ respect
   // to this selectable object.
-  virtual bool HandleReadEvent(const SelectorEventData& event) {
+  virtual bool HandleReadEvent(const SelectorEventData& /*event*/) {
     return true;
   }
 
   // Signal that informs the selectable object that it can write data out
   // Return true if the events should be contiued to be processesd w/ respect
   // to this selectable object.
-  virtual bool HandleWriteEvent(const SelectorEventData& event) {
+  virtual bool HandleWriteEvent(const SelectorEventData& /*event*/) {
     return true;
   }
 
   // Signal an error(exception) occured on the fd.
   // Return true if the events should be contiued to be processesd w/ respect
   // to this selectable object.
-  virtual bool HandleErrorEvent(const SelectorEventData& event) {
+  virtual bool HandleErrorEvent(const SelectorEventData& /*event*/) {
     return true;
   }
 
@@ -109,6 +110,7 @@ class Selectable {
 
   friend class Selector;
 };
-}
+}  // namespace net
+}  // namespace whisper
 
 #endif  // __NET_BASE_SELECTABLE_H__

@@ -29,20 +29,20 @@
 //
 // Author: Catalin Popescu
 
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/timer.h>
-#include <whisperlib/base/system.h>
-#include <whisperlib/base/gflags.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/timer.h"
+#include "whisperlib/base/system.h"
+#include "whisperlib/base/gflags.h"
 
-#include <whisperlib/io/buffer/memory_stream.h>
-#include <whisperlib/io/num_streaming.h>
+#include "whisperlib/io/buffer/memory_stream.h"
+#include "whisperlib/io/num_streaming.h"
+
+using namespace std;
 
 //////////////////////////////////////////////////////////////////////
 
-DEFINE_int32(rand_seed,
-             0,
-             "Seed the random with this guy");
+DEFINE_int32(rand_seed, 0, "Seed the random with this guy");
 
 //////////////////////////////////////////////////////////////////////
 
@@ -62,7 +62,7 @@ void TestPipeStyle(int64 initial_ints,     // we write initially these many ints
   int32* buffer = new int32[max_write_size];
   int32 last_num_read = 0;
   int32 last_num_write = 0;
-  io::MemoryStream stream;
+  whisper::io::MemoryStream stream;
   int64 cb = 0;
   int64 expected_size = 0;
   const int64 total_ints = num_ints + initial_ints + final_ints;
@@ -94,7 +94,7 @@ void TestPipeStyle(int64 initial_ints,     // we write initially these many ints
       expected_size -= cbread;
       CHECK_EQ(stream.Size(), expected_size);
       for ( int i = 0; i < ints_read; ++i ) {
-        CHECK_EQ(last_num_read, buffer[i]);
+        CHECK_EQ(int(last_num_read), int(buffer[i]));
         last_num_read++;
       }
     }
@@ -105,7 +105,7 @@ void TestPipeStyle(int64 initial_ints,     // we write initially these many ints
 
 //////////////////////////////////////////////////////////////////////
 
-int32 GenerateRecord(io::MemoryStream* buf,
+int32 GenerateRecord(whisper::io::MemoryStream* buf,
                      int32* out_buf,
                      int32 left_ints,
                      int32 max_add_record_size) {
@@ -122,7 +122,7 @@ int32 GenerateRecord(io::MemoryStream* buf,
   return rec_size;
 }
 
-void CheckRecords(io::MemoryStream* buf,
+void CheckRecords(whisper::io::MemoryStream* buf,
                   int32* check_buf,
                   int32 left_ints,
                   int32 max_read_record_size) {
@@ -155,8 +155,8 @@ void TestRandomAppends(bool mix_operations,
   int32 num_ints = total_size / sizeof(int32);
   int32* out_buf = new int32[num_ints];
   int32* p = out_buf;
-  io::MemoryStream buf1(block_size1);
-  io::MemoryStream buf2(block_size2);
+  whisper::io::MemoryStream buf1(block_size1);
+  whisper::io::MemoryStream buf2(block_size2);
 
   LOG_INFO << "Generating buffers... ";
   int32 size = 0;
@@ -212,39 +212,39 @@ void TestRandomAppends(bool mix_operations,
 //////////////////////////////////////////////////////////////////////
 
 int main(int argc, char* argv[]) {
-  common::Init(argc, argv);
+  whisper::common::Init(argc, argv);
   rand_seed = FLAGS_rand_seed;
   if ( FLAGS_rand_seed > 0 ) {
     srand(FLAGS_rand_seed);
   }
 
-  common::ByteOrder bos[2] = {common::BIGENDIAN, common::LILENDIAN};
+  whisper::common::ByteOrder bos[2] = {whisper::common::BIGENDIAN, whisper::common::LILENDIAN};
   for ( int i = 0; i < 2; i++ ) {
-    common::ByteOrder bo = bos[i];
-    LOG_INFO << "Test number " << common::ByteOrderName(bo);
-    io::MemoryStream ms;
+    whisper::common::ByteOrder bo = bos[i];
+    LOG_INFO << "Test number " << whisper::common::ByteOrderName(bo);
+    whisper::io::MemoryStream ms;
 
-    io::NumStreamer::WriteByte(&ms, 0xab);
-    io::NumStreamer::WriteInt16(&ms, 0xabcd, bo);
-    io::NumStreamer::WriteUInt24(&ms, 0x1234abcd, bo);
-    io::NumStreamer::WriteInt32(&ms, 0x12345678, bo);
-    io::NumStreamer::WriteInt64(&ms, 0x123456789abcdfULL, bo);
-    io::NumStreamer::WriteDouble(&ms, 0.987654321, bo);
-    io::NumStreamer::WriteFloat(&ms, 1.23456789, bo);
+    whisper::io::NumStreamer::WriteByte(&ms, 0xab);
+    whisper::io::NumStreamer::WriteInt16(&ms, 0xabcd, bo);
+    whisper::io::NumStreamer::WriteUInt24(&ms, 0x1234abcd, bo);
+    whisper::io::NumStreamer::WriteInt32(&ms, 0x12345678, bo);
+    whisper::io::NumStreamer::WriteInt64(&ms, 0x123456789abcdfULL, bo);
+    whisper::io::NumStreamer::WriteDouble(&ms, 0.987654321, bo);
+    whisper::io::NumStreamer::WriteFloat(&ms, 1.23456789, bo);
 
-    CHECK_EQ(io::NumStreamer::ReadByte(&ms), 0xab);
-    CHECK_EQ(io::NumStreamer::ReadInt16(&ms, bo), int16(0xabcd));
-    CHECK_EQ(io::NumStreamer::ReadUInt24(&ms, bo), 0x34abcd);
-    CHECK_EQ(io::NumStreamer::ReadInt32(&ms, bo), 0x12345678);
-    CHECK_EQ(io::NumStreamer::ReadInt64(&ms, bo), 0x123456789abcdfULL);
-    CHECK_EQ(io::NumStreamer::ReadDouble(&ms, bo), 0.987654321);
-    CHECK_EQ(io::NumStreamer::ReadFloat(&ms, bo), static_cast<float>(1.23456789));
+    CHECK_EQ(int(whisper::io::NumStreamer::ReadByte(&ms)), int(0xab));
+    CHECK_EQ(whisper::io::NumStreamer::ReadInt16(&ms, bo), int16(0xabcd));
+    CHECK_EQ(whisper::io::NumStreamer::ReadUInt24(&ms, bo), 0x34abcd);
+    CHECK_EQ(whisper::io::NumStreamer::ReadInt32(&ms, bo), 0x12345678);
+    CHECK_EQ(whisper::io::NumStreamer::ReadInt64(&ms, bo), 0x123456789abcdfULL);
+    CHECK_EQ(whisper::io::NumStreamer::ReadDouble(&ms, bo), 0.987654321);
+    CHECK_EQ(whisper::io::NumStreamer::ReadFloat(&ms, bo), static_cast<float>(1.23456789));
 
     CHECK(ms.IsEmpty());
   }
 
   {
-    io::MemoryStream a, b;
+    whisper::io::MemoryStream a, b;
     a.Write("abcdefg");
     a.Write("123456");
     b.AppendStreamNonDestructive(&a);
@@ -269,7 +269,7 @@ int main(int argc, char* argv[]) {
   }
 
   {
-    io::MemoryStream a(12);
+    whisper::io::MemoryStream a(12);
     a.Write("1234567890\r\n"
             "abcdef\r\n"
             "123456789012345\r\n"
@@ -291,24 +291,24 @@ int main(int argc, char* argv[]) {
   }
   LOG_INFO << "Test Tokens";
   {
-    io::MemoryStream a(12);
+    whisper::io::MemoryStream a(12);
     a.Write("{ ala bala \"porto'ca\\nla}\" xbuc'  \n  \\t' *");
     string s;
-    CHECK_EQ(a.ReadNextAsciiToken(&s), io::TOKEN_SEP_OK);
+    CHECK_EQ(a.ReadNextAsciiToken(&s), whisper::io::TOKEN_SEP_OK);
     CHECK_EQ(s, "{");
-    CHECK_EQ(a.ReadNextAsciiToken(&s), io::TOKEN_OK);
+    CHECK_EQ(a.ReadNextAsciiToken(&s), whisper::io::TOKEN_OK);
     CHECK_EQ(s, "ala");
-    CHECK_EQ(a.ReadNextAsciiToken(&s), io::TOKEN_OK);
+    CHECK_EQ(a.ReadNextAsciiToken(&s), whisper::io::TOKEN_OK);
     CHECK_EQ(s, "bala");
-    CHECK_EQ(a.ReadNextAsciiToken(&s), io::TOKEN_QUOTED_OK);
+    CHECK_EQ(a.ReadNextAsciiToken(&s), whisper::io::TOKEN_QUOTED_OK);
     CHECK_EQ(s, "\"porto'ca\\nla}\"");
-    CHECK_EQ(a.ReadNextAsciiToken(&s), io::TOKEN_OK);
+    CHECK_EQ(a.ReadNextAsciiToken(&s), whisper::io::TOKEN_OK);
     CHECK_EQ(s, "xbuc");
-    CHECK_EQ(a.ReadNextAsciiToken(&s), io::TOKEN_QUOTED_OK);
+    CHECK_EQ(a.ReadNextAsciiToken(&s), whisper::io::TOKEN_QUOTED_OK);
     CHECK_EQ(s, "'  \n  \\t'");
-    CHECK_EQ(a.ReadNextAsciiToken(&s), io::TOKEN_SEP_OK);
+    CHECK_EQ(a.ReadNextAsciiToken(&s), whisper::io::TOKEN_SEP_OK);
     CHECK_EQ(s, "*");
-    CHECK_EQ(a.ReadNextAsciiToken(&s), io::TOKEN_NO_DATA);
+    CHECK_EQ(a.ReadNextAsciiToken(&s), whisper::io::TOKEN_NO_DATA);
   }
 
   LOG_INFO << "TestRandomAppends /false/1";
@@ -343,5 +343,5 @@ int main(int argc, char* argv[]) {
   LOG_INFO << "Test 4";
   // TestPipeStyle(10000, 1000000000, 5000, 1, 1000);
   printf("PASS\n");
-  common::Exit(0);
+  whisper::common::Exit(0);
 }

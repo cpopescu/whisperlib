@@ -34,23 +34,16 @@
 
 #include <string>
 
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/system.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/strutil.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/strutil.h"
 
-#include <whisperlib/io/stream_base.h>
-#include <whisperlib/io/iomarker.h>
-#include <whisperlib/io/seeker.h>
-
+namespace whisper {
 namespace io {
 
-class InputStream : public StreamBase {
+class InputStream {
  public:
-  InputStream() : StreamBase() {
-  }
-  InputStream(IoMarker* marker, Seeker* seeker)
-    : StreamBase(marker, seeker) {
+  InputStream() {
   }
   virtual ~InputStream() {
   }
@@ -63,11 +56,11 @@ class InputStream : public StreamBase {
   // Same as read, but w/ strings
   // If len == -1 read to the end of input, else read len bytes. Returns
   // anyway the number of read bytes
-  inline int32 ReadString(string* s, int32 len = -1) {
+  inline int32 ReadString(std::string* s, int32 len = -1) {
     if ( len == -1 ) {
       len = int32(Readable());
     }
-    string tmp;
+    std::string tmp;
     tmp.reserve(len);
     const int32 cb = Read(&tmp[0], len);
     s->assign(tmp.c_str(), cb);
@@ -76,7 +69,7 @@ class InputStream : public StreamBase {
   // Reads a LF or a CRLF line. In fact CR characters preceding LF are ignored.
   // The CR LF characters are not returned.
   // The last piece of data before EOS is considered a line.
-  inline bool ReadLine(string* s) {
+  inline bool ReadLine(std::string* s) {
     s->clear();
     while ( true ) {
       MarkerSet();
@@ -130,29 +123,12 @@ class InputStream : public StreamBase {
   // Removes the last read mark for the underlying stream
   virtual void MarkerClear() = 0;
 
-  // !! NOTE !!
-  //  -- This is amazingly expensive !! Use it only for debugging --
-  virtual string ToString() const {
-
-#ifdef _DEBUG
-    InputStream& in = const_cast<InputStream&>(*this);
-    const int64 size = in.Readable();
-    in.MarkerSet();
-    string buffer;
-    in.ReadString(&buffer);
-    in.MarkerRestore();
-    DCHECK_EQ(in.Readable(), size);
-
-    return (strutil::StringPrintf("InputStream [#%lld bytes]:\n", (long long int) size) +
-            strutil::PrintableDataBuffer(buffer.data(), buffer.size()));
-#else
+  virtual std::string ToString() const {
     return (strutil::StringPrintf("InputStream [#%lld bytes]:\n",
                                   (long long int)Readable()));
-#endif
-
   }
-  virtual string PeekString() const {
-    string s;
+  virtual std::string PeekString() const {
+    std::string s;
     InputStream& in = const_cast<InputStream&>(*this);
     const int64 size = in.Readable();
     in.MarkerSet();
@@ -168,5 +144,6 @@ inline std::ostream& operator<<(std::ostream& os,
                                 const InputStream& in) {
   return os << in.ToString();
 }
-}
+}  // namespace io
+}  // namespace whisper
 #endif  // __WHISPERLIB_IO_INPUT_STREAM_H__

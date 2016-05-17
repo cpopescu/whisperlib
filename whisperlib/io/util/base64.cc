@@ -35,8 +35,14 @@
 //
 // Modified 2009 WhisperSoft s.r.l.
 //
+
+#include <vector>
+#include <string>
 #include "whisperlib/io/util/base64.h"
 
+using std::string;
+
+namespace whisper {
 namespace base64 {
 
 string EncodeString(const string& s) {
@@ -50,7 +56,7 @@ string EncodeString(const string& s) {
   delete [] encbuf;
   return ret;
 }
-string EncodeVector(const vector<uint8>& v) {
+string EncodeVector(const std::vector<uint8>& v) {
   const int32 buflen = 2 * v.size() + 4;
   char* encbuf = new char[buflen];
   base64::Encoder encoder;
@@ -208,4 +214,5 @@ int DecodeBlock(const char* code_in, const int length_in,
   return decchar - decoded_out;
 }
 
-}
+}  // namespace base64
+}  // namespace whisper

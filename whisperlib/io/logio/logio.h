@@ -41,19 +41,19 @@
 #ifndef __COMMON_IO_LOGIO_LOGIO_H__
 #define __COMMON_IO_LOGIO_LOGIO_H__
 
-#include <whisperlib/base/core_config.h>
-
 #include <string>
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/re.h>
-#include <whisperlib/io/file/file.h>
-#include <whisperlib/io/buffer/memory_stream.h>
-#include <whisperlib/io/logio/recordio.h>
-
-#if HAVE_PROTOBUF
+#include <vector>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/hash.h"
+#include "whisperlib/base/re.h"
+#include "whisperlib/io/file/file.h"
+#include "whisperlib/io/buffer/memory_stream.h"
+#include "whisperlib/io/logio/recordio.h"
 #include <google/protobuf/message_lite.h>
-#endif
 
+using std::string;
+
+namespace whisper {
 namespace io {
 
 static const int32 kDefaultBlocksPerFile = 1 << 14;
@@ -82,6 +82,13 @@ struct LogPos {
     record_num_ = other.record_num_;
     return *this;
   }
+  LogPos operator-(const LogPos& other) const {
+      return LogPos(file_num_ - other.file_num_,
+                    file_num_ == other.file_num_
+                    ? block_num_ - other.block_num_ : 0,
+                    file_num_ == other.file_num_ && block_num_ == other.block_num_
+                    ? record_num_ - other.record_num_ : 0);
+  }
 
   // 3-way compare function returns:  -1 for less, 0 for equal, 1 for greater
   int Compare(const LogPos& other) const {
@@ -99,9 +106,44 @@ struct LogPos {
             block_num_ == other.block_num_ &&
             record_num_ == other.record_num_);
   }
+  bool operator!=(const LogPos& other) const {
+    return (file_num_ != other.file_num_ ||
+            block_num_ != other.block_num_ ||
+            record_num_ != other.record_num_);
+  }
+  bool operator<(const LogPos& other) const {
+     return Compare(other) < 0;
+  }
+  bool operator<=(const LogPos& other) const {
+     return Compare(other) <= 0;
+  }
+  bool operator>(const LogPos& other) const {
+     return Compare(other) > 0;
+  }
+  bool operator>=(const LogPos& other) const {
+     return Compare(other) >= 0;
+  }
 
   bool IsNull() const {
     return file_num_ == -1;
+  }
+
+  void Decrement(int blocks_per_file) {
+    if (record_num_ > 0) {
+        --record_num_;
+        return;
+    }
+    record_num_ = 0;
+    if (block_num_ > 0) {
+        --block_num_;
+        return;
+    }
+    block_num_ = blocks_per_file - 1;
+    if (file_num_ > 0) {
+        --file_num_;
+    } else {
+        *this = LogPos();
+    }
   }
 
   string ToString() const {
@@ -119,7 +161,7 @@ struct LogPos {
       LOG_ERROR << "Cannot decode, string too small: [" << str << "]";
       return false;
     }
-    vector< pair<string, string> > pairs;
+    std::vector< std::pair<string, string> > pairs;
     strutil::SplitPairs(str.substr(7, str.size() - 8), ";", ":", &pairs);
     if ( pairs.size() != 3 ) {
       LOG_ERROR << "Cannot decode str: [" << str << "]";
@@ -133,6 +175,7 @@ struct LogPos {
 };
 
 //////////////////////////////////////////////////////////////////////
+class LogReader;
 
 class LogWriter {
  public:
@@ -151,11 +194,12 @@ class LogWriter {
   // false: failure, a lock file already exists
   bool Initialize();
 
+  LogReader* NewReader() const;
+
   const string& file_name() const { return file_.filename(); }
 
   bool WriteRecord(io::MemoryStream* in);
   bool WriteRecord(const char* buffer, int32 size);
-#if HAVE_PROTOBUF
   bool WriteRecord(const google::protobuf::MessageLite* message) {
       string output;
       if (!message->SerializeToString(&output)) {
@@ -163,16 +207,22 @@ class LogWriter {
       }
       return WriteRecord(output.data(), output.size());
   }
-#endif
+
+  // Truncates the log at the provided position
+  bool TruncateAt(const LogPos& pos);
 
   // Flush internal buffer to file.
-  bool Flush();
+  bool Flush(bool sync_to_disk = true);
 
   // This makes sense after a Flush() call
   LogPos Tell() const;
 
   // close everything
   void Close();
+
+  void DecrementPos(LogPos* pos) const {
+    pos->Decrement(blocks_per_file_);
+  }
 
  private:
   // Name of the current file to open (according to our internal members)
@@ -207,7 +257,6 @@ class LogWriter {
   MemoryStream buf_;             // used to accumulate records
   RecordWriter recorder_;        // encapsulates records for us
 
-
   DISALLOW_EVIL_CONSTRUCTORS(LogWriter);
 };
 
@@ -232,12 +281,24 @@ class LogReader {
   LogPos Tell() const {
     int32 block_num = 0;
     if ( file_.is_open() && file_.Position() > 0 ) {
-      CHECK(file_.Position() % block_size_ == 0) << "Illegal file position: "
+      DCHECK(file_.Position() % block_size_ == 0) << "Illegal file position: "
           << file_.Position() << ", block_size_: " << block_size_;
       block_num = file_.Position() / block_size_ - (record_num_ == 0 ? 0 : 1);
     }
     return LogPos(file_num_, block_num, record_num_);
   }
+
+  LogPos TellAtBlock() const {
+    int32 block_num = 0;
+    if ( file_.is_open() && file_.Position() > 0 ) {
+      block_num = file_.Position() / block_size_;
+      if (block_num >= blocks_per_file_) {
+          return LogPos(file_num_ + 1, 0, 0);
+      }
+    }
+    return LogPos(file_num_, block_num, 0);
+  }
+
 
   // try Seek to the given position.
   // returns: success. If seek fails => the log is automatically Rewind()
@@ -247,6 +308,10 @@ class LogReader {
   // No files => leave file_num == -1 and GetNextRecord() will Rewind() again
   // Some files => go to first file_num found.
   void Rewind();
+
+  void DecrementPos(LogPos* pos) const {
+    pos->Decrement(blocks_per_file_);
+  }
 
   string ComposeFileName(int32 file_num) const;
 
@@ -285,11 +350,24 @@ class LogReader {
   DISALLOW_EVIL_CONSTRUCTORS(LogReader);
 };
 
+
+// Computational intensive: go through all the log counting the records.
+// NOTE: Call this function only at reader begin!
+//       The reader is rewinded after this function finishes counting records.
+int64 CountLogRecords(LogReader* reader);
+
+void GetLogFiles(std::vector<string>* files,
+                 const string& log_dir, const string& file_base,
+                 int32 block_size = kDefaultRecordBlockSize);
+
+size_t CountLogFiles(const string& log_dir, const string& file_base,
+                     int32 block_size = kDefaultRecordBlockSize);
+
 // Clean log files before the given position (i.e. you can seek to the
 // given position, but probably not before .. )
 //
 // We return how many files we have deleted.
-uint32 CleanLog(const string& log_dir, const string& file_base,
+size_t CleanLog(const string& log_dir, const string& file_base,
                 LogPos first_pos = LogPos(kMaxInt32, 0, 0),
                 int32 block_size = kDefaultRecordBlockSize);
 
@@ -301,6 +379,18 @@ bool DetectLogSettings(const string& log_dir, string* out_file_base,
 bool LogExists(const string& dir, const string& file_base, int32 block_size, int32 file_num);
 int64 LogFileTime(const string& dir, const string& file_base, int32 block_size, int32 file_num);
 
-}
+}  // namespace io
+}  // namespace whisper
+
+#include WHISPER_HASH_FUN_HEADER
+WHISPER_HASH_FUN_NAMESPACE_BEGIN
+template<> struct hash<whisper::io::LogPos> {
+    size_t operator()(const whisper::io::LogPos& pos) const {
+        return ((size_t(pos.file_num_) << 24) ^
+                size_t(pos.block_num_) ^
+                (size_t(pos.record_num_) << 8));
+    }
+};
+WHISPER_HASH_FUN_NAMESPACE_END
 
 #endif  // __COMMON_IO_LOGIO_LOGIO_H__

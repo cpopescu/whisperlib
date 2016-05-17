@@ -1,3 +1,4 @@
+// -*- c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil; coding: utf-8 -*-
 // Copyright (c) 2009, Whispersoft s.r.l.
 // All rights reserved.
 //
@@ -50,17 +51,17 @@
 #include "whisperlib/net/connection.h"
 #include "whisperlib/net/dns_resolver.h"
 
-DEFINE_bool(net_connection_debug,
-            false,
-            "Enable debug messages in NetConnection");
+using namespace std;
 
+DEFINE_bool(net_connection_debug, false, "Enable debug messages in NetConnection");
+namespace whisper {
 namespace net {
 
 #define IF_NET_DEBUG if ( !FLAGS_net_connection_debug ); else
 
 #define ICONNLOG  IF_NET_DEBUG LOG_INFO << this->PrefixInfo()
 #define WCONNLOG  IF_NET_DEBUG LOG_WARNING << this->PrefixInfo()
-#define ECONNLOG              LOG_ERROR << this->PrefixInfo()
+#define ECONNLOG              LOG_WARNING << this->PrefixInfo()
 #define FCONNLOG              LOG_FATAL << this->PrefixInfo()
 
 // log always
@@ -106,8 +107,7 @@ bool NetAcceptor::InvokeFilterHandler(const net::HostPort& peer_address) {
           filter_handler_->Run(peer_address);
 }
 void NetAcceptor::InvokeAcceptHandler(NetConnection* new_connection) {
-  CHECK_NOT_NULL(accept_handler_) << "missing accept_handler_ !";
-  accept_handler_->Run(new_connection);
+  CHECK_NOT_NULL(accept_handler_)->Run(new_connection);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -176,17 +176,14 @@ void NetConnection::DetachAllHandlers() {
 
 void NetConnection::InvokeConnectHandler() {
   ICONNLOG << "Connected! invoking application connect handler.. ";
-  CHECK_NOT_NULL(connect_handler_) << "no connect_handler found";
-  connect_handler_->Run();
+  CHECK_NOT_NULL(connect_handler_)->Run();
 }
 bool NetConnection::InvokeReadHandler() {
-  CHECK_NOT_NULL(read_handler_) << "no read_handler found";
-  return read_handler_->Run();
+  return CHECK_NOT_NULL(read_handler_)->Run();
   // TODO(cosmin): check return value on read_handler_ or make it return void
 }
 bool NetConnection::InvokeWriteHandler() {
-  CHECK_NOT_NULL(write_handler_) << "no write_handler found";
-  return write_handler_->Run();
+  return CHECK_NOT_NULL(write_handler_)->Run();
   // TODO(cosmin): check return value on write_handler_ or make it return void
 }
 void NetConnection::InvokeCloseHandler(int err, CloseWhat what) {
@@ -298,7 +295,7 @@ void TcpAcceptor::Close() {
   InternalClose(0);
 }
 string TcpAcceptor::PrefixInfo() const {
-  ostringstream oss;
+  std::ostringstream oss;
   oss << StateName() << " : [" << local_address() << " (fd: " << fd_ << ")] ";
   return oss.str();
 }
@@ -370,7 +367,7 @@ void TcpAcceptor::InternalClose(int err) {
   set_last_error_code(err);
 }
 
-bool TcpAcceptor::HandleReadEvent(const SelectorEventData& event) {
+bool TcpAcceptor::HandleReadEvent(const SelectorEventData& /*event*/) {
   // new client connection
 
   //perform ::accept
@@ -387,7 +384,7 @@ bool TcpAcceptor::HandleReadEvent(const SelectorEventData& event) {
                << GetLastSystemErrorDescription();
       return true;
     }
-    ECONNLOG << "::accept failed: " << GetLastSystemErrorDescription();
+    WCONNLOG << "::accept failed: " << GetLastSystemErrorDescription();
     return false;
   }
 
@@ -452,7 +449,7 @@ void TcpAcceptor::InitializeLocalAddress() {
   }
 }
 
-bool TcpAcceptor::HandleWriteEvent(const SelectorEventData& event) {
+bool TcpAcceptor::HandleWriteEvent(const SelectorEventData& /*event*/) {
   FCONNLOG << "Erroneous call to HandleWriteEvent on server socket";
   return false;
 }
@@ -519,8 +516,7 @@ TcpConnection::TcpConnection(Selector* selector,
           NewPermanentCallback(this, &TcpConnection::HandleTimeoutEvent)),
       last_read_ts_(0),
       last_write_ts_(0),
-      handle_dns_result_(NewPermanentCallback(this,
-          &TcpConnection::HandleDnsResult)) {
+      handle_dns_result_(NULL) {
 }
 
 TcpConnection::~TcpConnection() {
@@ -528,7 +524,6 @@ TcpConnection::~TcpConnection() {
   CHECK_EQ(state(), DISCONNECTED);
   DetachAllHandlers();
   delete handle_dns_result_;
-  handle_dns_result_ = NULL;
 }
 
 void TcpConnection::Close(CloseWhat what) {
@@ -581,6 +576,12 @@ bool TcpConnection::Connect(const HostPort& remote_addr) {
   // maybe start DNS resolve
   if ( state() == DISCONNECTED && remote_addr.ip_object().IsInvalid() ) {
     remote_address_ = remote_addr;
+
+    if (handle_dns_result_ != NULL) {
+        DnsCancel(handle_dns_result_);
+    }
+    handle_dns_result_ = NewPermanentCallback(this, &TcpConnection::HandleDnsResult);
+
     LOG_INFO << " Resolving first: " << remote_addr.host() << " to connect";
     DnsResolve(net_selector(), remote_addr.host(), handle_dns_result_);
     set_state(RESOLVING);
@@ -701,7 +702,7 @@ const HostPort& TcpConnection::remote_address() const {
 }
 
 string TcpConnection::PrefixInfo() const {
-  ostringstream oss;
+  std::ostringstream oss;
   int64 now_ts = selector_ != NULL ? selector_->now() : timer::TicksMsec();
   oss << StateName() << " : ["
       << local_address() << " => " << remote_address()
@@ -769,7 +770,8 @@ bool TcpConnection::HandleReadEvent(const SelectorEventData& event) {
       return false;
     }
     D10CONNLOG << "HandleReadEvent: after read_handler_"
-               << " #" << inbuf()->Size() << " bytes still remaining in inbuf_";
+               << " #" << inbuf()->Size() << " bytes still remaining in inbuf_"
+               << " / " << tcp_params_.read_limit_;
   }
 
   if ( cb == 0 ) {
@@ -1069,6 +1071,10 @@ void TcpConnection::InitializeRemoteAddress() {
 }
 
 void TcpConnection::InternalClose(int err, bool call_close_handler) {
+  if (handle_dns_result_ != NULL) {
+    DnsCancel(handle_dns_result_);
+    handle_dns_result_ = NULL;
+  }
   if ( state() == DISCONNECTED ) {
     CHECK_EQ(fd_, INVALID_FD_VALUE);
     return;
@@ -1084,7 +1090,6 @@ void TcpConnection::InternalClose(int err, bool call_close_handler) {
     }
     fd_ = INVALID_FD_VALUE;
   }
-  DnsCancel(handle_dns_result_);
   set_state(DISCONNECTED);
   set_read_closed(true);
   set_write_closed(true);
@@ -1118,7 +1123,7 @@ void TcpConnection::HandleDnsResult(scoped_ref<DnsHostInfo> info) {
     return;   // probably in course of closing
   }
   if ( info.get() == NULL || info->ipv4_.empty() ) {
-    LOG_ERROR << "Cannot resolve: " << remote_address_.host()
+    LOG_WARN << "Cannot resolve: " << remote_address_.host()
               << ", info: " << info.ToString();
     set_state(DISCONNECTED);
     InvokeCloseHandler(0, CLOSE_READ_WRITE);
@@ -1135,7 +1140,8 @@ void TcpConnection::HandleDnsResult(scoped_ref<DnsHostInfo> info) {
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-#if defined(HAVE_OPENSSL_SSL_H) && defined(USE_OPENSSL)
+
+#if defined(USE_OPENSSL)
 
 SslAcceptor::SslAcceptor(Selector* selector,
                          const SslAcceptorParams& ssl_params)
@@ -1241,7 +1247,8 @@ SslConnection::SslConnection(Selector* selector,
       ssl_out_count_(0),
       ssl_in_count_(0),
       timeouter_(selector,
-                 NewPermanentCallback(this, &SslConnection::HandleTimeoutEvent)) {
+                 NewPermanentCallback(this, &SslConnection::HandleTimeoutEvent)),
+      verification_failed_(false) {
 }
 SslConnection::~SslConnection() {
   ForceClose();
@@ -1297,7 +1304,9 @@ void SslConnection::FlushAndClose() {
 }
 void SslConnection::ForceClose() {
   SslClear();
-  tcp_connection_->ForceClose();
+  if (tcp_connection_ != NULL) {
+      tcp_connection_->ForceClose();
+  }
 }
 bool SslConnection::SetSendBufferSize(int size) {
   CHECK_NOT_NULL(tcp_connection_);
@@ -1367,24 +1376,26 @@ void SslConnection::TcpConnectionConnectHandler() {
 bool SslConnection::TcpConnectionReadHandler() {
   DCONNLOG << "SslConnection::TcpConnectionReadHandler";
   // Read from TCP --> write to SSL
-  while ( !tcp_connection_->inbuf()->IsEmpty() ) {
-    char buf[1024];
-    int32 read = tcp_connection_->inbuf()->Read(buf, sizeof(buf));
-    int32 write = BIO_write(p_bio_read_, buf, read);
-    if ( write < read ) {
+  const char* buf = NULL;
+  int32 size = 0;
+  while ( tcp_connection_->inbuf()->ReadNext(&buf, &size) ) {
+    if (!size ) continue;
+    int32 write_size = BIO_write(p_bio_read_, buf, size);
+    if ( write_size < size ) {
       // we use memory BIO, no reason for BIO_write to fail
       ECONNLOG << "BIO_write failed, closing connection";
       ForceClose();
       return false;
     }
 
-    ssl_in_count_ += write;
-    WCONNLOG << "BIO write: " << write << " bytes"
-                ", BIO total: in " << ssl_in_count_
+    ssl_in_count_ += write_size;
+    WCONNLOG << "BIO write: " << write_size << " of: " << size
+             << " bytes" ", BIO total: in " << ssl_in_count_
              << " / out " << ssl_out_count_
              << " TCP buffers: in " << tcp_connection_->inbuf()->Size()
              << " / out " << tcp_connection_->outbuf()->Size();
-    DCONNLOG << "TCP >>>> " << write << " bytes >>>> SSL";
+    DCONNLOG << "TCP >>>> " << write_size << " bytes >>>> SSL";
+    size = 0;   //  So ReadNext will get the next full block
   }
   if ( state() == CONNECTING ) {
     // still in handshake
@@ -1403,13 +1414,20 @@ bool SslConnection::TcpConnectionReadHandler() {
   //      So even if you have tons of data in BIO, SSL_pending still returns 0.
 
   // Read from SSL --> write to inbuf()
-  while ( BIO_pending(p_bio_read_) ) {
+  int pending = 0;
+  // Note - is essential to take the max of pending bytes in the BIO and SSL -
+  // the bytes are moved from the BIO to SSL at SSL_read. At the last SSL_read we
+  // may end up with byte in internal SSL buffer, but BIO may be empty (not yet
+  // read by SSL_read) so we need to read as long as we have any kind of data in both of
+  // them.
+  while ( (pending = std::max(BIO_pending(p_bio_read_), SSL_pending(p_ssl_))) > 0 ) {
     // If there is no data in p_bio_read_ then avoid calling SSL_read because
     // it would return WANT_READ and we'll get read_blocked.
     // WCONNLOG << "Going to SSL_read from bio_data: " << SslPrintableBio(p_bio_read_);
     char* buffer;
     int32 scratch;
     inbuf()->GetScratchSpace(&buffer, &scratch);
+    if (scratch > pending) scratch = pending;
     const int32 cb = SSL_read(p_ssl_, buffer, scratch);
 
     //WCONNLOG << "SSL read: " << read << " bytes"
@@ -1447,10 +1465,13 @@ bool SslConnection::TcpConnectionReadHandler() {
     }
     // SSL_read was successful
     inbuf()->ConfirmScratch(cb);
-    DCONNLOG << "SSL >>>> " << cb << " bytes >>>> APP";
+    DCONNLOG << "SSL >>>> " << cb << " bytes >>>> APP "
+             << pending
+             << " / " << BIO_pending(p_bio_read_)
+             << " / " << SSL_pending(p_ssl_);
   }
 
-  if ( !read_blocked_ && !outbuf()->IsEmpty() ) {
+  if ( read_blocked_ && !outbuf()->IsEmpty() ) {
     // the write has been stopped due to read_blocked_
     RequestWriteEvents(true);
   }
@@ -1637,12 +1658,12 @@ X509* SslConnection::SslLoadCertificateFile(const string& filename) {
   // Load certificate file.
   FILE * f = ::fopen(filename.c_str(), "r");
   if ( f == NULL ) {
-    LOG_ERROR << "Cannot find certificate file: [" << filename << "]";
+    LOG_WARN << "Cannot find certificate file: [" << filename << "]";
     return NULL;
   }
   X509* certificate = NULL;
   if ( NULL == PEM_read_X509(f, &certificate, NULL, NULL) ) {
-    LOG_ERROR << "PEM_read_X509 failed to load certificate from file: ["
+    LOG_WARN << "PEM_read_X509 failed to load certificate from file: ["
               << filename << "]";
     fclose(f);
     return NULL;
@@ -1657,12 +1678,12 @@ EVP_PKEY* SslConnection::SslLoadPrivateKeyFile(const string& filename) {
   // Load private key file.
   FILE * f = ::fopen(filename.c_str(),"r");
   if ( f == NULL ) {
-    LOG_ERROR << "Cannot find key file: [" << filename << "]";
+    LOG_WARN << "Cannot find key file: [" << filename << "]";
     return NULL;
   }
   EVP_PKEY* key = NULL;
   if ( NULL == PEM_read_PrivateKey(f, &key, NULL, NULL) ) {
-    LOG_ERROR << "PEM_read_PrivateKey failed to load key from file: ["
+    LOG_WARN << "PEM_read_PrivateKey failed to load key from file: ["
              << filename << "]";
     fclose(f);
     return NULL;
@@ -1719,7 +1740,7 @@ SSL_CTX* SslConnection::SslCreateContext(const string& certificate_filename,
   if ( certificate_filename != "" ) {
     ssl_certificate = SslLoadCertificateFile(certificate_filename);
     if ( ssl_certificate == NULL ) {
-      LOG_ERROR << "SslLoadCertificateFile failed for file: ["
+      LOG_WARN << "SslLoadCertificateFile failed for file: ["
                 << certificate_filename << "]";
       return NULL;
     }
@@ -1728,7 +1749,7 @@ SSL_CTX* SslConnection::SslCreateContext(const string& certificate_filename,
   if ( key_filename != "" ) {
     ssl_key = SslLoadPrivateKeyFile(key_filename);
     if ( ssl_key == NULL ) {
-      LOG_ERROR << "SslLoadPrivateKeyFile failed for file: ["
+      LOG_WARN << "SslLoadPrivateKeyFile failed for file: ["
                 << key_filename << "]";
       X509_free(ssl_certificate);
       return NULL;
@@ -1736,7 +1757,7 @@ SSL_CTX* SslConnection::SslCreateContext(const string& certificate_filename,
   }
   SSL_CTX* ssl_ctx = SSL_CTX_new(SSLv23_method());
   if ( ssl_ctx == NULL ) {
-    LOG_ERROR << "SSL_CTX_new failed: " << SslLastError();
+    LOG_WARN << "SSL_CTX_new failed: " << SslLastError();
     X509_free(ssl_certificate);
     EVP_PKEY_free(ssl_key);
     return NULL;
@@ -1752,7 +1773,7 @@ SSL_CTX* SslConnection::SslCreateContext(const string& certificate_filename,
   // The client may optionally use certificate and key.
   if ( ssl_certificate != NULL ) {
     if ( SSL_CTX_use_certificate(ssl_ctx, ssl_certificate) <= 0 ) {
-      LOG_ERROR << "SSL_CTX_use_certificate failed: " << SslLastError();
+      LOG_WARN << "SSL_CTX_use_certificate failed: " << SslLastError();
       X509_free(ssl_certificate);
       EVP_PKEY_free(ssl_key);
       SSL_CTX_free(ssl_ctx);
@@ -1764,7 +1785,7 @@ SSL_CTX* SslConnection::SslCreateContext(const string& certificate_filename,
   }
   if ( ssl_key != NULL ) {
     if ( SSL_CTX_use_PrivateKey(ssl_ctx, ssl_key) <= 0 ) {
-      LOG_ERROR << "SSL_CTX_use_PrivateKey failed: " << SslLastError();
+      LOG_WARN << "SSL_CTX_use_PrivateKey failed: " << SslLastError();
       X509_free(ssl_certificate);
       EVP_PKEY_free(ssl_key);
       SSL_CTX_free(ssl_ctx);
@@ -1785,7 +1806,30 @@ void SslConnection::SslDeleteContext(SSL_CTX* ssl_ctx) {
   SSL_CTX_free(ssl_ctx);
 }
 
+int SslConnectionVerifyCallback(int preverify, X509_STORE_CTX* x509_ctx) {
+    /*
+    int depth = X509_STORE_CTX_get_error_depth(x509_ctx);
+    int err = X509_STORE_CTX_get_error(x509_ctx);
+    X509* cert = X509_STORE_CTX_get_current_cert(x509_ctx);
+    X509_NAME* iname = cert ? X509_get_issuer_name(cert) : NULL;
+    X509_NAME* sname = cert ? X509_get_subject_name(cert) : NULL;
+    if (iname) X509_NAME_print_ex_fp(stderr, iname, 20, XN_FLAG_MULTILINE);
+    if (sname) X509_NAME_print_ex_fp(stderr, sname, 20, XN_FLAG_MULTILINE);
+    if (depth == 0) {
+        PEM_write_X509(stderr, cert);
+    }
+    */
+    SSL* ssl = (SSL*) X509_STORE_CTX_get_ex_data(x509_ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
+    if (!preverify) {
+        SslConnection*  conn = (SslConnection*) SSL_get_ex_data(ssl, SslConnection::SslVerificationIndex());
+        conn->SslSetVerificationFailed();
+    }
+    SSL_set_verify_result(ssl, preverify);
+    return preverify;
+}
 
+
+int SslConnection::verification_index_ = -1;
 
 bool SslConnection::SslInitialize(bool is_server) {
   DCONNLOG << "Initializing SSL ...";
@@ -1796,10 +1840,24 @@ bool SslConnection::SslInitialize(bool is_server) {
     ECONNLOG << "no SSL_CTX provided";
     return false;
   }
-
+  verification_failed_ = false;
+  if (verification_index_ < 0) {
+      synch::MutexLocker l(&verification_mutex_);
+      if (verification_index_ < 0) {
+          verification_index_ = SSL_get_ex_new_index(
+              0, (void*) "SSLConnection::verification_index", NULL, NULL, NULL);
+          CHECK_GE(verification_index_, 0);
+      }
+  }
   CHECK_NULL(p_ssl_);
   p_ssl_ = SSL_new(p_ctx_);
   CHECK_NOT_NULL(p_ssl_);
+
+  SSL_set_ex_data(p_ssl_, verification_index_, this);
+  const int verify_mode = SSL_CTX_get_verify_mode(p_ctx_);
+  if (verify_mode != SSL_VERIFY_NONE) {
+      SSL_set_verify(p_ssl_, verify_mode, SslConnectionVerifyCallback);
+  }
 
   p_bio_read_ = BIO_new(BIO_s_mem());
   CHECK_NOT_NULL(p_bio_read_);
@@ -1862,17 +1920,19 @@ void SslConnection::SslHandshake() {
     selector_->RunInSelectLoop(NewCallback(this, &SslConnection::InvokeConnectHandler));
     return;
   }
-  int result = SSL_do_handshake(p_ssl_);
-  DCONNLOG << "SslHandshake SSL_do_handshake => " << result;
-  if ( result < 1 ) {
-    int error = SSL_get_error(p_ssl_, result);
+  const int result = SSL_do_handshake(p_ssl_);
+  // For some reason this seems to never get set.
+  // const int verify_result = SSL_get_verify_result(p_ssl_);
+  if ( result < 1 || verification_failed_) {
+    const int error = SSL_get_error(p_ssl_, result);
     DCONNLOG << "SslHandshake SSL_get_error => "
              << error << " " << SslErrorName(error)
+             << " , verification_failed: " << verification_failed_
              << " , BIO_pending(p_bio_write_): " << BIO_pending(p_bio_write_)
              << " , BIO_pending(p_bio_read_): " << BIO_pending(p_bio_read_)
              << " , error: " << SslLastError();
-    if ( error != SSL_ERROR_WANT_READ &&
-         error != SSL_ERROR_WANT_WRITE ) {
+    if ( verification_failed_ ||
+         (error != SSL_ERROR_WANT_READ && error != SSL_ERROR_WANT_WRITE) ) {
         ECONNLOG << "SSL_do_handshake failed: " << SslErrorName(error)
                  << " , error: " << SslLastError();
         ForceClose();
@@ -1928,5 +1988,6 @@ void SslConnection::SslShutdown() {
 }
 
 #endif    // Open SSL
-}
+}  // namespace net
+}  // namespace whisper
 //////////////////////////////////////////////////////////////////////

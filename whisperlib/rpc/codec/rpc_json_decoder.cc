@@ -36,11 +36,12 @@
 #include "whisperlib/base/log.h"
 #include "whisperlib/rpc/codec/rpc_json_decoder.h"
 
+namespace whisper {
 namespace codec {
 
 DECODE_RESULT JsonDecoder::DecodeElementContinue(bool& more_attribs,
                                                  const char* separator) {
-  string s;
+  std::string s;
   in_.MarkerSet();
   const io::TokenReadError res = in_.ReadNextAsciiToken(&s);
   if ( res == io::TOKEN_NO_DATA ) {
@@ -121,7 +122,7 @@ DECODE_RESULT JsonDecoder::DecodeMapPairEnd() {
 }
 
 DECODE_RESULT JsonDecoder::DecodeBody(bool& out) {
-  string s;
+  std::string s;
   const io::TokenReadError res = in_.ReadNextAsciiToken(&s);
   if ( res == io::TOKEN_NO_DATA ) {
     return DECODE_RESULT_NOT_ENOUGH_DATA;
@@ -155,8 +156,8 @@ DECODE_RESULT JsonDecoder::DecodeBody(double& out) {
   return ReadNumber(out, true , decoding_map_key_);
 }
 
-DECODE_RESULT JsonDecoder::DecodeBody(string& out) {
-  string s;
+DECODE_RESULT JsonDecoder::DecodeBody(std::string& out) {
+  std::string s;
   const io::TokenReadError res = in_.ReadNextAsciiToken(&s);
   if ( res == io::TOKEN_NO_DATA ) {
     return DECODE_RESULT_NOT_ENOUGH_DATA;
@@ -176,18 +177,22 @@ void JsonDecoder::Reset() {
 }
 
 DECODE_RESULT JsonDecoder::DecodeRaw(io::MemoryStream* out) {
-  deque<char> paranthesis;
+  std::deque<char> paranthesis;
   in_.MarkerSet();
   do {
-    string s;
+    std::string s;
     const io::TokenReadError res = in_.ReadNextAsciiToken(&s);
     switch ( res ) {
       case io::TOKEN_OK:
       case io::TOKEN_QUOTED_OK:
-        out->Write(s);
+        if (out) {
+            out->Write(s);
+        }
         break;
       case io::TOKEN_SEP_OK:
-        out->Write(s);
+        if (out) {
+            out->Write(s);
+        }
         if ( s == "{" ) {
           paranthesis.push_back('}');
         } else if ( s == "[" ) {
@@ -217,12 +222,14 @@ DECODE_RESULT JsonDecoder::DecodeRaw(io::MemoryStream* out) {
     }
   } while ( !paranthesis.empty() );
   in_.MarkerClear();
-  out->Write(" ");    // append always a separator at the end in this cases..
+  if (out) {
+      out->Write(" "); // append always a separator at the end in this cases..
+  }
   return DECODE_RESULT_SUCCESS;
 }
 
 DECODE_RESULT JsonDecoder::ReadExpectedSeparator(char expected) {
-  string s;
+  std::string s;
   const io::TokenReadError res = in_.ReadNextAsciiToken(&s);
   if ( res == io::TOKEN_NO_DATA ) {
     return DECODE_RESULT_NOT_ENOUGH_DATA;
@@ -238,4 +245,5 @@ DECODE_RESULT JsonDecoder::ReadExpectedSeparator(char expected) {
   return DECODE_RESULT_ERROR;
 }
 
+}
 }

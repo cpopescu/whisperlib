@@ -9,8 +9,8 @@
 #include <stdio.h>
 #include <errno.h>
 
-#include <whisperlib/base/strutil_format.h>
-#include <whisperlib/base/log.h>
+#include "whisperlib/base/strutil_format.h"
+#include "whisperlib/base/log.h"
 
 namespace strutil {
 

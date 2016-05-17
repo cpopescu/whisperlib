@@ -33,9 +33,10 @@
 #define __COMMON_IO_FILE_FILE_OUTPUT_STREAM_H__
 
 #include <string>
-#include <whisperlib/io/file/file.h>
-#include <whisperlib/io/output_stream.h>
+#include "whisperlib/io/file/file.h"
+#include "whisperlib/io/output_stream.h"
 
+namespace whisper {
 namespace io {
 
 class FileOutputStream : public OutputStream {
@@ -43,8 +44,8 @@ class FileOutputStream : public OutputStream {
   FileOutputStream(File* file);
   ~FileOutputStream();
 
-  static void WriteFileOrDie(const char* filename, const string& content);
-  static bool TryWriteFile(const char* filename, const string& content);
+  static void WriteFileOrDie(const char* filename, const std::string& content);
+  static bool TryWriteFile(const char* filename, const std::string& content);
 
   virtual int32 Write(const void* buf, int32 len);
   virtual int64 Writable() const;
@@ -55,6 +56,7 @@ class FileOutputStream : public OutputStream {
   File* file_;
   DISALLOW_EVIL_CONSTRUCTORS(FileOutputStream);
 };
-}
+}  // namespace io
+}  // namespace whisper
 
 #endif  // __COMMON_IO_FILE_FILE_OUTPUT_STREAM_H__

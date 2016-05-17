@@ -1,3 +1,4 @@
+// -*- c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil; coding: utf-8 -*-
 // Copyright (c) 2009, Whispersoft s.r.l.
 // All rights reserved.
 //
@@ -35,13 +36,14 @@
 
 #include <string>
 
-#include <whisperlib/base/types.h>
-#include <whisperlib/http/http_consts.h>
-#include <whisperlib/http/http_header.h>
-#include <whisperlib/io/buffer/memory_stream.h>
-#include <whisperlib/io/zlib/zlibwrapper.h>
-#include <whisperlib/url/url.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/http/http_consts.h"
+#include "whisperlib/http/http_header.h"
+#include "whisperlib/io/buffer/memory_stream.h"
+#include "whisperlib/io/zlib/zlibwrapper.h"
+#include "whisperlib/url/url.h"
 
+namespace whisper {
 namespace http {
 
 //
@@ -140,8 +142,14 @@ class Request {
   bool server_use_gzip_encoding() const {
     return server_use_gzip_encoding_;
   }
-  void set_server_use_gzip_encoding(bool use_gzip_encoding) {
+  // Sets the use of gzip encoding - the drain buffer should be used when
+  // the message in the buffer is intended to be drained, and not left
+  // for further reads. You probably want to set it to true unless you
+  // have a big-stream, no back / forth conversation going on, like
+  // (i.e. would set it to false for something like video streaming or so).
+  void set_server_use_gzip_encoding(bool use_gzip_encoding, bool gzip_drain_buffer) {
     server_use_gzip_encoding_ = use_gzip_encoding;
+    server_gzip_drain_buffer_ = gzip_drain_buffer;
   }
 
   // In these cases no body must be transmitted
@@ -153,6 +161,24 @@ class Request {
             code == NOT_MODIFIED);
   }
 
+  struct RequestStats {
+    int64 client_size_;
+    int64 server_size_;
+    int64 client_raw_size_;
+    int64 server_raw_size_;
+    RequestStats() {
+      Clear();
+    }
+    void Clear() {
+      client_size_ = 0;
+      server_size_ = 0;
+      client_raw_size_ = 0;
+      server_raw_size_ = 0;
+    }
+  };
+  const RequestStats& stats() const { return stats_; }
+  RequestStats* mutable_stats() { return &stats_; }
+  void ResetStats() { stats_.Clear(); }
  private:
   // Utility function that really does the chunk appending. Returns true
   // iff the last chunk and trailer was appended.
@@ -185,12 +211,15 @@ class Request {
   io::ZlibGzipEncodeWrapper* gzip_zwrapper_;
 
   bool server_use_gzip_encoding_;
+  bool server_gzip_drain_buffer_;
   enum CompressOption {
     COMPRESS_NONE,
     COMPRESS_GZIP,
     COMPRESS_DEFLATE
   };
   CompressOption compress_option_;
+
+  RequestStats stats_;
 
   DISALLOW_EVIL_CONSTRUCTORS(Request);
 };
@@ -440,6 +469,7 @@ class RequestParser {
  private:
   DISALLOW_EVIL_CONSTRUCTORS(RequestParser);
 };
-}
+}  // namespace http
+}  // namespace whisper
 
 #endif  // __NET_HTTP_HTTP_REQUEST_H__

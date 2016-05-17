@@ -31,15 +31,15 @@
 
 #include <stdlib.h>
 
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/system.h>
-#include <whisperlib/base/gflags.h>
-#include <whisperlib/base/scoped_ptr.h>
+#include "whisperlib/net/connection.h"
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/system.h"
+#include "whisperlib/base/gflags.h"
+#include "whisperlib/base/scoped_ptr.h"
 
-#include <whisperlib/net/address.h>
-#include <whisperlib/net/selector.h>
-#include <whisperlib/net/connection.h>
+#include "whisperlib/net/address.h"
+#include "whisperlib/net/selector.h"
 
 //////////////////////////////////////////////////////////////////////
 
@@ -107,18 +107,18 @@ class EchoServerConnection {
   static const int64 kWriteTimeout = 5000;  // milliseconds
 
  public:
-  explicit EchoServerConnection(net::Selector* selector,
-                                net::NetConnection* connection)
+  explicit EchoServerConnection(whisper::net::Selector* selector,
+                                whisper::net::NetConnection* connection)
       : selector_(selector),
         net_connection_(connection),
         expected_size_(-1),
-        timeouter_(selector, NewPermanentCallback(
+        timeouter_(selector, whisper::NewPermanentCallback(
             this, &EchoServerConnection::TimeoutHandler)) {
-    net_connection_->SetReadHandler(NewPermanentCallback(
+    net_connection_->SetReadHandler(whisper::NewPermanentCallback(
         this, &EchoServerConnection::ConnectionReadHandler), true);
-    net_connection_->SetWriteHandler(NewPermanentCallback(
+    net_connection_->SetWriteHandler(whisper::NewPermanentCallback(
         this, &EchoServerConnection::ConnectionWriteHandler), true);
-    net_connection_->SetCloseHandler(NewPermanentCallback(
+    net_connection_->SetCloseHandler(whisper::NewPermanentCallback(
         this, &EchoServerConnection::ConnectionCloseHandler), true);
     timeouter_.SetTimeout(kReadEvent, kReadTimeout);
   }
@@ -136,14 +136,14 @@ class EchoServerConnection {
 
   bool ConnectionReadHandler() {
     DCONNLOG << " SERVER - Handle Read";
-    CHECK_EQ(net_connection_->state(), net::NetConnection::CONNECTED);
+    CHECK_EQ(net_connection_->state(), whisper::net::NetConnection::CONNECTED);
     // Normally we would not crash on this one,
     // but as we are the clients, we do
     CHECK_NE(expected_size_, 0);
     if ( expected_size_ == -1 ) {
       if ( net_connection_->inbuf()->Size() >= sizeof(expected_size_) ) {
-        expected_size_ = io::NumStreamer::ReadInt32(net_connection_->inbuf(),
-                                                    common::kByteOrder);
+        expected_size_ = whisper::io::NumStreamer::ReadInt32(net_connection_->inbuf(),
+                                                    whisper::common::kByteOrder);
       } else {
         return true;  // wait for now..
       }
@@ -182,10 +182,10 @@ class EchoServerConnection {
     }
     return true;
   }
-  void ConnectionCloseHandler(int err, net::NetConnection::CloseWhat what) {
+  void ConnectionCloseHandler(int err, whisper::net::NetConnection::CloseWhat what) {
     LOG_WARNING << "ConnectionCloseHandler err=" << err
-                << " what=" <<  net::NetConnection::CloseWhatName(what);
-    if ( what != net::NetConnection::CLOSE_READ_WRITE ) {
+                << " what=" <<  whisper::net::NetConnection::CloseWhatName(what);
+    if ( what != whisper::net::NetConnection::CLOSE_READ_WRITE ) {
       net_connection_->FlushAndClose();
       return;
     }
@@ -193,25 +193,26 @@ class EchoServerConnection {
     selector_->DeleteInSelectLoop(this);
   }
  private:
-  net::Selector* selector_;
-  net::NetConnection* net_connection_; // either server or client
+  whisper::net::Selector* selector_;
+  whisper::net::NetConnection* net_connection_; // either server or client
   int32 expected_size_;
-  net::Timeouter timeouter_;
+  whisper::net::Timeouter timeouter_;
 };
 
 class EchoServer {
 public:
-  EchoServer(net::Selector* selector,
-             net::NetFactory* net_factory,
-             net::PROTOCOL net_protocol)
+  EchoServer(whisper::net::Selector* selector,
+             whisper::net::NetFactory* net_factory,
+             whisper::net::PROTOCOL net_protocol)
     : selector_(selector),
       net_factory_(net_factory),
-      net_acceptor_(net_factory->CreateAcceptor(net_protocol)) {
-    net_acceptor_->SetFilterHandler(NewPermanentCallback(
+      net_acceptor_(net_factory_->CreateAcceptor(net_protocol)) {
+    net_acceptor_->SetFilterHandler(whisper::NewPermanentCallback(
         this, &EchoServer::AcceptorFilterHandler), true);
-    net_acceptor_->SetAcceptHandler(NewPermanentCallback(
+    net_acceptor_->SetAcceptHandler(whisper::NewPermanentCallback(
         this, &EchoServer::AcceptorAcceptHandler), true);
-    selector_->RunInSelectLoop(NewCallback(this, &EchoServer::StartServer));
+    selector_->RunInSelectLoop(
+        whisper::NewCallback(this, &EchoServer::StartServer));
   }
   virtual ~EchoServer() {
     delete net_acceptor_;
@@ -219,24 +220,24 @@ public:
   }
 
   void StartServer() {
-    net::HostPort local_addr("0.0.0.0", int16(FLAGS_port));
+    whisper::net::HostPort local_addr("0.0.0.0", int16(FLAGS_port));
     bool success = net_acceptor_->Listen(local_addr);
     CHECK(success);
   }
 
-  bool AcceptorFilterHandler(const net::HostPort & client_addr) {
+  bool AcceptorFilterHandler(const whisper::net::HostPort & client_addr) {
     return true; // accept all
   }
-  void AcceptorAcceptHandler(net::NetConnection * client_connection) {
+  void AcceptorAcceptHandler(whisper::net::NetConnection * client_connection) {
     LOG_INFO << net_acceptor_->PrefixInfo() << "Client accepted from "
              << client_connection->remote_address();
     // auto-deletes on close
     new EchoServerConnection(selector_, client_connection);
   }
 private:
-  net::Selector* selector_;
-  net::NetFactory* net_factory_;
-  net::NetAcceptor* net_acceptor_;
+  whisper::net::Selector* selector_;
+  whisper::net::NetFactory* net_factory_;
+  whisper::net::NetAcceptor* net_acceptor_;
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -258,9 +259,9 @@ class EchoClientConnection {
   static const int32 kReadTimeout = 8000;
   static const int32 kWriteTimeout = 8000;
  public:
-  EchoClientConnection(net::Selector* selector,
-                       net::NetFactory* net_factory,
-                       net::PROTOCOL net_protocol,
+  EchoClientConnection(whisper::net::Selector* selector,
+                       whisper::net::NetFactory* net_factory,
+                       whisper::net::PROTOCOL net_protocol,
                        int32 piece_size,
                        int32 num_pieces,
                        int64 time_between_pieces)
@@ -273,19 +274,19 @@ class EchoClientConnection {
         pieces_sent_(0),
         has_timeout_(0),
         expected_data_(),
-        timeouter_(selector, NewPermanentCallback(
+        timeouter_(selector, whisper::NewPermanentCallback(
             this, &EchoClientConnection::TimeoutHandler)) {
-    net_connection_->SetReadHandler(NewPermanentCallback(
+    net_connection_->SetReadHandler(whisper::NewPermanentCallback(
         this, &EchoClientConnection::ConnectionReadHandler), true);
-    net_connection_->SetWriteHandler(NewPermanentCallback(
+    net_connection_->SetWriteHandler(whisper::NewPermanentCallback(
         this, &EchoClientConnection::ConnectionWriteHandler), true);
-    net_connection_->SetConnectHandler(NewPermanentCallback(
+    net_connection_->SetConnectHandler(whisper::NewPermanentCallback(
         this, &EchoClientConnection::ConnectionConnectHandler), true);
-    net_connection_->SetCloseHandler(NewPermanentCallback(
+    net_connection_->SetCloseHandler(whisper::NewPermanentCallback(
         this, &EchoClientConnection::ConnectionCloseHandler), true);
     selector_->RunInSelectLoop(
-        NewCallback(this, &EchoClientConnection::StartClient,
-                    net::HostPort(FLAGS_host.c_str(), FLAGS_port)));
+        whisper::NewCallback(this, &EchoClientConnection::StartClient,
+                    whisper::net::HostPort(FLAGS_host.c_str(), FLAGS_port)));
   }
   virtual ~EchoClientConnection() {
     if ( time_between_pieces_ < 4500 && has_timeout_ ) {
@@ -307,7 +308,7 @@ class EchoClientConnection {
     if ( global_num_clients == 0 ) {
       LOG_INFO << " Stopping the server in 2 secs !";
       selector_->RegisterAlarm(
-          NewCallback(selector_, &net::Selector::MakeLoopExit),
+          whisper::NewCallback(selector_, &whisper::net::Selector::MakeLoopExit),
           2000);
     }
     LOG_INFO << "EchoClientConnection deleted, "
@@ -367,10 +368,11 @@ class EchoClientConnection {
     }
     return true;
   }
-  void ConnectionCloseHandler(int err, net::NetConnection::CloseWhat what) {
+  void ConnectionCloseHandler(
+      int err, whisper::net::NetConnection::CloseWhat what) {
     LOG_WARNING << "ConnectionCloseHandler err=" << err
-                << " what=" <<  net::NetConnection::CloseWhatName(what);
-    if ( what != net::NetConnection::CLOSE_READ_WRITE ) {
+                << " what=" <<  whisper::net::NetConnection::CloseWhatName(what);
+    if ( what != whisper::net::NetConnection::CLOSE_READ_WRITE ) {
       net_connection_->FlushAndClose();
       return;
     }
@@ -383,10 +385,10 @@ class EchoClientConnection {
     if ( pieces_sent_ == 0 ) {
       DCONNLOG << " Appending expected size: "
                << static_cast<int32>(piece_size_ * num_pieces_);
-      CHECK_EQ(io::NumStreamer::WriteInt32(
+      CHECK_EQ(whisper::io::NumStreamer::WriteInt32(
                    net_connection_->outbuf(),
                    static_cast<int32>(piece_size_ * num_pieces_),
-                   common::kByteOrder),
+                   whisper::common::kByteOrder),
                sizeof(pieces_sent_));
       CHECK_EQ(net_connection_->outbuf()->Size(), sizeof(pieces_sent_));
     }
@@ -395,7 +397,7 @@ class EchoClientConnection {
     for ( int32 i = 0; i < piece_size_; i++ ) {
       *p++ = static_cast<char>(random() % 256);
     }
-    io::MemoryStream s;
+    whisper::io::MemoryStream s;
     s.AppendRaw(buffer, piece_size_);
     expected_data_.AppendStreamNonDestructive(&s);
     net_connection_->Write(&s);
@@ -413,29 +415,29 @@ class EchoClientConnection {
     // And we should get some data from the server back
     timeouter_.SetTimeout(kReadEvent, kReadTimeout);
   }
-  void StartClient(net::HostPort remote_address) {
+  void StartClient(whisper::net::HostPort remote_address) {
     if ( !net_connection_->Connect(remote_address) ) {
       return;  // Nothing to do ..
     }
     timeouter_.SetTimeout(kConnectEvent, kConnectTimeout);
   }
  private:
-  net::Selector* selector_;
-  net::NetFactory* net_factory_;
-  net::NetConnection* net_connection_;
+  whisper::net::Selector* selector_;
+  whisper::net::NetFactory* net_factory_;
+  whisper::net::NetConnection* net_connection_;
   const int32 piece_size_;
   const int32 num_pieces_;
   const int64 time_between_pieces_;
   int32 pieces_sent_;
   int has_timeout_;
-  io::MemoryStream expected_data_;
-  net::Timeouter timeouter_;
+  whisper::io::MemoryStream expected_data_;
+  whisper::net::Timeouter timeouter_;
 };
 
 void StartEchoConnection(int32 num_to_start,
-                         net::Selector* selector,
-                         net::NetFactory* net_factory,
-                         net::PROTOCOL net_protocol) {
+                         whisper::net::Selector* selector,
+                         whisper::net::NetFactory* net_factory,
+                         whisper::net::PROTOCOL net_protocol) {
   // TODO(cosmin): restore original code
   const bool should_timeout = false;//random() % 10 > 8;
   int64 time_between_pieces = (should_timeout
@@ -457,43 +459,43 @@ void StartEchoConnection(int32 num_to_start,
   global_num_clients++;
   num_to_start--;
   if ( num_to_start > 0 ) {
-    selector->RegisterAlarm(NewCallback(&StartEchoConnection,
-                                        num_to_start, selector,
-                                        net_factory, net_protocol),
-                            FLAGS_time_between_connections_ms);
+    selector->RegisterAlarm(whisper::NewCallback(&StartEchoConnection,
+                                                 num_to_start, selector,
+                                                 net_factory, net_protocol),
+                              FLAGS_time_between_connections_ms);
   }
 }
 
 //////////////////////////////////////////////////////////////////////
 
 int main(int argc, char* argv[]) {
-  common::Init(argc, argv);
-  net::Selector selector;
+  whisper::common::Init(argc, argv);
+  whisper::net::Selector selector;
 
-  net::NetFactory net_factory(&selector);
-  net::PROTOCOL net_protocol = net::PROTOCOL_TCP;
+  whisper::net::NetFactory net_factory(&selector);
+  whisper::net::PROTOCOL net_protocol = whisper::net::PROTOCOL_TCP;
 
-#if defined(HAVE_OPENSSL_SSL_H) && defined(USE_OPENSSL)
+#if defined(USE_OPENSSL)
   SSL_CTX* ssl_context = NULL;
   if ( FLAGS_ssl_enable ) {
     LOG_WARNING << "Running the SSL test...";
-    ssl_context = net::SslConnection::SslCreateContext(
+    ssl_context = whisper::net::SslConnection::SslCreateContext(
         FLAGS_ssl_certificate, FLAGS_ssl_key);
     if ( ssl_context == NULL ) {
       LOG_FATAL << "Failed to create SSL context. Using"
                    " certificate file: [" << FLAGS_ssl_certificate << "]"
                    ", key file: [" << FLAGS_ssl_key << "]";
     }
-    net::SslConnectionParams ssl_connection_params;
+    whisper::net::SslConnectionParams ssl_connection_params;
     ssl_connection_params.ssl_context_ = ssl_context;
-    net_factory.SetSslParams(net::SslAcceptorParams(ssl_connection_params),
+    net_factory.SetSslParams(whisper::net::SslAcceptorParams(ssl_connection_params),
                              ssl_connection_params);
-    net_protocol = net::PROTOCOL_SSL;
+    net_protocol = whisper::net::PROTOCOL_SSL;
   } else {
 #endif
     LOG_WARNING << "Running the TCP test...";
-    net_protocol = net::PROTOCOL_TCP;
-#if defined(HAVE_OPENSSL_SSL_H) && defined(USE_OPENSSL)
+    net_protocol = whisper::net::PROTOCOL_TCP;
+#if defined(USE_OPENSSL)
   }
 #endif
   if ( !FLAGS_just_client ) {
@@ -501,18 +503,18 @@ int main(int argc, char* argv[]) {
   }
   if ( !FLAGS_just_server ) {
     selector.RunInSelectLoop(
-        NewCallback(&StartEchoConnection,
-                    FLAGS_num_connections,
-                    &selector,
-                    &net_factory,
-                    net_protocol));
+        whisper::NewCallback(&StartEchoConnection,
+                             FLAGS_num_connections,
+                             &selector,
+                             &net_factory,
+                             net_protocol));
   }
 
   selector.Loop();
-#if defined(HAVE_OPENSSL_SSL_H) && defined(USE_OPENSSL)
-  net::SslConnection::SslDeleteContext(ssl_context);
+#if defined(USE_OPENSSL)
+  whisper::net::SslConnection::SslDeleteContext(ssl_context);
   ssl_context = NULL;
 #endif
   LOG_INFO << "PASS";
-  common::Exit(0);
+  whisper::common::Exit(0);
 }

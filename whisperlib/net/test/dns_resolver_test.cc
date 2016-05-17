@@ -31,16 +31,16 @@
 
 #include <stdlib.h>
 
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/system.h>
-#include <whisperlib/base/gflags.h>
-#include <whisperlib/base/scoped_ptr.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/system.h"
+#include "whisperlib/base/gflags.h"
+#include "whisperlib/base/scoped_ptr.h"
 
-#include <whisperlib/net/timeouter.h>
-#include <whisperlib/net/address.h>
-#include <whisperlib/net/selector.h>
-#include <whisperlib/net/dns_resolver.h>
+#include "whisperlib/net/timeouter.h"
+#include "whisperlib/net/address.h"
+#include "whisperlib/net/selector.h"
+#include "whisperlib/net/dns_resolver.h"
 
 //////////////////////////////////////////////////////////////////////
 
@@ -51,12 +51,11 @@ DEFINE_bool(just_server,
 #define LOG_TEST LOG_INFO
 
 uint32 g_pending = 0;
-net::Selector* g_selector = NULL;
+whisper::net::Selector* g_selector = NULL;
 
 void HandleDnsResult(string hostname, bool expected_success,
-    scoped_ref<net::DnsHostInfo> info) {
-  LOG_INFO << "Got info " << info->is_valid();
-  CHECK(expected_success == info->is_valid())
+    scoped_ref<whisper::net::DnsHostInfo> info) {
+  CHECK(expected_success == (info.get() != NULL))
       << "For hostname: [" << hostname
       << "], expected_success: " << strutil::BoolToString(expected_success)
       << ", result: " << info.ToString();
@@ -69,20 +68,22 @@ void HandleDnsResult(string hostname, bool expected_success,
   g_pending--;
 
   if ( g_pending == 0 ) {
-    g_selector->RunInSelectLoop(NewCallback(g_selector,
-        &net::Selector::MakeLoopExit));;
+      g_selector->RunInSelectLoop(whisper::NewCallback(g_selector,
+        &whisper::net::Selector::MakeLoopExit));;
   }
 }
 
 void TestDnsQuery(const string& hostname, bool expected_success) {
   g_pending++;
-  net::DnsResolve(g_selector, hostname, NewPermanentCallback(&HandleDnsResult,
-      hostname, expected_success));
+  whisper::net::DnsResolve(
+      g_selector, hostname,
+      whisper::NewPermanentCallback(&HandleDnsResult,
+                                    hostname, expected_success));
 }
 
 int main(int argc, char ** argv) {
-  common::Init(argc, argv);
-  g_selector = new net::Selector();
+  whisper::common::Init(argc, argv);
+  g_selector = new whisper::net::Selector();
 
   TestDnsQuery("google.com", true);
   TestDnsQuery("localhost", true);
@@ -93,5 +94,5 @@ int main(int argc, char ** argv) {
   g_selector = NULL;
 
   LOG_INFO << "Pass";
-  common::Exit(0);
+  whisper::common::Exit(0);
 }

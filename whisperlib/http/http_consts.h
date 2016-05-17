@@ -35,8 +35,9 @@
 #ifndef __NET_HTTP_HTTP_CONSTS_H__
 #define __NET_HTTP_HTTP_CONSTS_H__
 
-#include <whisperlib/base/types.h>
+#include "whisperlib/base/types.h"
 
+namespace whisper {
 namespace http {
 
 //////////////////////////////////////////////////////////////////////
@@ -319,6 +320,7 @@ inline bool IsTokenChar(unsigned char c) {
 // END NOTE (google-url library)
 //
 //////////////////////////////////////////////////////////////////////
-}
+}  // namespace http
+}  // namespace whisper
 
 #endif  // __NET_HTTP_HTTP_CONSTS_H__

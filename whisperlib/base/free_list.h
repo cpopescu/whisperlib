@@ -37,13 +37,22 @@
 #endif
 
 #include <stdlib.h>
-
 #include <vector>
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/timer.h>
-#include <whisperlib/base/core_errno.h>
-#include <whisperlib/sync/mutex.h>
 
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/timer.h"
+#include "whisperlib/base/core_errno.h"
+#include "whisperlib/sync/mutex.h"
+
+#if defined(HAVE_MEMALIGN)
+#include <malloc.h>
+#endif
+
+#if defined(HAVE_POSIX_MEMALIGN)
+#include <stdlib.h>
+#endif
+
+namespace whisper {
 namespace util {
 
 template <typename T>
@@ -55,7 +64,27 @@ class Disposer {
         delete p;
         return true;
     }
+    virtual void MultiDispose(const std::vector<T*>& p, size_t start = 0) {
+        for (int i = start; i < p.size(); ++i) {
+            Dispose(p[i]);
+        }
+    }
 };
+
+template <class C>
+class scoped_dispose {
+public:
+    explicit scoped_dispose(Disposer<C>* disp, C* p = NULL) : disp_(disp), ptr_(p) { }
+    ~scoped_dispose() { if (ptr_) { disp_->Dispose(ptr_); } }
+    C& operator*() const { return *ptr_; }
+    C* operator->() const  { return ptr_; }
+    C* get() const { return ptr_; }
+    C* release() { C* p = ptr_; ptr_ = NULL; return p; }
+private:
+    Disposer<C>* const disp_;
+    C* ptr_;
+};
+
 
 template <typename T>
 class FreeList : public Disposer<T> {
@@ -70,6 +99,7 @@ class FreeList : public Disposer<T> {
       delete p;
     }
   }
+  virtual T* Allocate() const = 0;
   virtual T* New() {
     ++outstanding_;
     if ( !free_list_.empty() ) {
@@ -77,7 +107,7 @@ class FreeList : public Disposer<T> {
       free_list_.pop_back();
       return p;
     } else {
-      return new T;
+      return Allocate();
     }
   }
   virtual bool Dispose(T* p) {
@@ -89,6 +119,16 @@ class FreeList : public Disposer<T> {
     delete p;
     return true;
   }
+  virtual void DisposeAll(std::vector<T*>* p) {
+    outstanding_ -= p->size();
+    free_list_.insert(free_list_.end(), p->begin(), p->end());
+    if ( free_list_.size() > max_size_ ) {
+        for ( size_t i = max_size_; i < free_list_.size(); ++i ) {
+            delete free_list_[i];
+        }
+        free_list_.resize(max_size_);
+    }
+  }
   size_t max_size() const {
     return max_size_;
   }
@@ -99,29 +139,72 @@ class FreeList : public Disposer<T> {
  private:
   size_t outstanding_;
   const size_t max_size_;
-  vector<T*> free_list_;
+  std::vector<T*> free_list_;
 };
 
 template <typename T>
+class SimpleFreeList : public FreeList<T> {
+public:
+  explicit SimpleFreeList(size_t max_size)
+      : FreeList<T>(max_size) {
+  }
+  virtual T* Allocate() const {
+    return new T;
+  }
+};
+
+template <typename T, class M, class ML>
 class ThreadSafeFreeList : public FreeList<T> {
  public:
-  explicit ThreadSafeFreeList(size_t max_size)
-    : FreeList<T>(max_size) {
+  explicit ThreadSafeFreeList(size_t max_size, M* m)
+      : FreeList<T>(max_size), mutex_(m)  {
+  }
+  virtual ~ThreadSafeFreeList() {
+    delete mutex_;
   }
   virtual T* New() {
-    synch::MutexLocker ml(&mutex_);
+    ML ml(mutex_);
     return FreeList<T>::New();
   }
   virtual bool Dispose(T* p) {
-    synch::MutexLocker ml(&mutex_);
+    ML ml(mutex_);
     return FreeList<T>::Dispose(p);
   }
+  virtual void DisposeAll(std::vector<T*>* p) {
+    ML ml(mutex_);
+    FreeList<T>::DisposeAll(p);
+  }
   virtual size_t outstanding() const {
-    synch::MutexLocker ml(&mutex_);
+    ML ml(mutex_);
     return FreeList<T>::outstanding();
   }
  private:
-  mutable synch::Mutex mutex_;
+  M* mutex_;
+};
+
+template <typename T>
+class SimpleThreadSafeFreeList
+    : public ThreadSafeFreeList<T, synch::Mutex, synch::MutexLocker> {
+public:
+  explicit SimpleThreadSafeFreeList(size_t max_size)
+      : ThreadSafeFreeList<T, synch::Mutex, synch::MutexLocker>(max_size, new synch::Mutex()) {
+  }
+  virtual T* Allocate() const {
+    return new T;
+  }
+};
+
+template <typename T>
+class SpinThreadSafeFreeList
+    : public ThreadSafeFreeList<T, synch::Spin, synch::SpinLocker> {
+public:
+  explicit SpinThreadSafeFreeList(size_t max_size)
+      : ThreadSafeFreeList<T, synch::Spin, synch::SpinLocker>(
+          max_size, new synch::Spin()) {
+  }
+  virtual T* Allocate() const {
+    return new T;
+  }
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -129,7 +212,7 @@ class ThreadSafeFreeList : public FreeList<T> {
 // a FreeList that stores objects. Each object is an array of T: T[]
 // The size of the arrays are fixed, estabilished by constructor.
 template <typename T>
-class FreeArrayList {
+class FreeArrayList : public Disposer<T> {
  public:
   // size: This list stores array. This is the size of each array.
   // max_size: maximum list size.
@@ -172,7 +255,7 @@ class FreeArrayList {
  protected:
   const size_t size_;
   const size_t max_size_;
-  vector<T*> free_list_;
+  std::vector<T*> free_list_;
   size_t outstanding_;
 };
 
@@ -230,7 +313,7 @@ class MemAlignedFreeArrayList : public ThreadSafeFreeArrayList<char> {
       alloc_initially_(false),
       last_error_log_ts_(0) {
     if ( alloc_initially ) {
-      vector<char*> p;
+      std::vector<char*> p;
       for ( size_t i = 0; i < max_size; ++i ) {
         p.push_back(NewInternal());
         CHECK(p.back() != NULL);
@@ -269,28 +352,25 @@ class MemAlignedFreeArrayList : public ThreadSafeFreeArrayList<char> {
       int64 now = timer::TicksMsec();
       if ( now > last_error_log_ts_ + 10000 ) {
         last_error_log_ts_ = now;
-        LOG_ERROR << "Freepool exhausted";
+        LOG_WARNING << "Freepool exhausted";
       }
       return NULL;
     } else {
 #if defined(HAVE_MEMALIGN)
-      void* ret = memalign(size_ * alignment_, alignment_);
+        void* ret = memalign(size_ * alignment_, alignment_);
+#elif defined(HAVE_POSIX_MEMALIGN)
+        void* ret = NULL;
+        const int err = posix_memalign(&ret, alignment_,
+                                       size_ * alignment_);
+        if ( err ) {
+            LOG_WARNING << " Error in posix_memalign: " << errno
+                        << " : " << GetSystemErrorDescription(errno);
+            return NULL;
+        }
 #else
-#if defined(HAVE_POSIX_MEMALIGN)
-      void* ret = NULL;
-      const int err = posix_memalign(&ret,
-                                     alignment_,
-                                     size_ * alignment_);
-      if ( err ) {
-        LOG_ERROR << " Error in posix_memalign: " << errno
-                  << " : " << GetSystemErrorDescription(errno);
-        return NULL;
-      }
-#else
-      void* ret = aligned_malloc(size_ * alignment_, alignment_);
-#endif  // defined(HAVE_POSIX_MEMALIGN)
+        void* ret = aligned_malloc(size_ * alignment_, alignment_);
 #endif  // defined(HAVE_MEMALIGN)
-      return reinterpret_cast<char*>(ret);
+        return reinterpret_cast<char*>(ret);
     }
   }
   bool DisposeInternal(char* p) {
@@ -313,6 +393,7 @@ class MemAlignedFreeArrayList : public ThreadSafeFreeArrayList<char> {
   int64 last_error_log_ts_;
 };
 
-}
+}  // namespace util
+}  // namespace whisper
 
 #endif  // __COMMON_BASE_FREE_LIST_H__

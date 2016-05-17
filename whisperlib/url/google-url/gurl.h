@@ -34,9 +34,9 @@
 #include <string>
 #include <vector>
 
-#include <whisperlib/url/google-url/url_canon.h>
-#include <whisperlib/url/google-url/url_canon_stdstring.h>
-#include <whisperlib/url/google-url/url_parse.h>
+#include "whisperlib/url/google-url/url_canon.h"
+#include "whisperlib/url/google-url/url_canon_stdstring.h"
+#include "whisperlib/url/google-url/url_parse.h"
 
 class URL {
  public:
@@ -304,19 +304,19 @@ class URL {
 
   // Appends the query components (pairs key / value) to components vector.
   // Returns the number of extracted pairs
-  int GetQueryParameters(std::vector< std::pair<string, string> >* comp,
+  int GetQueryParameters(std::vector< std::pair<std::string, std::string> >* comp,
                          bool unescape) const;
 
   // Utility function that unescapes a % / + encoded url piece to the binary
   // unescaped underneath string.
-  static string UrlUnescape(const char* spec, int len);
-  static string UrlUnescape(const string& s) {
+  static std::string UrlUnescape(const char* spec, int len);
+  static std::string UrlUnescape(const std::string& s) {
     return UrlUnescape(s.c_str(), s.size());
   }
 
   // Utility function that escapes a string to be included in urls
-  static string UrlEscape(const char* spec, int len);
-  static string UrlEscape(const string& s) {
+  static std::string UrlEscape(const char* spec, int len);
+  static std::string UrlEscape(const std::string& s) {
     return UrlEscape(s.c_str(), s.size());
   }
 

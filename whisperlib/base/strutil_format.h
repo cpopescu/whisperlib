@@ -4,7 +4,7 @@
 //
 // This file defines utility functions for working with strings.
 //
-// 1618labs node: Picked from chromium/src/base/string_util.h
+// Urban Engines node: Picked from chromium/src/base/string_util.h
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -15,7 +15,7 @@
 #include <vector>
 #include <stdarg.h>   // va_list
 
-#include <whisperlib/base/types.h>
+#include "whisperlib/base/types.h"
 
 /*
 #ifdef HAVE_GLIB_2_0_GLIB_GMACROS_H

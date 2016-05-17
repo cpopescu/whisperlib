@@ -31,7 +31,9 @@
 #ifndef __WHISPERLIB_BASE_CALLBACK_CLOSURE_H__
 #define __WHISPERLIB_BASE_CALLBACK_CLOSURE_H__
 
-#include <whisperlib/base/log.h>
+#include "whisperlib/base/log.h"
+
+namespace whisper {
 
 class Closure {
 public:
@@ -1138,6 +1140,7 @@ ConstMemberClosure9<C, T0, T1, T2, T3, T4, T5, T6, T7, T8>* NewCallback(const C*
 template<typename C, typename T0, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
 ConstMemberClosure9<C, T0, T1, T2, T3, T4, T5, T6, T7, T8>* NewPermanentCallback(C* c, void (C::*fun)(T0, T1, T2, T3, T4, T5, T6, T7, T8) const, T0 p0, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8) {
   return new ConstMemberClosure9<C, T0, T1, T2, T3, T4, T5, T6, T7, T8>(true, c, fun, p0, p1, p2, p3, p4, p5, p6, p7, p8);
+}
 }
 
 #endif  // __WHISPERLIB_BASE_CALLBACK_CLOSURE_H__

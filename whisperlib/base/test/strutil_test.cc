@@ -29,22 +29,31 @@
 //
 // Author: Catalin Popescu
 
+#include <map>
 #include "whisperlib/base/log.h"
 #include "whisperlib/base/strutil.h"
 #include "whisperlib/base/system.h"
+#include "whisperlib/base/gflags.h"
 
+using namespace std;
+
+DEFINE_string(test_flag, "A", "Test");
 
 int main(int argc, char* argv[]) {
-  common::Init(argc, argv);
+    whisper::common::Init(argc, argv);
+
+  LOG_INFO << " Test flag: " << FLAGS_test_flag;
   {
     LOG_INFO << " Testing strutil::JsonStrEscape / JsonStrUnescape";
     string s("',P6=-7E|c\\\\\\\\$'+@kz[\\\"\\\"3l]jtDkyt?$!o8>zOax4@U8F`W4^54^H!>5vb\\\"pWArX2,t\\/[Y");
-    CHECK_EQ(strutil::JsonStrEscape(strutil::JsonStrUnescape(s)), s);
+    // Note the / diference: decoding parses \/ to / but encoding is not necessary
+    string s2("',P6=-7E|c\\\\\\\\$'+@kz[\\\"\\\"3l]jtDkyt?$!o8>zOax4@U8F`W4^54^H!>5vb\\\"pWArX2,t/[Y");
+    CHECK_EQ(strutil::JsonStrEscape(strutil::JsonStrUnescape(s)), s2);
 
-    CHECK_EQ(strutil::JsonStrEscape("Șoseaua Olteniței"), "Șoseaua Olteniței");
+    CHECK_EQ(strutil::JsonStrEscape("Șoseaua Olteniței"), "\\u0218oseaua Olteni\\u021bei");
     CHECK_EQ(strutil::JsonStrUnescape("Șoseaua Olteniței"), "Șoseaua Olteniței");
 
-    CHECK_EQ(strutil::JsonStrEscape("Șoseaua \\ \"2\""), "Șoseaua \\\\ \\\"2\\\"");
+    CHECK_EQ(strutil::JsonStrEscape("Șoseaua \\ \"2\""), "\\u0218oseaua \\\\ \\\"2\\\"");
     CHECK_EQ(strutil::JsonStrUnescape("\u0218oseaua Olteni\u021Bei"), "Șoseaua Olteniței");
   }
 
@@ -80,20 +89,16 @@ int main(int argc, char* argv[]) {
   CHECK(!strutil::StrPrefix("abc", "abcedf"));
   CHECK(!strutil::StrPrefix("adfabc", "adfb"));
 
-  LOG_INFO << " Testing strutil::ShiftLeftBuffer";
-  char test_shift[100];
-  strcpy(test_shift, "abcdefghijkl");
-  strutil::ShiftLeftBuffer(test_shift, sizeof(test_shift) - 1, 0, 0);
-  CHECK(!strcmp(test_shift, "abcdefghijkl")) << "[" << test_shift << "]";
-  strutil::ShiftLeftBuffer(test_shift, 5, 3, 'x');
-  CHECK(!strcmp(test_shift, "dexxxfghijkl")) << "[" << test_shift << "]";
-  strutil::ShiftLeftBuffer(test_shift, 1, 1, 'y');
-  CHECK(!strcmp(test_shift, "yexxxfghijkl")) << "[" << test_shift << "]";
-  strutil::ShiftLeftBuffer(test_shift, 10, 0, 'y');
-  CHECK(!strcmp(test_shift, "yexxxfghijkl")) << "[" << test_shift << "]";
-  strutil::ShiftLeftBuffer(test_shift, strlen(test_shift),
-                           strlen(test_shift), 'z');
-  CHECK(!strcmp(test_shift, "zzzzzzzzzzzz")) << "[" << test_shift << "]";
+  LOG_INFO << " Testing strutil::StrSuffix";
+  CHECK(strutil::StrSuffix("abc()", "()"));
+  CHECK(strutil::StrSuffix(string("abc()"), string("()")));
+  CHECK(strutil::StrSuffix(string("abc()"), "()"));
+  CHECK(!strutil::StrSuffix("abc()", "()a"));
+  CHECK(strutil::StrSuffix("abc()", "c()"));
+  CHECK(strutil::StrSuffix("abc()", ")"));
+  CHECK(strutil::StrSuffix("xabc()", "abc()"));
+  CHECK(strutil::StrSuffix("abc()", "abc()"));
+  CHECK(!strutil::StrSuffix("xabc()", "yabc()"));
 
   LOG_INFO << " Testing strutil::JoinStrings";
   const char* test_join[] = {"aaaaa", "bbb", "cccccc", "dd" };
@@ -561,10 +566,10 @@ int main(int argc, char* argv[]) {
   CHECK(!strutil::i18n::IsAlnum(L'('));
   // CHECK(!strutil::i18n::IsAlnum(L'\u037B'));
 
-  CHECK(strutil::i18n::IsSpace(L' '));
-  CHECK(strutil::i18n::IsSpace(L'\t'));
-  CHECK(strutil::i18n::IsSpace(L'\r'));
-  CHECK(strutil::i18n::IsSpace(L'\n'));
+  CHECK(strutil::i18n::IsSpace(L'\u0020'));
+  CHECK(strutil::i18n::IsSpace(L'\u0009'));
+  CHECK(strutil::i18n::IsSpace(L'\u000A'));
+  CHECK(strutil::i18n::IsSpace(L'\u000D'));
   CHECK(strutil::i18n::IsSpace(L'\u2000'));
   CHECK(strutil::i18n::IsSpace(L'\u2004'));
   CHECK(strutil::i18n::IsSpace(L'\u2005'));
@@ -603,12 +608,17 @@ int main(int argc, char* argv[]) {
   terms.clear();
 
   CHECK_EQ(strutil::i18n::Utf8StrTrim(""), "");
+  CHECK_EQ(strutil::i18n::Utf8StrTrim("   \t "), "");
   CHECK_EQ(strutil::i18n::Utf8StrTrim("  \xe3\x80\x80 x\t\n"), "x");
   CHECK_EQ(strutil::i18n::Utf8StrTrim("\xe3\x80\x80 x\t\n"), "x");
   CHECK_EQ(strutil::i18n::Utf8StrTrim(
                " \xe3\x80\x80\xc4\x91okovi\xc4\x87 \xe3\x80\x80 x ldka y \xe3\x80\x80Z"),
            "\xc4\x91okovi\xc4\x87 \xe3\x80\x80 x ldka y \xe3\x80\x80Z");
   CHECK_EQ(strutil::i18n::Utf8StrTrim("W\n"), "W");
+  CHECK_EQ(strutil::i18n::Utf8StrTrimFront("\xe3\x80\x80 x\t\n"), "x\t\n");
+  CHECK_EQ(strutil::i18n::Utf8StrTrimFront("\n\tW W \n"), "W W \n");
+  CHECK_EQ(strutil::i18n::Utf8StrTrimBack("\xe3\x80\x80 x\t\n"), "\xe3\x80\x80 x");
+  CHECK_EQ(strutil::i18n::Utf8StrTrimBack("\n\tW W \n"), "\n\tW W");
 
   pair<string, string> p = strutil::i18n::Utf8SplitPairs("name = Batu Caves<br>பத்து மலை ", L'=');
   CHECK_EQ(p.first, "name ");
@@ -620,8 +630,39 @@ int main(int argc, char* argv[]) {
   CHECK_EQ(p.second, "");
   CHECK_EQ(p.first, "");
 
+  std::vector<std::string> split;
+  strutil::i18n::Utf8SplitString("\xc5\x8a\xe7\xb5\xb1\xc4\x91ok\xe7\xb5\xb1ovi\xc4\x87\xe7\xb5\xb1", "\xe7\xb5\xb1", &split);
+  CHECK_EQ(strutil::JoinStrings(split, "_"), "\xc5\x8a_\xc4\x91ok_ovi\xc4\x87_");
+  split.clear();
+  strutil::i18n::Utf8SplitString("\xc5\x8a\xe7\xb5\xb1\xc4\x91ok\xe7\xb5\xb1ovi\xc4\x87\xe7\xb5\xb1", "", &split);
+  CHECK_EQ(strutil::JoinStrings(split, "_"),
+           "\xc5\x8a_\xe7\xb5\xb1_\xc4\x91_o_k_\xe7\xb5\xb1_o_v_i_\xc4\x87_\xe7\xb5\xb1");
+  split.clear();
+  strutil::i18n::Utf8SplitString("", "x", &split);
+  CHECK_EQ(strutil::JoinStrings(split, "_"), "");
 
+  CHECK_EQ(strutil::i18n::Utf8Compare("djokovic", "djokovic", true), 0);
+  CHECK_EQ(strutil::i18n::Utf8Compare("djokovic", "djokovic", false), 0);
+  CHECK_EQ(strutil::i18n::Utf8Compare("\xc4\x91okovi\xc4\x87", "\xc4\x91okovi\xc4\x87", true), 0);
+  CHECK_EQ(strutil::i18n::Utf8Compare("\xc4\x91okovi\xc4\x87", "\xc4\x91okovi\xc4\x87", false), 0);
 
-  LOG_INFO << "PASS";
-  common::Exit(0);
+  CHECK_EQ(strutil::i18n::Utf8Compare("\xc4\x91okovi\xc4\x87", "dokovic", true), 0);
+  CHECK_EQ(strutil::i18n::Utf8Compare("dokovic", "\xc4\x91okovi\xc4\x87", true), 0);
+
+  CHECK_EQ(strutil::i18n::Utf8Compare("\xc4\x91okovi\xc4\x87", "dokovic", false), 1);
+  CHECK_EQ(strutil::i18n::Utf8Compare("dokovic", "\xc4\x91okovi\xc4\x87", false), -1);
+
+  CHECK_EQ(strutil::i18n::Utf8Compare("\xc5\x8a\xc4\x91okovi\xc4\x87", "Engdokovic", true), 0);
+  CHECK_EQ(strutil::i18n::Utf8Compare("Engdokovic", "\xc5\x8a\xc4\x91okovi\xc4\x87", true), 0);
+
+  CHECK_EQ(strutil::i18n::Utf8Compare("\xc5\x8a\xc4\x91okovi\xc4\x87", "Engdokovic", false), 1);
+  CHECK_EQ(strutil::i18n::Utf8Compare("Engdokovic", "\xc5\x8a\xc4\x91okovi\xc4\x87", false), -1);
+
+  CHECK_EQ(strutil::i18n::Utf8Compare("\xc4\x91okovi\xc4\x87", "dokovi",  true), 1);
+  CHECK_EQ(strutil::i18n::Utf8Compare("\xc4\x91okovi\xc4\x87", "dokovi",  false), 1);
+  CHECK_EQ(strutil::i18n::Utf8Compare("\xc4\x91okovi\xc4\x87", "dokovicx",  true), -1);
+  CHECK_EQ(strutil::i18n::Utf8Compare("\xc4\x91okovi\xc4\x87", "dokovicx",  false), 1);
+
+  printf("PASS\n");
+  whisper::common::Exit(0);
 }

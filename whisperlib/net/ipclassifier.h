@@ -83,12 +83,12 @@
 
 #include <vector>
 #include <set>
-#include <whisperlib/base/types.h>
-#include <whisperlib/net/address.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/net/address.h"
 
 // TODO(cpopescu): maybe add this if we use ip2location
-// #include <whisperlib/net/util/ip2location.h>
-
+// #include "whisperlib/net/util/ip2location.h"
+namespace whisper {
 namespace net {
 
 class IpClassifier {
@@ -109,7 +109,7 @@ class IpNoneClassifier : public IpClassifier {
  public:
   IpNoneClassifier() : IpClassifier() {}
   virtual ~IpNoneClassifier() {}
-  virtual bool IsInClass(const IpAddress& ip) const {
+  virtual bool IsInClass(const IpAddress& /*ip*/) const {
     return false;
   }
  private:
@@ -137,14 +137,14 @@ class IpOrClassifier : public IpClassifier {
     members_.push_back(member);
   }
  private:
-  vector<IpClassifier*> members_;
+  std::vector<IpClassifier*> members_;
   DISALLOW_EVIL_CONSTRUCTORS(IpOrClassifier);
 };
 
 class IpAndClassifier : public IpClassifier  {
  public:
   IpAndClassifier() : IpClassifier() {}
-  IpAndClassifier(const string& members);
+  IpAndClassifier(const std::string& members);
   virtual ~IpAndClassifier() {
     for ( int i = 0; i < members_.size(); ++i ) {
       delete members_[i];
@@ -161,7 +161,7 @@ class IpAndClassifier : public IpClassifier  {
     members_.push_back(member);
   }
  private:
-  vector<IpClassifier*> members_;
+  std::vector<IpClassifier*> members_;
   DISALLOW_EVIL_CONSTRUCTORS(IpAndClassifier);
 };
 
@@ -169,12 +169,13 @@ class IpNotClassifier : public IpClassifier  {
  public:
   IpNotClassifier()
       : IpClassifier(), member_(NULL) {}
-  IpNotClassifier(const string& member);
+  IpNotClassifier(const std::string& member);
   virtual ~IpNotClassifier() {
     delete member_;
   }
   virtual bool IsInClass(const IpAddress& ip) const {
-    CHECK(member_);
+    CHECK_NOT_NULL
+        (member_);
     return !member_->IsInClass(ip);
   }
  private:
@@ -187,18 +188,18 @@ class IpNotClassifier : public IpClassifier  {
 class IpLocationClassifier : public IpClassifier  {
  public:
   IpLocationClassifier() : IpClassifier() {}
-  IpLocationClassifier(const string& spec);
+  IpLocationClassifier(const std::string& spec);
 
   virtual bool IsInClass(const IpAddress& ip) const;
 
  private:
   static void InitResolver();
   // we do an AND on all features
-  set<string> countries_short_;  // and OR inside each field
-  set<string> countries_;
-  set<string> regions_;
-  set<string> cities_;
-  set<string> isps_;
+  set<std::string> countries_short_;  // and OR inside each field
+  set<std::string> countries_;
+  set<std::string> regions_;
+  set<std::string> cities_;
+  set<std::string> isps_;
 
   static net::Ip2Location* resolver_;
   DISALLOW_EVIL_CONSTRUCTORS(IpLocationClassifier);
@@ -210,7 +211,7 @@ class IpLocationClassifier : public IpClassifier  {
 class IpFilterStringClassifier : public IpClassifier  {
  public:
   IpFilterStringClassifier() : IpClassifier() {}
-  IpFilterStringClassifier(const string& spec);
+  IpFilterStringClassifier(const std::string& spec);
 
   virtual bool IsInClass(const IpAddress& ip) const {
     return filter_.Matches(ip);
@@ -224,7 +225,7 @@ class IpFilterStringClassifier : public IpClassifier  {
 class IpFilterFileClassifier : public IpClassifier  {
  public:
   IpFilterFileClassifier() : IpClassifier() {}
-  IpFilterFileClassifier(const string& spec);
+  IpFilterFileClassifier(const std::string& spec);
 
   virtual bool IsInClass(const IpAddress& ip) const {
     return filter_.Matches(ip);
@@ -236,6 +237,8 @@ class IpFilterFileClassifier : public IpClassifier  {
 };
 
 //////////////////////////////////////////////////////////////////////
-}
+
+}  // namespace net
+}  // namespace whisper
 
 #endif  //  __NET_UTIL_IPCLASSIFIER_H__

@@ -33,14 +33,14 @@
 
 #include <stdio.h>
 
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/timer.h>
-#include <whisperlib/base/system.h>
-#include <whisperlib/base/gflags.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/timer.h"
+#include "whisperlib/base/system.h"
+#include "whisperlib/base/gflags.h"
 
-#include <whisperlib/io/buffer/memory_stream.h>
-#include <whisperlib/io/logio/recordio.h>
+#include "whisperlib/io/buffer/memory_stream.h"
+#include "whisperlib/io/logio/recordio.h"
 
 //////////////////////////////////////////////////////////////////////
 
@@ -68,31 +68,31 @@ DEFINE_bool(deflate,
 
 static unsigned int g_rand_seed;
 
-io::MemoryStream* GenerateRecord() {
+whisper::io::MemoryStream* GenerateRecord() {
   const int32 rec_size = rand_r(&g_rand_seed) %
                          (FLAGS_max_record_size / sizeof(rec_size));
   int32* buf = new int32[rec_size];
   for ( int32 i = 0; i < rec_size; ++i ) {
     buf[i] = rand_r(&g_rand_seed);
   }
-  io::MemoryStream* rec = new io::MemoryStream();
+  whisper::io::MemoryStream* rec = new whisper::io::MemoryStream();
   rec->Write(buf, rec_size * sizeof(*buf));
   delete [] buf;
   return rec;
 }
 
 int main(int argc, char* argv[]) {
-  common::Init(argc, argv);
+  whisper::common::Init(argc, argv);
 
   g_rand_seed = FLAGS_rand_seed;
   srand(g_rand_seed);
 
-  io::RecordWriter rw(FLAGS_block_size, FLAGS_deflate);
-  vector<io::MemoryStream*> recs;
-  io::MemoryStream out;
+  whisper::io::RecordWriter rw(FLAGS_block_size, FLAGS_deflate);
+  std::vector<whisper::io::MemoryStream*> recs;
+  whisper::io::MemoryStream out;
 
   for ( int32 i = 0; i < FLAGS_num_records; ++i ) {
-    io::MemoryStream* rec = GenerateRecord();
+    whisper::io::MemoryStream* rec = GenerateRecord();
     LOG_INFO << "#" << i << " New record: " << rec->Size() << " bytes";
     if ( rec->IsEmpty() ) {
       LOG_INFO << "================ > EMPTY record: " << i;
@@ -117,20 +117,20 @@ int main(int argc, char* argv[]) {
   rw.FinalizeContent(&out);
   LOG_INFO << "Final records size: " << out.Size();
 
-  io::RecordReader rd(FLAGS_block_size);
-  io::MemoryStream in;
+  whisper::io::RecordReader rd(FLAGS_block_size);
+  whisper::io::MemoryStream in;
   int32 rec_id = 0;
   while ( !out.IsEmpty() ) {
-    int32 to_pull = min(rand_r(&g_rand_seed) % 2048, out.Size());
+    int32 to_pull = std::min(rand_r(&g_rand_seed) % 2048, out.Size());
     in.AppendStream(&out, to_pull);
     while ( true ) {
       int num_skipped = 0;
-      io::MemoryStream crt;
-      io::RecordReader::ReadResult err = rd.ReadRecord(&in, &crt, &num_skipped, 0);
-      if ( err == io::RecordReader::READ_NO_DATA ) {
+      whisper::io::MemoryStream crt;
+      whisper::io::RecordReader::ReadResult err = rd.ReadRecord(&in, &crt, &num_skipped, 0);
+      if ( err == whisper::io::RecordReader::READ_NO_DATA ) {
         break;
       }
-      CHECK(err == io::RecordReader::READ_OK) << " err: " << err
+      CHECK(err == whisper::io::RecordReader::READ_OK) << " err: " << err
           << ", rec_id: " << rec_id;
       CHECK(recs[rec_id]->Equals(crt))
           << "\n recs[" << rec_id << "]: " << recs[rec_id]->DumpContentHex()

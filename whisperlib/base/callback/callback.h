@@ -31,10 +31,12 @@
 #ifndef __WHISPERLIB_BASE_CALLBACK_CALLBACK_H__
 #define __WHISPERLIB_BASE_CALLBACK_CALLBACK_H__
 
+namespace whisper {
 class Callback {
 public:
   Callback() {}
   virtual ~Callback() {}
 };
+}
 
 #endif //  __WHISPERLIB_BASE_CALLBACK_CALLBACK_H__

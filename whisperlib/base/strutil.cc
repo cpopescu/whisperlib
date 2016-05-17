@@ -29,29 +29,29 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 // Author: Cosmin Tudorache
-//
+
+#include "whisperlib/base/strutil.h"
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <time.h>
 #include <memory>
-#include <iomanip>      // std::setprecision
 
-#include "whisperlib/base/strutil.h"
 #include "whisperlib/base/scoped_ptr.h"
 #include "whisperlib/base/unicode_table.h"
 
 namespace strutil {
 
 // Convert binary string to hex
-string ToHex(const unsigned char* cp, int len) {
+std::string ToHex(const unsigned char* cp, int len) {
   char buf[len * 2 + 1];
   for (int i = 0; i < len; ++i) {
     sprintf(buf + i * 2, "%02x", cp[i]);
   }
-  return string(buf, len * 2);
+  return std::string(buf, len * 2);
 }
 
-string ToHex(const string& str) {
+std::string ToHex(const std::string& str) {
   return ToHex(reinterpret_cast<const unsigned char*>(str.data()), str.size());
 }
 
@@ -61,14 +61,14 @@ bool StrEql(const char* str1, const char* str2) {
           0 == strcmp(str1, str2));
 }
 // Comparison between char* and string
-bool StrEql(const char* p, const string& s) {
+bool StrEql(const char* p, const std::string& s) {
     return p ? !strcmp(p, s.c_str()) : s.empty();
 }
-bool StrEql(const string& s, const char* p) {
+bool StrEql(const std::string& s, const char* p) {
     return p ? !strcmp(p, s.c_str()) : s.empty();
 }
 
-bool StrEql(const string& str1, const string& str2) {
+bool StrEql(const std::string& str1, const std::string& str2) {
   return str1 == str2;
 }
 
@@ -76,7 +76,7 @@ bool StrIEql(const char* str1, const char* str2) {
   return str1 == str2 || 0 == strcasecmp(str1, str2);
 }
 
-bool StrIEql(const string& str1, const string& str2) {
+bool StrIEql(const std::string& str1, const std::string& str2) {
   return 0 == ::strcasecmp(str1.c_str(), str2.c_str());
 }
 
@@ -95,8 +95,8 @@ bool StrStartsWith(const char* str, const char* prefix) {
   return StrPrefix(str, prefix);
 }
 
-bool StrStartsWith(const string& str, const string& prefix) {
-  return StrStartsWith(str.c_str(), prefix.c_str());
+bool StrStartsWith(const std::string& str, const std::string& prefix) {
+  return 0 == strncmp(str.data(), prefix.data(), prefix.size());
 }
 
 bool StrCasePrefix(const char* str, const char* prefix) {
@@ -115,7 +115,7 @@ bool StrIStartsWith(const char* str, const char* prefix) {
   return StrCasePrefix(str, prefix);
 }
 
-bool StrIStartsWith(const string& str, const string& prefix) {
+bool StrIStartsWith(const std::string& str, const std::string& prefix) {
   return StrIStartsWith(str.c_str(), prefix.c_str());
 }
 
@@ -130,13 +130,13 @@ bool StrSuffix(const char* str, const char* suffix) {
   return StrSuffix(str, strlen(str), suffix, strlen(suffix));
 }
 
-bool StrSuffix(const string& str, const string& suffix) {
-  return StrSuffix(str.data(), str.size(), suffix.data(), str.size());
+bool StrSuffix(const std::string& str, const std::string& suffix) {
+  return StrSuffix(str.data(), str.size(), suffix.data(), suffix.size());
 }
 bool StrEndsWith(const char* str, const char* suffix) {
   return StrSuffix(str, suffix);
 }
-bool StrEndsWith(const string& str, const string& suffix) {
+bool StrEndsWith(const std::string& str, const std::string& suffix) {
   return StrEndsWith(str.c_str(), suffix.c_str());
 }
 
@@ -146,7 +146,7 @@ const char* StrFrontTrim(const char* str) {
   return str;
 }
 
-string StrFrontTrim(const string& str) {
+std::string StrFrontTrim(const std::string& str) {
   size_t i = 0;
   while ( i < str.size() && isspace(str[i]) ) {
     ++i;
@@ -154,7 +154,7 @@ string StrFrontTrim(const string& str) {
   return str.substr(i);
 }
 
-string StrTrim(const string& str) {
+std::string StrTrim(const std::string& str) {
   int i = 0;
   int j = str.size() - 1;
   while ( i <= j && isspace(str[i]) ) {
@@ -164,12 +164,12 @@ string StrTrim(const string& str) {
     --j;
   }
   if ( j < i )  {
-    return string("");
+    return std::string("");
   }
   return str.substr(i, j - i + 1);
 }
 
-string StrTrimChars(const string& str, const char* chars_to_trim) {
+std::string StrTrimChars(const std::string& str, const char* chars_to_trim) {
   int i = 0;
   int j = str.size() - 1;
   while ( i <= j && strchr(chars_to_trim, str[i]) != NULL ) {
@@ -179,13 +179,13 @@ string StrTrimChars(const string& str, const char* chars_to_trim) {
     --j;
   }
   if ( j < i )  {
-    return string("");
+    return std::string("");
   }
   return str.substr(i, j - i + 1);
 }
 
-string StrTrimCompress(const string& str) {
-  string s;
+std::string StrTrimCompress(const std::string& str) {
+  std::string s;
   for ( size_t i = 0; i < str.size(); i++ ) {
     if ( !isspace(str[i]) )
       s.append(1, str[i]);
@@ -193,7 +193,7 @@ string StrTrimCompress(const string& str) {
   return s;
 }
 
-void StrTrimCRLFInPlace(string& s) {
+void StrTrimCRLFInPlace(std::string& s) {
   int e = 0;
   while ( s.size() > e && (s[s.size()-1-e] == 0x0a ||
                            s[s.size()-1-e] == 0x0d) ) {
@@ -201,29 +201,43 @@ void StrTrimCRLFInPlace(string& s) {
   }
   s.erase(s.size()-e, e);
 }
-string StrTrimCRLF(const string& str) {
-  string s = str;
+std::string StrTrimCRLF(const std::string& str) {
+  std::string s = str;
   StrTrimCRLFInPlace(s);
   return s;
 }
-
-void ShiftLeftBuffer(void* buf,
-                     size_t buf_size,
-                     size_t shift_size,
-                     int fill_value) {
-  if ( shift_size == 0 ) return;
-  CHECK_GE(buf_size, shift_size);
-  uint8* const data = reinterpret_cast<uint8*>(buf);
-  const size_t cb = buf_size - shift_size;
-  memmove(data, data + shift_size, cb);
-  memset(data + cb, fill_value, shift_size);
+void StrTrimCommentInPlace(std::string& str, char comment_char) {
+    const int index = str.find(comment_char);
+    if (index == -1) { return; }
+    str.erase(index);
+}
+std::string StrTrimComment(const std::string& str, char comment_char) {
+    const int index = str.find(comment_char);
+    if (index == -1) { return str; }
+    return str.substr(0, index);
+}
+std::string StrReplaceAll(const std::string& str,
+                          const std::string& find_what,
+                          const std::string& replace_with) {
+    std::string tmp(str);
+    StrReplaceAllInPlace(tmp, find_what, replace_with);
+    return tmp;
+}
+void StrReplaceAllInPlace(std::string& str,
+                          const std::string& find_what,
+                          const std::string& replace_with) {
+    size_t pos = 0;
+    while ((pos = str.find(find_what, pos)) != std::string::npos) {
+        str.replace(pos, find_what.length(), replace_with);
+        pos += replace_with.length();
+    }
 }
 
-string NormalizeUrlPath(const string& path) {
+std::string NormalizeUrlPath(const std::string& path) {
   if ( path == "" ) {
     return "/";
   }
-  string ret(strutil::NormalizePath(path, '/'));
+  std::string ret(strutil::NormalizePath(path, '/'));
   int i = 0;
   while ( i < ret.size() && ret[i] == '/' ) {
     ++i;
@@ -237,8 +251,8 @@ string NormalizeUrlPath(const string& path) {
   return ret.substr(i - 1);
 }
 
-string NormalizePath(const string& path, char sep) {
-  string s(path);
+std::string NormalizePath(const std::string& path, char sep) {
+  std::string s(path);
   const char sep_str[] = { sep, '\0' };
   // Normalize the slashes and add leading slash if necessary
   for ( size_t i = 0; i < s.size(); ++i ) {
@@ -256,33 +270,33 @@ string NormalizePath(const string& path, char sep) {
   const char triple_sep[] = { sep, sep, sep, '\0' };
   while ( true ) {
     const size_t index = s.find(triple_sep);
-    if ( index == string::npos ) break;
+    if ( index == std::string::npos ) break;
     s = s.substr(0, index) + s.substr(index + 2);
   }
   // Resolve occurrences of "//" in the normalized path (but not beginning !)
   const char* double_sep = triple_sep + 1;
   while ( true ) {
     const size_t index = s.find(double_sep, 1);
-    if ( index == string::npos ) break;
+    if ( index == std::string::npos ) break;
     s = s.substr(0, index) + s.substr(index + 1);
   }
   // Resolve occurrences of "/./" in the normalized path
   const char sep_dot_sep[] = { sep, '.', sep, '\0' };
   while ( true ) {
     const size_t index = s.find(sep_dot_sep);
-    if ( index == string::npos ) break;
+    if ( index == std::string::npos ) break;
     s = s.substr(0, index) + s.substr(index + 2);
   }
   // Resolve occurrences of "/../" in the normalized path
   const char sep_dotdot_sep[] = { sep, '.', '.', sep, '\0' };
   while  ( true ) {
     const size_t index = s.find(sep_dotdot_sep);
-    if ( index == string::npos ) break;
+    if ( index == std::string::npos ) break;
     if ( index == 0 )
       return slash_added ? "" : sep_str;
        // The only left path is the root.
     const size_t index2 = s.find_last_of(sep, index - 1);
-    if ( index2 == string::npos )
+    if ( index2 == std::string::npos )
       return slash_added ? "": sep_str;
     s = s.substr(0, index2) + s.substr(index + 3);
   }
@@ -290,18 +304,18 @@ string NormalizePath(const string& path, char sep) {
   {
     const char sep_dot[] = { sep, '.' , '\0' };
     const size_t index = s.rfind(sep_dot);
-    if ( index != string::npos && index  == s.length() - 2 ) {
+    if ( index != std::string::npos && index  == s.length() - 2 ) {
       s = s.substr(0, index);
     }
   }
   {
     const char sep_dotdot[] = { sep, '.', '.',  '\0' };
     size_t index = s.rfind(sep_dotdot);
-    if ( index != string::npos && index == s.length() - 3 ) {
+    if ( index != std::string::npos && index == s.length() - 3 ) {
       if ( index == 0 )
         return slash_added ? "": sep_str;
       const size_t index2 = s.find_last_of(sep, index - 1);
-      if ( index2 == string::npos )
+      if ( index2 == std::string::npos )
         return slash_added ? "": sep_str;
       s = s.substr(0, index2);
     }
@@ -311,8 +325,8 @@ string NormalizePath(const string& path, char sep) {
   return s.substr(1);
 }
 
-string JoinStrings(const char* pieces[], size_t size, const char* glue) {
-  string s;
+std::string JoinStrings(const char* pieces[], size_t size, const char* glue) {
+  std::string s;
   if ( size > 0 ) {
     s += pieces[0];
   }
@@ -323,8 +337,9 @@ string JoinStrings(const char* pieces[], size_t size, const char* glue) {
   return s;
 }
 
-string JoinStrings(const vector<string>& pieces, size_t start, size_t limit, const char* glue) {
-  string s;
+std::string JoinStrings(const std::vector<std::string>& pieces,
+                        size_t start, size_t limit, const char* glue) {
+  std::string s;
   if ( pieces.size() > start ) {
     s += pieces[start];
   }
@@ -335,10 +350,10 @@ string JoinStrings(const vector<string>& pieces, size_t start, size_t limit, con
   return s;
 }
 
-string PrintableEscapedDataBuffer(const void* buffer, size_t size) {
+std::string PrintableEscapedDataBuffer(const void* buffer, size_t size) {
   const char* p = (const char*)buffer;
   const char* end = p + size;
-  string s;
+  std::string s;
   while ( p < end ) {
     wint_t codepoint;
     const char* next = strutil::i18n::Utf8ToCodePoint(p, end, &codepoint);
@@ -352,9 +367,9 @@ string PrintableEscapedDataBuffer(const void* buffer, size_t size) {
   return s;
 }
 
-string PrintableDataBuffer(const void* pbuffer, size_t size) {
+std::string PrintableDataBuffer(const void* pbuffer, size_t size) {
   const uint8* buffer = reinterpret_cast<const uint8*>(pbuffer);
-  string l1, l2;
+  std::string l1, l2;
   l1.reserve(size * 8 + (size / 16) * 10);
   l2.reserve(size * 8 + (size / 16) * 10);
   for ( size_t i = 0; i < size; i++ ) {
@@ -372,13 +387,13 @@ string PrintableDataBuffer(const void* pbuffer, size_t size) {
                                   static_cast<int32>(buffer[i] & 0xff));
     }
   }
-  const string str_size = StringOf(size);
+  const std::string str_size = StringOf(size);
   return "#" + str_size + " bytes HEXA: \n" + l1 + "\n" +
          "#" + str_size + " bytes CHAR: \n" + l2 + "\n";
 }
-string PrintableDataBufferHexa(const void* pbuffer, size_t size) {
+std::string PrintableDataBufferHexa(const void* pbuffer, size_t size) {
   const uint8* buffer = reinterpret_cast<const uint8*>(pbuffer);
-  string l1;
+  std::string l1;
   l1.reserve(size * 8 + (size / 16) * 10);
   for ( size_t i = 0; i < size; i++ ) {
     if ( i % 16 == 0 ) {
@@ -387,12 +402,16 @@ string PrintableDataBufferHexa(const void* pbuffer, size_t size) {
     l1 += strutil::StringPrintf("  0x%02x, ",
                                 static_cast<int32>(buffer[i] & 0xff));
   }
-  const string str_size = StringOf(size);
+  const std::string str_size = StringOf(size);
   return "#" + str_size + " bytes HEXA: \n" + l1 + "\n";
 }
-string PrintableDataBufferInline(const void* vbuffer, size_t size) {
+std::string PrintableDataBufferInline(const std::string& s) {
+  return PrintableDataBufferInline(s.data(), s.size());
+}
+
+std::string PrintableDataBufferInline(const void* vbuffer, size_t size) {
   const unsigned char* buffer = static_cast<const unsigned char*>(vbuffer);
-  ostringstream oss;
+  std::ostringstream oss;
   oss << size << " bytes {";
   for ( int32 i = 0; i < size; i++ ) {
     if ( i != 0 ) {
@@ -406,26 +425,26 @@ string PrintableDataBufferInline(const void* vbuffer, size_t size) {
   return oss.str();
 }
 
-void SplitString(const string& s,
-                 const string& separator,
-                 vector<string>* output) {
+void SplitString(const std::string& s,
+                 const std::string& separator,
+                 std::vector<std::string>* output) {
   if ( s.empty() ) {
     return;
   }
   if ( separator.empty() ) {
     // split all characters
-    for ( string::const_iterator it = s.begin(); it != s.end(); ++it ) {
-        output->push_back(string(1, *it));
+    for ( std::string::const_iterator it = s.begin(); it != s.end(); ++it ) {
+        output->push_back(std::string(1, *it));
     }
     return;
   }
 
   size_t pos = 0;
-  size_t last_pos = string::npos;
+  size_t last_pos = std::string::npos;
   while ( true ) {
     last_pos = s.find(separator, pos);
-    if ( last_pos == string::npos ) {
-         output->push_back(s.substr(pos, string::npos));
+    if ( last_pos == std::string::npos ) {
+         output->push_back(s.substr(pos, std::string::npos));
          return;
     }
     output->push_back(s.substr(pos, last_pos - pos));
@@ -433,22 +452,22 @@ void SplitString(const string& s,
   }
 }
 
-void SplitPairs(const string& s,
-                const string& elements_separator,  // sep1
-                const string& pair_separator,      // sep2
-                vector< pair<string, string> >* output) {
-  vector<string> tmp;
+void SplitPairs(const std::string& s,
+                const std::string& elements_separator,  // sep1
+                const std::string& pair_separator,      // sep2
+                std::vector< std::pair<std::string, std::string> >* output) {
+  std::vector<std::string> tmp;
   SplitString(s, elements_separator, &tmp);
   for ( size_t i = 0; i < tmp.size(); ++i ) {
     output->push_back(SplitFirst(tmp[i], pair_separator));
   }
 }
 
-void SplitPairs(const string& s,
-                const string& elements_separator,  // sep1
-                const string& pair_separator,      // sep2
-                map<string, string>* output) {
-  vector<string> tmp;
+void SplitPairs(const std::string& s,
+                const std::string& elements_separator,  // sep1
+                const std::string& pair_separator,      // sep2
+                std::map<std::string, std::string>* output) {
+  std::vector<std::string> tmp;
   SplitString(s, elements_separator, &tmp);
   for ( size_t i = 0; i < tmp.size(); ++i ) {
     output->insert(SplitFirst(tmp[i], pair_separator));
@@ -459,7 +478,7 @@ bool SplitBracketedString(const char* s,
                           const char separator,
                           const char open_bracket,
                           const char close_bracket,
-                          vector<string>* output) {
+                          std::vector<std::string>* output) {
   const char* b = s;
   const char* p = s;
   int in_paranthesis = 0;
@@ -469,7 +488,7 @@ bool SplitBracketedString(const char* s,
     } else if ( *p == close_bracket ) {
       --in_paranthesis;
     } else if ( *p == separator && in_paranthesis == 0 ) {
-      output->push_back(string(b, p - b));
+      output->push_back(std::string(b, p - b));
       b = p + 1;
     }
     ++p;
@@ -477,11 +496,11 @@ bool SplitBracketedString(const char* s,
       return false;
   }
   if ( in_paranthesis == 0 && p > b && *b ) {
-    output->push_back(string(b, p - b));
+    output->push_back(std::string(b, p - b));
   }
   return in_paranthesis == 0;
 }
-string RemoveOutermostBrackets(const string& s,
+std::string RemoveOutermostBrackets(const std::string& s,
                                const char open_bracket,
                                const char close_bracket) {
   if (s.length() > 2) {
@@ -513,7 +532,7 @@ inline uint8 hexval(char c) {
 
 void SplitStringOnAny(const char* text, int size,
                       const char* separators,
-                      vector<string>* output,
+                      std::vector<std::string>* output,
                       bool skip_empty) {
   uint32 charbits[256/32] = { 0, 0, 0, 0,
                               0, 0, 0, 0 };
@@ -527,7 +546,7 @@ void SplitStringOnAny(const char* text, int size,
   while ( i < size ) {
     if ( is_set_bit(charbits, *t) ) {
       if (i > next_word_start || !skip_empty) {
-        output->push_back(string(text + next_word_start,
+        output->push_back(std::string(text + next_word_start,
                                  i - next_word_start));
       }
       next_word_start = i + 1;
@@ -536,13 +555,13 @@ void SplitStringOnAny(const char* text, int size,
     ++t;
   }
   if (next_word_start < size) {
-      output->push_back(string(text + next_word_start,
+      output->push_back(std::string(text + next_word_start,
                                size - next_word_start));
   }
 }
 
 
-string StrNEscape(const char* text, size_t size, char escape,
+std::string StrNEscape(const char* text, size_t size, char escape,
                   const char* chars_to_escape) {
   uint32 escapes[256/32] = { 0, 0, 0, 0,
                              0, 0, 0, 0 };
@@ -553,7 +572,7 @@ string StrNEscape(const char* text, size_t size, char escape,
   set_char_bit(escapes, escape);
   const char* t = text;
   int i = 0;
-  string ret;
+  std::string ret;
   while ( i++ < size ) {
     if ( is_set_bit(escapes, *t) || *t  < 32 || *t > 126 ) {
       ret.append(strutil::StringPrintf("%c%02x",
@@ -568,13 +587,17 @@ string StrNEscape(const char* text, size_t size, char escape,
   return ret;
 }
 
-const string& BoolToString(bool value) {
-  static const string str_true = "true";
-  static const string str_false = "false";
+bool StrToBool(const std::string& str) {
+  const std::string s = strutil::StrToLower(str);
+  return not (s == "false" or s == "no" or s == "0");
+}
+const std::string& BoolToString(bool value) {
+  static const std::string str_true = "true";
+  static const std::string str_false = "false";
   return value ? str_true : str_false;
 }
 
-string GetNextInLexicographicOrder(const string& prefix) {
+std::string GetNextInLexicographicOrder(const std::string& prefix) {
   if ( prefix.empty() ) {
     return "";
   }
@@ -582,23 +605,23 @@ string GetNextInLexicographicOrder(const string& prefix) {
     return GetNextInLexicographicOrder(prefix.substr(0, prefix.size() - 1));
   }
 
-  string upper_bound(prefix);
+  std::string upper_bound(prefix);
   upper_bound[upper_bound.size() - 1] = prefix[prefix.size() - 1] + 1;
   return upper_bound;
 }
 
-string StrEscape(const char* text, char escape,
+std::string StrEscape(const char* text, char escape,
                  const char* chars_to_escape) {
   return StrNEscape(text, strlen(text), escape, chars_to_escape);
 }
 
-string StrEscape(const string& text,
+std::string StrEscape(const std::string& text,
                  char escape,
                  const char* chars_to_escape) {
   return StrNEscape(text.data(), text.size(),escape, chars_to_escape);
 }
 
-string StrUnescape(const char* text, char escape) {
+std::string StrUnescape(const char* text, char escape) {
   const char* p = text;
   size_t esc_count = 0;
 
@@ -619,61 +642,65 @@ string StrUnescape(const char* text, char escape) {
     }
     ++p;
   }
-  return string(dest.get(), d - dest.get());
+  return std::string(dest.get(), d - dest.get());
 }
 
-string StrUnescape(const string& text, char escape) {
+std::string StrUnescape(const std::string& text, char escape) {
   return StrUnescape(text.c_str(), escape);
 }
 }
 
 namespace strutil {
-// Old implementation : user    0m6.368s
-// New implementation : user    0m0.568s
 
-#ifdef HAVE_UNICODE_UTF_8
-#include <unicode/utf8.h>      // ICU/source/common/unicode/utf8.h
-#else
-#define U8_IS_SINGLE(c) (((c)&0x80)==0)
-#endif
+#define IS_CHAR(c) (c >= ' ' && c <= '~' && c != '\\' && c != '"')
+static const char kHexChars[] = "0123456789abcdef";
 
-string JsonStrEscape(const char* text, size_t size) {
-  const char* p = text;
-  scoped_array<char> dest(new char[size * 3 + 4]);
-  uint8* d = reinterpret_cast<uint8*>(dest.get());
-  while (size > 0) {
-    const uint8 c = *p++;
-    size--;
-
-    if ( c >= ' ' && c <= '~' ) {
-      // ASCII printable
-      if ( c == '\\' || c == '\"' || c == '/' ) {
-        *d++ = '\\';
-      }
-      *d++ = c;
-      continue;
-    }
-    switch ( c ) {
-      case '\b': *d++ = '\\'; *d++ = 'b'; break;
-      case '\f': *d++ = '\\'; *d++ = 'f'; break;
-      case '\n': *d++ = '\\'; *d++ = 'n'; break;
-      case '\r': *d++ = '\\'; *d++ = 'r'; break;
-      case '\t': *d++ = '\\'; *d++ = 't'; break;
-      default: {
-        // NOTE(cosmin): leave it UTF8. JSON is perfectly capable of carrying it.
-        //               Converting to Unicode is not such a simple task as writing a hex code.
-        *d++ = c;
-        while (size > 0 && (((*p) & 0xc0) == 0x80)) {
-          *d++ = *p++;
-          size--;
+std::string JsonStrEscape(const char* text, size_t size) {
+  ::scoped_array<wchar_t> wtext(strutil::i18n::Utf8ToWchar(text, size));
+  const int wlen = wcslen(wtext.get());
+  ::scoped_array<wchar_t> crt_token(new wchar_t[wlen + 1]);
+  ::scoped_array<char> output(new char[wlen * 12 + 1]);
+  size_t pos = 0;
+  for (int i = 0; i < wlen; ++i) {
+    wchar_t c = wtext[i];
+    if (IS_CHAR(c)) {
+      output[pos++] = (char)c;
+    } else {
+      output[pos++] = '\\';
+      switch (c) {
+      case '\\': output[pos++] = (char)c; break;
+      case '"' : output[pos++] = (char)c; break;
+      case '\b': output[pos++] = 'b'; break;
+      case '\f': output[pos++] = 'f'; break;
+      case '\n': output[pos++] = 'n'; break;
+      case '\r': output[pos++] = 'r'; break;
+      case '\t': output[pos++] = 't'; break;
+      default:
+        if (c >= 0x10000) {
+          /* UTF-16 surrogate pair */
+          wchar_t v = c - 0x10000;
+          c = 0xd800 | ((v >> 10) & 0x3ff);
+          output[pos++] = 'u';
+          output[pos++] = kHexChars[(c >> 12) & 0xf];
+          output[pos++] = kHexChars[(c >>  8) & 0xf];
+          output[pos++] = kHexChars[(c >>  4) & 0xf];
+          output[pos++] = kHexChars[(c      ) & 0xf];
+          c = 0xdc00 | (v & 0x3ff);
+          output[pos++] = '\\';
         }
+        output[pos++] = 'u';
+        output[pos++] = kHexChars[(c >> 12) & 0xf];
+        output[pos++] = kHexChars[(c >>  8) & 0xf];
+        output[pos++] = kHexChars[(c >>  4) & 0xf];
+        output[pos++] = kHexChars[(c      ) & 0xf];
       }
     }
   }
-  return string(dest.get(), d - reinterpret_cast<uint8*>(dest.get()));
+  // output[pos++] = '\0';
+  return std::string(output.get(), pos);
 }
 
-string JsonStrUnescape(const char* text, size_t size) {
+std::string JsonStrUnescape(const char* text, size_t size) {
   const char* p = text;
   scoped_array<char> dest(new char[size * 3 + 4]);
   uint8* d = reinterpret_cast<uint8*>(dest.get());
@@ -729,31 +756,33 @@ string JsonStrUnescape(const char* text, size_t size) {
     // default copying behaviour
     *d++ = c;
   }
-  return string(dest.get(), d - reinterpret_cast<uint8*>(dest.get()));
+  return std::string(dest.get(), d - reinterpret_cast<uint8*>(dest.get()));
 }
 
-string XmlStrEscape(const string& original) {
-  string result;
+std::string XmlStrEscape(const std::string& original) {
+  std::string result;
   result.reserve(original.size());
-  for (int i = 0; i != original.size(); ++i) {
-    switch (original[i]) {
-      case '&':
-        result.append("&amp;");
-        break;
-      case '\"':
-        result.append("&quot;");
-        break;
-      case '\'':
-        result.append("&apos;");
-        break;
-      case '<':
-        result.append("&lt;");
-        break;
-      case '>':
-        result.append("&gt;");
-        break;
-      default:
-        result.append(1, original[i]);
+  i18n::Utf8ToWcharIterator it(original);
+  while (it.IsValid()) {
+    wint_t c = it.ValueAndNext();
+    switch (c) {
+    case L'&':
+      result.append("&amp;");
+      break;
+    case L'\"':
+      result.append("&quot;");
+      break;
+    case L'\'':
+      result.append("&apos;");
+      break;
+    case L'<':
+      result.append("&lt;");
+      break;
+    case L'>':
+      result.append("&gt;");
+      break;
+    default:
+      i18n::CodePointToUtf8(c, &result);
     }
   }
   return result;
@@ -811,8 +840,8 @@ enum StrFormatState {
 }
 
 namespace strutil {
-string StrMapFormat(const char* s,
-                    const map<string, string>& m,
+std::string StrMapFormat(const char* s,
+                    const std::map<std::string, std::string>& m,
                     const char* arg_begin,
                     const char* arg_end,
                     char escape_char) {
@@ -822,8 +851,8 @@ string StrMapFormat(const char* s,
   const int size_end = strlen(arg_end);
   StrFormatState state = IN_TEXT;
 
-  string out;
-  string symbol;
+  std::string out;
+  std::string symbol;
   const char* begin = s;
   const char* p = s;
   while ( *p ) {
@@ -855,7 +884,7 @@ string StrMapFormat(const char* s,
           state = IN_TEXT;
           p += size_end;
           begin = p;
-          map<string, string>::const_iterator it = m.find(symbol);
+          std::map<std::string, std::string>::const_iterator it = m.find(symbol);
           if ( it != m.end() ) {
             out.append(it->second);
           }
@@ -898,74 +927,80 @@ string StrMapFormat(const char* s,
   }
   return out;
 }
+std::string StrHumanBytes(size_t bytes) {
+  if (bytes > 1024 * 1024 * 1024) {
+    return StringPrintf("%.2fGB", bytes / (1024.0f * 1024 * 1024));
+  }
+  if (bytes > 1024 * 1024) {
+    return StringPrintf("%.2fMB", bytes / (1024.0f * 1024));
+  }
+  if (bytes > 1024) {
+    return StringPrintf("%.2fKB", bytes / (1024.0f));
+  }
+  return StringPrintf("%" PRIu64 " bytes", bytes);
+}
 
-string StrHumanDuration(int64 duration_ms) {
-    ostringstream oss;
-    if (duration_ms > 3600000) {
-        oss << (duration_ms / 3600000) << "h";
-        duration_ms = duration_ms % 3600000;
+std::string StrOrdinalNth(int x) {
+  if (x <= 0) { return std::to_string(x); }
+    if (x == 11 or x == 12) { return std::to_string(x) + "th"; }
+    switch (x % 10) {
+    case 1: return std::to_string(x) + "st";
+    case 2: return std::to_string(x) + "nd";
+    case 3: return std::to_string(x) + "rd";
     }
-    if (duration_ms > 60000) {
-        oss << (duration_ms / 60000) << "m";
-        duration_ms = duration_ms % 60000;
-    }
-    oss << std::setprecision(3);
-    oss << (duration_ms / 1000.0) << "s";
-    return oss.str();
+    return std::to_string(x) + "th";
 }
-string StrHumanBytes(uint64 bytes) {
-    if (bytes > 1024 * 1024 * 1024) {
-        return StringPrintf("%.2fGB", bytes / (1024.0f * 1024 * 1024));
-    }
-    if (bytes > 1024 * 1024) {
-        return StringPrintf("%.2fMB", bytes / (1024.0f * 1024));
-    }
-    if (bytes > 1024) {
-        return StringPrintf("%.2fKB", bytes / (1024.0f));
-    }
-    return StringPrintf("%" PRIu64 " bytes", bytes);
+std::string StrOrdinal(int v) {
+  static const std::vector<std::string> kOrdinal {
+    "nth", "first", "second", "third", "fourth", "fifth", "sixth", "seventh",
+    "eighth", "ninth", "tenth", "eleventh", "twelfth"
+  };
+  if (uint32_t(v) >= kOrdinal.size()) { return StrOrdinalNth(v); }
+  return kOrdinal[v];
 }
-}
+
+}  // namespace strutil
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace {
-map<wchar_t, const wchar_t*> glb_umlaut_map;
-map<wint_t, const char*> glb_utf8_umlaut_map;
-map<wchar_t, wchar_t> glb_upper_map;
-map<wchar_t, wchar_t> glb_lower_map;
+std::map<wchar_t, const wchar_t*> glb_umlaut_map;
+std::map<wint_t, const char*> glb_utf8_umlaut_map;
+std::map<wchar_t, wchar_t> glb_upper_map;
+std::map<wchar_t, wchar_t> glb_lower_map;
 hash_set<wchar_t> glb_spaces;
 }
 
 namespace strutil {
 namespace i18n {
 
-inline pair<size_t, uint8> Utf8CharLen(uint8 p) {
+inline std::pair<size_t, uint8> Utf8CharLen(uint8 p) {
   if (p <= 0x7F)  {
     /* 0XXX XXXX one byte */
-    return make_pair(1, p & 0x7f);
+    return std::make_pair(1, p & 0x7f);
   }
   if ((p & 0xE0) == 0xC0) {
     /* 110X XXXX  two bytes */
-    return make_pair(2, p & 0x1f);
+    return std::make_pair(2, p & 0x1f);
   }
   if ((p & 0xF0) == 0xE0) {
     /* 1110 XXXX  three bytes */
-    return make_pair(3, p & 0x0f);
+    return std::make_pair(3, p & 0x0f);
   }
   if ((p & 0xF8) == 0xF0) {
     /* 1111 0XXX  four bytes */
-    return make_pair(4, p & 0x07);
+    return std::make_pair(4, p & 0x07);
   }
   if ((p & 0xFC) == 0xF8) {
     /* 1111 10XX  five bytes */
-    return make_pair(5, p & 0x03);
+    return std::make_pair(5, p & 0x03);
   }
   if ((p & 0xFE) == 0xFC) {
     /* 1111 110X  six bytes */
-    return make_pair(6, p & 0x01);
+    return std::make_pair(6, p & 0x01);
   }
-  return make_pair(0, 0);
+  return std::make_pair(0, 0);
 }
 
 size_t Utf8Strlen(const char *s) {
@@ -998,7 +1033,7 @@ const char* Utf8ToCodePoint(const char* start, const char* end, wint_t* codepoin
     end = start + strlen(start);
   }
 
-  pair<size_t, uint8> crt = Utf8CharLen(uint8(*start));
+  std::pair<size_t, uint8> crt = Utf8CharLen(uint8(*start));
   if (!crt.first) {
     *codepoint = WEOF;
     return start + 1;
@@ -1021,7 +1056,7 @@ const char* Utf8ToCodePoint(const char* start, const char* end, wint_t* codepoin
 wint_t ToUpper(wint_t c) {
   // NOTE: towupper does not handle correctly accented chars so we need
   //  our own map
-  map<wchar_t, wchar_t>::const_iterator it = glb_upper_map.find(c);
+  std::map<wchar_t, wchar_t>::const_iterator it = glb_upper_map.find(c);
   if (it != glb_upper_map.end()) {
     return it->second;
   }
@@ -1031,7 +1066,7 @@ wint_t ToUpper(wint_t c) {
 wint_t ToLower(wint_t c) {
   // NOTE: towlower does not handle correctly accented chars so we need
   //  our own map
-  map<wchar_t, wchar_t>::const_iterator it = glb_lower_map.find(c);
+  std::map<wchar_t, wchar_t>::const_iterator it = glb_lower_map.find(c);
   if (it != glb_lower_map.end()) {
     return it->second;
   }
@@ -1041,7 +1076,56 @@ wint_t ToLower(wint_t c) {
 
 static const size_t kMaxUtf8Size = 6;
 
-size_t CodePointToUtf8(wint_t codepoint, string* s) {
+char* CodePointToUtf8Char(wint_t codepoint, char* p) {
+  if (codepoint <= 0x007F) {
+      // UTF-8, 1 bytes: 0vvvvvvv 10vvvvvv 10vvvvvv
+    *(p++) = char(codepoint);
+    return p;
+  }
+  if (codepoint <= 0x07FF) {
+    // UTF-8, 2 bytes: 110vvvvv 10vvvvvv 10vvvvvv
+    *(p++) = char(0xC0 | ((codepoint >> 6)& 0x1F));
+    *(p++) = char(0x80 | (codepoint & 0x3F));
+    return p;
+  }
+  if (codepoint <= 0xFFFF) {
+    // UTF-8, 3 bytes: 1110vvvv 10vvvvvv 10vvvvvv
+    *(p++) = char(0xE0 | ((codepoint >> 12)& 0x0F));
+    *(p++) = char(0x80 | ((codepoint >> 6)& 0x3F));
+    *(p++) = char(0x80 | (codepoint & 0x3F));
+    return p;
+  }
+  if (codepoint <= 0x1FFFFF) {
+    // UTF-8, 4 bytes: 11110vvv 10vvvvvv 10vvvvvv 10vvvvvv
+    *(p++) = char(0xF0 | ((codepoint >> 18) & 0x07));
+    *(p++) = char(0x80 | ((codepoint >> 12) & 0x3F));
+    *(p++) = char(0x80 | ((codepoint >> 6) & 0x3F));
+    *(p++) = char(0x80 | (codepoint & 0x3F));
+    return p;
+  }
+  if (codepoint <= 0x3FFFFFF) {
+    // UTF-8, 5 bytes: 111110vv 10vvvvvv 10vvvvvv 10vvvvvv 10vvvvvv
+    *(p++) = char(0xF8 | ((codepoint >> 24) & 0x03));
+    *(p++) = char(0x80 | ((codepoint >> 18) & 0x3F));
+    *(p++) = char(0x80 | ((codepoint >> 12) & 0x3F));
+    *(p++) = char(0x80 | ((codepoint >> 6) & 0x3F));
+    *(p++) = char(0x80 | (codepoint & 0x3F));
+    return p;
+  }
+  if (codepoint <= 0x7FFFFFFF) {
+    // UTF-8, 6 bytes: 1111110v 10vvvvvv 10vvvvvv 10vvvvvv 10vvvvvv 10vvvvvv
+    *(p++) = char(0xFC | ((codepoint >> 30) & 0x01));
+    *(p++) = char(0x80 | ((codepoint >> 24) & 0x3F));
+    *(p++) = char(0x80 | ((codepoint >> 18) & 0x3F));
+    *(p++) = char(0x80 | ((codepoint >> 12) & 0x3F));
+    *(p++) = char(0x80 | ((codepoint >> 6) & 0x3F));
+    *(p++) = char(0x80 | (codepoint & 0x3F));
+    return p;
+  }
+  return p;
+}
+
+size_t CodePointToUtf8(wint_t codepoint, std::string* s) {
     if (codepoint <= 0x007F) {
       // UTF-8, 1 bytes: 0vvvvvvv 10vvvvvv 10vvvvvv
       s->append(1, char(codepoint));
@@ -1090,9 +1174,10 @@ size_t CodePointToUtf8(wint_t codepoint, string* s) {
     return 0;
 }
 
-wchar_t* Utf8ToWchar(const char* s, size_t size_bytes) {
+std::pair<wchar_t*, size_t> Utf8ToWcharWithLen(const char* s, size_t size_bytes) {
   wchar_t* ws = new wchar_t[size_bytes + 1];
   wchar_t* wp = ws;
+  size_t len = 0;
   if (size_bytes) {
     const char* end = s + size_bytes;
     const char* p = s;
@@ -1101,21 +1186,22 @@ wchar_t* Utf8ToWchar(const char* s, size_t size_bytes) {
       p = Utf8ToCodePoint(p, end, &codepoint);
       if (codepoint != WEOF) {
         *wp++ = codepoint;
+        ++len;
       }
     }
   }
   *wp = L'\0';
-  return ws;
+  return std::make_pair(ws, len);
 }
 
 size_t WcharToUtf8Size(const wchar_t* s) {
     return kMaxUtf8Size * wcslen(s) + 1;
 }
 
-string ToUpperStr(const string& s) {
+std::string ToUpperStr(const std::string& s) {
   const char* end = s.c_str() + s.size();
   const char* p = s.c_str();
-  string result;
+  std::string result;
   wint_t codepoint;
   while (p < end) {
     p = Utf8ToCodePoint(p, end, &codepoint);
@@ -1126,10 +1212,10 @@ string ToUpperStr(const string& s) {
   return result;
 }
 
-string ToLowerStr(const string& s) {
+std::string ToLowerStr(const std::string& s) {
   const char* end = s.c_str() + s.size();
   const char* p = s.c_str();
-  string result;
+  std::string result;
   wint_t codepoint;
   while (p < end) {
     p = Utf8ToCodePoint(p, end, &codepoint);
@@ -1140,7 +1226,17 @@ string ToLowerStr(const string& s) {
   return result;
 }
 
-bool IsUtf8Valid(const string& s) {
+std::string Iso8859_1ToUtf8(const std::string& s) {
+  std::string out;
+  for (unsigned char c : s) {
+    if (c < 0x80) out += c;
+    else if (c < 0xc0) { out += '\xc2'; out += 0x80 + (c & 0x3f); }
+    else { out += '\xc3'; out += 0x80 + (c & 0x3f); }
+  }
+  return out;
+}
+
+bool IsUtf8Valid(const std::string& s) {
   const char* end = s.c_str() + s.size();
   const char* p = s.c_str();
   wint_t codepoint;
@@ -1153,24 +1249,24 @@ bool IsUtf8Valid(const string& s) {
   return true;
 }
 
-string Utf8StrPrefix(const string& s, size_t prefix_size) {
+std::string Utf8StrPrefix(const std::string& s, size_t prefix_size) {
   const char* end = s.c_str() + s.size();
   const char* p = s.c_str();
   size_t num = 0;
 
   while (p < end && num < prefix_size) {
     size_t crt_len = Utf8CharLen(uint8(*p)).first;
-    if (!crt_len) return string();
+    if (!crt_len) return std::string();
     p += crt_len;
     ++num;
   }
   if (p > end) {
-    return string();
+    return std::string();
   }
-  return string (s.c_str(), p - s.c_str());
+  return std::string (s.c_str(), p - s.c_str());
 }
 
-string Utf8StrTrim(const string& s) {
+std::string Utf8StrTrim(const std::string& s) {
   const char* p = s.c_str();
   const char* end = p + s.size();
   const char* begin_non_space = NULL;
@@ -1192,7 +1288,7 @@ string Utf8StrTrim(const string& s) {
     p = next;
   }
   if (!begin_non_space) {
-    return s;
+    return std::string();
   }
   if (!last_space_start) {
     return s.substr(begin_non_space - s.c_str());
@@ -1200,7 +1296,54 @@ string Utf8StrTrim(const string& s) {
   return s.substr(begin_non_space - s.c_str(), last_space_start - begin_non_space);
 }
 
-pair<string, string> Utf8SplitPairs(const string& s, wchar_t split) {
+
+std::string Utf8StrTrimBack(const std::string& s) {
+  const char* p = s.c_str();
+  const char* end = p + s.size();
+  const char* last_space_start = NULL;
+
+  wint_t codepoint;
+  while (p < end) {
+    const char* next = Utf8ToCodePoint(p, end, &codepoint);
+    if (codepoint != WEOF) {
+      if (!IsSpace(codepoint)) {
+        last_space_start = NULL;
+      } else if (!last_space_start) {
+        last_space_start = p;
+      }
+    }
+    p = next;
+  }
+  if (!last_space_start) {
+    return s;
+  }
+  return s.substr(0, last_space_start - s.c_str());
+}
+
+std::string Utf8StrTrimFront(const std::string& s) {
+  const char* p = s.c_str();
+  const char* end = p + s.size();
+  const char* begin_non_space = NULL;
+
+  wint_t codepoint;
+  while (p < end) {
+    const char* next = Utf8ToCodePoint(p, end, &codepoint);
+    if (codepoint != WEOF) {
+      if (!IsSpace(codepoint)) {
+        begin_non_space = p;
+        break;
+      }
+    }
+    p = next;
+  }
+  if (!begin_non_space) {
+    return std::string();
+  }
+  return s.substr(begin_non_space - s.c_str());
+}
+
+
+std::pair<std::string, std::string> Utf8SplitPairs(const std::string& s, wchar_t split) {
   const char* end = s.c_str() + s.size();
   const char* p = s.c_str();
 
@@ -1208,14 +1351,15 @@ pair<string, string> Utf8SplitPairs(const string& s, wchar_t split) {
   while (p < end) {
     const char* next = Utf8ToCodePoint(p, end, &codepoint);
     if (codepoint == split) {
-      return make_pair(s.substr(0, p - s.c_str()), s.substr(next - s.c_str()));
+      return std::make_pair(s.substr(0, p - s.c_str()), s.substr(next - s.c_str()));
     }
     p = next;
   }
-  return make_pair(s, "");
+  return std::make_pair(s, "");
 }
 
-void Utf8SplitOnWChars(const string& s, const wchar_t* splits, vector<string>* terms) {
+void Utf8SplitOnWChars(const std::string& s, const wchar_t* splits,
+                       std::vector<std::string>* terms) {
   const char* end = s.c_str() + s.size();
   const char* p = s.c_str();
   const char* starter = NULL;
@@ -1233,7 +1377,7 @@ void Utf8SplitOnWChars(const string& s, const wchar_t* splits, vector<string>* t
       }
       if (is_split) {
         if (starter != NULL && p > starter) {
-          terms->push_back(string(starter, p - starter));
+          terms->push_back(std::string(starter, p - starter));
           starter = NULL;
         }
       } else if (starter == NULL) {
@@ -1245,11 +1389,34 @@ void Utf8SplitOnWChars(const string& s, const wchar_t* splits, vector<string>* t
     p = e;
   }
   if (p <= end && starter != NULL && p > starter) {
-    terms->push_back(string(starter, p - starter));
+    terms->push_back(std::string(starter, p - starter));
   }
 }
 
-void Utf8SplitOnWhitespace(const string& s, vector<string>* terms) {
+void Utf8SplitString(const std::string& s, const std::string& split,
+                     std::vector<std::string>* terms) {
+  const std::pair<wchar_t*, size_t> slen = strutil::i18n::Utf8ToWcharWithLen(s);
+  std::unique_ptr<wchar_t[]> wstr(slen.first);
+  const std::pair<wchar_t*, size_t> sslen = strutil::i18n::Utf8ToWcharWithLen(split);
+  std::unique_ptr<wchar_t[]> wsstr(sslen.first);
+
+  if (!slen.second) {
+    terms->push_back("");
+  } else if (!sslen.second) {
+    for (size_t i = 0; i < slen.second; ++i) {
+      terms->push_back(WcharToUtf8StringWithLen(wstr.get() + i, 1));
+    }
+  } else {
+    const wchar_t* start = wstr.get();
+    while (const wchar_t* p = wcsstr(start, wsstr.get())) {
+      terms->push_back(WcharToUtf8StringWithLen(start, p - start));
+      start = p + sslen.second;
+    }
+    terms->push_back(WcharToUtf8String(start));
+  }
+}
+
+void Utf8SplitOnWhitespace(const std::string& s, std::vector<std::string>* terms) {
   const char* end = s.c_str() + s.size();
   const char* p = s.c_str();
   const char* starter = NULL;
@@ -1261,7 +1428,7 @@ void Utf8SplitOnWhitespace(const string& s, vector<string>* terms) {
     if (codepoint != WEOF) {
       if (IsSpace(codepoint)) {
         if (starter != NULL && p > starter) {
-          terms->push_back(string(starter, p - starter));
+          terms->push_back(std::string(starter, p - starter));
           starter = NULL;
         }
       } else if (starter == NULL) {
@@ -1273,7 +1440,7 @@ void Utf8SplitOnWhitespace(const string& s, vector<string>* terms) {
     p = e;
   }
   if (p <= end && starter != NULL && p > starter) {
-    terms->push_back(string(starter, p - starter));
+    terms->push_back(std::string(starter, p - starter));
   }
 }
 
@@ -1283,7 +1450,7 @@ wchar_t* UmlautTransform(const wchar_t* s) {
     int size = 0;
     bool need_conversion = false;
     while (*p) {
-        map<wchar_t, const wchar_t*>::const_iterator it = glb_umlaut_map.find(*p);
+        std::map<wchar_t, const wchar_t*>::const_iterator it = glb_umlaut_map.find(*p);
         if (it == glb_umlaut_map.end()) {
             ++size;
         } else {
@@ -1301,7 +1468,7 @@ wchar_t* UmlautTransform(const wchar_t* s) {
     wchar_t* d = dest;
     // Second pass to convert
     while (*p) {
-        map<wchar_t, const wchar_t*>::const_iterator it = glb_umlaut_map.find(*p);
+        std::map<wchar_t, const wchar_t*>::const_iterator it = glb_umlaut_map.find(*p);
         if (it == glb_umlaut_map.end()) {
             *d++ = *p++;
         } else {
@@ -1316,7 +1483,7 @@ wchar_t* UmlautTransform(const wchar_t* s) {
     return dest;
 }
 
-bool UmlautTransformUtf8(const string& s, string* result) {
+bool UmlautTransformUtf8(const std::string& s, std::string* result) {
   const char* end = s.c_str() + s.size();
   const char* p = s.c_str();
   wint_t codepoint;
@@ -1325,7 +1492,7 @@ bool UmlautTransformUtf8(const string& s, string* result) {
   while (p < end) {
     const char* e = Utf8ToCodePoint(p, end, &codepoint);
     if (codepoint != WEOF) {
-      map<wint_t, const char*>::const_iterator it = glb_utf8_umlaut_map.find(codepoint);
+      std::map<wint_t, const char*>::const_iterator it = glb_utf8_umlaut_map.find(codepoint);
       if (it != glb_utf8_umlaut_map.end()) {
         transformed = true;
         result->append(it->second);
@@ -1334,7 +1501,7 @@ bool UmlautTransformUtf8(const string& s, string* result) {
       }
     } else {
       // This means invalid utf8 - skip / do something ?
-      // LOG_ERROR << "Invalid UTF8 detected [" << s << "]";
+      // LOG_WARNING << "Invalid UTF8 detected [" << s << "]";
     }
     p = e;
   }
@@ -1350,8 +1517,57 @@ bool IsAlnum(const wint_t c) {
     return false;   // unknown - out of range
   return (glb_alnum_table[c >> 3] & (1 << (c & 7))) != 0;
 }
+
+struct CompareStruct {
+  CompareStruct(const std::string& s, bool umlaut_expand)
+    : umlaut_expand_(umlaut_expand),
+      end_(s.c_str() + s.size()),
+      p_(s.c_str()),
+      crt_umlaut_(NULL) {
+  }
+  bool IsDone() const {
+    return !(p_ < end_) && crt_umlaut_ == NULL;
+  }
+  wint_t NextCodepoint() {
+    wint_t codepoint = WEOF;
+    if (crt_umlaut_) {
+      codepoint = *crt_umlaut_++;
+    } else {
+      const char* e = Utf8ToCodePoint(p_, end_, &codepoint);
+      if (codepoint != WEOF && umlaut_expand_) {
+        std::map<wint_t, const char*>::const_iterator it = glb_utf8_umlaut_map.find(codepoint);
+        if (it != glb_utf8_umlaut_map.end()) {
+          crt_umlaut_ = it->second;
+          codepoint = *crt_umlaut_++;
+        }
+      }
+      p_ = e;
+    }
+    if (crt_umlaut_ && !*crt_umlaut_) {
+      crt_umlaut_ = NULL;
+    }
+    return codepoint;
+  }
+private:
+  const bool umlaut_expand_;
+  const char* const end_;
+  const char* p_;
+  const char* crt_umlaut_;
+};
+
+int Utf8Compare(const std::string& s1, const std::string& s2, bool umlaut_expand) {
+  CompareStruct cs1(s1, umlaut_expand);
+  CompareStruct cs2(s2, umlaut_expand);
+  while (!cs1.IsDone() && !cs2.IsDone()) {
+    wint_t codepoint1 = cs1.NextCodepoint();
+    wint_t codepoint2 = cs2.NextCodepoint();
+    if (codepoint1 < codepoint2) return -1;
+    if (codepoint1 > codepoint2) return 1;
+  }
+  return cs1.IsDone() ? ( cs2.IsDone() ? 0 : -1 ) : 1;
 }
-}
+}   // namespace i18n
+}   // namespace strutil
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1359,13 +1575,13 @@ namespace {
 struct __InitUmlaut {
 #define _ADD(a, b, c)                                   \
   do {                                                  \
-    glb_umlaut_map.insert(make_pair((a), (b)));         \
-    glb_utf8_umlaut_map.insert(make_pair((a), (c)));    \
+    glb_umlaut_map.insert(std::make_pair((a), (b)));         \
+    glb_utf8_umlaut_map.insert(std::make_pair((a), (c)));    \
   } while(false)
 #define _UPPER_ADD(u, l)                                \
   do {                                                  \
-    glb_upper_map.insert(make_pair((l), (u)));          \
-    glb_lower_map.insert(make_pair((u), (l)));   \
+    glb_upper_map.insert(std::make_pair((l), (u)));          \
+    glb_lower_map.insert(std::make_pair((u), (l)));   \
   } while(false)
 #define _SPACE_ADD(c) \
   glb_spaces.insert(c)
@@ -1373,7 +1589,7 @@ struct __InitUmlaut {
   // NOTE/TODO(cp):  this is imperfect, need to take in considerations other
   //   factors. For example unicode character U+0110 should be translated
   //   to 'Dj' for serbo-croatian (e.g. is the first letter in Djokovic)
-  //   but to a simple D for vietnamese.
+  //   but to a simple D for vietnamese. For good results use ICU.
   __InitUmlaut() {
       _ADD(L'\u00C0', L"A", "A");
       _ADD(L'\u00E0', L"a", "a");

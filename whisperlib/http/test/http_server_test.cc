@@ -59,6 +59,8 @@ DEFINE_string(base_dir,
 //
 // Utilities:
 //
+using namespace whisper;
+
 string GenerateDirListing(const string& url_path) {
   const string dirpath(FLAGS_base_dir + url_path);
   vector<string> paths;
@@ -85,7 +87,7 @@ string GenerateDirListing(const string& url_path) {
 bool LooksTextFile(io::File* f) {
   bool is_text = true;
   // This is not very smart, but whatever, is just a test.
-  const int32 text_to_check = min(static_cast<int32>(f->Size()), 1024);
+  const int32 text_to_check = std::min(static_cast<int32>(f->Size()), 1024);
   uint8* buf = new uint8[text_to_check];
   if ( f->Read(buf, text_to_check) != text_to_check ) {
     f->SetPosition(0);

@@ -18,7 +18,7 @@ def build(ctx):
             'ipclassifier.cc',
             ])
     ctx.add_lib(ctx,
-        toplib = 'whisperlib',
+        toplib = 'core',
         name = 'whisperlib.net',
         target = 'whisperlib',
         source = sources)

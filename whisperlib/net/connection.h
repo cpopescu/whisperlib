@@ -1,3 +1,4 @@
+// -*- c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil; coding: utf-8 -*-
 // Copyright (c) 2009, Whispersoft s.r.l.
 // All rights reserved.
 //
@@ -34,15 +35,15 @@
 #define __NET_BASE_CONNECTION_H__
 
 #include <string>
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/log.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/log.h"
 
-#include <whisperlib/io/buffer/memory_stream.h>
+#include "whisperlib/io/buffer/memory_stream.h"
 
-#include <whisperlib/net/address.h>
-#include <whisperlib/net/selectable.h>
-#include <whisperlib/net/timeouter.h>
-#include <whisperlib/net/dns_resolver.h>
+#include "whisperlib/net/address.h"
+#include "whisperlib/net/selectable.h"
+#include "whisperlib/net/timeouter.h"
+#include "whisperlib/net/dns_resolver.h"
 
 
 // TcpConnection
@@ -78,7 +79,7 @@
 // - call Listen to open local address in listen mode
 // You will be notified on "filter" handler when someone wants to connect
 // and on "accept" handler when someone connected.
-
+namespace whisper {
 namespace net {
 
 ////////////////////////////////////////////////////////////////////////////
@@ -140,11 +141,10 @@ class NetAcceptor {
   }
 
  public:
-  NetAcceptor(const NetAcceptorParams& params = NetAcceptorParams())
+  explicit NetAcceptor(const NetAcceptorParams& /*params = NetAcceptorParams()*/)
     : state_(DISCONNECTED),
       local_address_(),
       last_error_code_(0),
-      count_clients_accepted_(0),
       filter_handler_(NULL),
       own_filter_handler_(false),
       accept_handler_(NULL),
@@ -158,7 +158,7 @@ class NetAcceptor {
   }
 
   // opens acceptor in listen mode
-  virtual bool Listen(const ::net::HostPort& local_addr) = 0;
+  virtual bool Listen(const whisper::net::HostPort& local_addr) = 0;
 
   // closes acceptor
   virtual void Close() = 0;
@@ -188,7 +188,7 @@ class NetAcceptor {
   void set_state(State state) {
     state_ = state;
   }
-  void set_local_address(const ::net::HostPort& local_address) {
+  void set_local_address(const whisper::net::HostPort& local_address) {
     local_address_ = local_address;
   }
   void set_last_error_code(int last_error_code) {
@@ -196,7 +196,7 @@ class NetAcceptor {
   }
 
  public:
-  typedef ResultCallback1<bool, const ::net::HostPort&> FilterHandler;
+  typedef ResultCallback1<bool, const whisper::net::HostPort&> FilterHandler;
   typedef Callback1<NetConnection*> AcceptHandler;
 
   void SetFilterHandler(FilterHandler* filter_handler, bool own);
@@ -206,7 +206,7 @@ class NetAcceptor {
   void DetachAllHandlers();
 
  protected:
-  bool InvokeFilterHandler(const ::net::HostPort& incoming_peer_address);
+  bool InvokeFilterHandler(const whisper::net::HostPort& incoming_peer_address);
   void InvokeAcceptHandler(NetConnection* new_connection);
 
  private:
@@ -218,9 +218,6 @@ class NetAcceptor {
 
   // the code of the last error. Just for log & debug.
   int last_error_code_;
-
-  // Statistics
-  int64 count_clients_accepted_;
 
   // We call this handler to notify the application that a new client wants
   //  to connect.
@@ -296,7 +293,7 @@ class NetConnection {
   //                  Later on: if the connect procedure succeeds,
   //                            the ConnectHandler will be called.
   //                            If it fails, the CloseHandler will be called.
-  virtual bool Connect(const ::net::HostPort& addr) = 0;
+  virtual bool Connect(const whisper::net::HostPort& addr) = 0;
   virtual void FlushAndClose() = 0;
   virtual void ForceClose() = 0;
   // tune connection
@@ -623,8 +620,8 @@ class TcpConnection : public NetConnection, private Selectable {
   // The fd of the socket
   int fd_;
 
-  ::net::HostPort local_address_;
-  ::net::HostPort remote_address_;
+  whisper::net::HostPort local_address_;
+  whisper::net::HostPort remote_address_;
 
   // true = the write half of the connection is closed; no more transmissions.
   bool write_closed_;
@@ -640,6 +637,8 @@ class TcpConnection : public NetConnection, private Selectable {
   // permanent callback to HandleDnsResult
   DnsResultHandler* handle_dns_result_;
 };
+}  // namespace net
+}  // namespace whisper
 
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
@@ -648,14 +647,17 @@ class TcpConnection : public NetConnection, private Selectable {
 //
 ////////////////////////////////////////////////////////////////////////
 
-#if defined(HAVE_OPENSSL_SSL_H) && defined(USE_OPENSSL)
-}
-
+#if defined(USE_OPENSSL)
 // apt-get install libssl-dev
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#endif // USE_OPENSSL
 
+namespace whisper {
 namespace net {
+
+#if defined(USE_OPENSSL)
+
 struct SslConnectionParams : public NetConnectionParams {
   SslConnectionParams(
       SSL_CTX* ssl_context = NULL,
@@ -696,7 +698,7 @@ class SslAcceptor : public NetAcceptor {
               const SslAcceptorParams& ssl_params = SslAcceptorParams());
   virtual ~SslAcceptor();
 
-  bool TcpAcceptorFilterHandler(const ::net::HostPort& peer_addr);
+  bool TcpAcceptorFilterHandler(const whisper::net::HostPort& peer_addr);
   void TcpAcceptorAcceptHandler(NetConnection* tcp_connection);
 
   void SslConnectionConnectHandler(SslConnection* ssl_connection);
@@ -707,7 +709,7 @@ class SslAcceptor : public NetAcceptor {
   //
   // NetAcceptor interface methods
   //
-  virtual bool Listen(const ::net::HostPort& local_addr);
+  virtual bool Listen(const whisper::net::HostPort& local_addr);
   virtual void Close();
   virtual string PrefixInfo() const;
 
@@ -717,10 +719,11 @@ class SslAcceptor : public NetAcceptor {
   // Cleanup SSL members
   void SslClear();
 
+  whisper::net::Selector* selector() { return selector_; }
   // Initializes a new connection in the provided selector
   // void InitializeAcceptedConnection(Selector* selector, int client_fd);
  private:
-  ::net::Selector* selector_;
+  whisper::net::Selector* selector_;
   // parameters for this acceptor
   const SslAcceptorParams params_;
 
@@ -817,6 +820,12 @@ class SslConnection : public NetConnection {
   // Free SSL context. This is the reverse of SslCreateContext(..).
   static void SslDeleteContext(SSL_CTX* ssl_ctx);
 
+  // Used from the depth of the ssl verification callback to set the
+  // verification status failed
+  void SslSetVerificationFailed() { verification_failed_ = true; }
+
+  static int SslVerificationIndex() { return verification_index_; }
+
  private:
   bool SslInitialize(bool is_server);
   void SslClear();
@@ -827,7 +836,7 @@ class SslConnection : public NetConnection {
   void SslShutdown();
 
  private:
-  ::net::Selector* selector_;
+  whisper::net::Selector* selector_;
   // parameters for this connection
   const SslConnectionParams ssl_params_;
 
@@ -856,14 +865,22 @@ class SslConnection : public NetConnection {
   uint64 ssl_in_count_;
 
   Timeouter timeouter_;
+
+  // If verification failed:
+  bool verification_failed_;
+  // Ssl index registerd for setting custom data to SSL object.
+  static int verification_index_;
+  synch::Mutex verification_mutex_;
 };
 
-#endif
+#endif // USE_OPENSSL
 
 enum PROTOCOL {
   PROTOCOL_TCP,
-#if defined(HAVE_OPENSSL_SSL_H) && defined(USE_OPENSSL)
+#if defined(USE_OPENSSL)
   PROTOCOL_SSL,
+#else
+  PROTOCOL_SSL = PROTOCOL_TCP,
 #endif
 };
 class NetFactory {
@@ -872,7 +889,7 @@ public:
     : selector_(selector),
       tcp_acceptor_params_(),
       tcp_connection_params_()
-#if defined(HAVE_OPENSSL_SSL_H) && defined(USE_OPENSSL)
+#if defined(USE_OPENSSL)
     , ssl_acceptor_params_(),
       ssl_connection_params_()
 #endif
@@ -891,7 +908,7 @@ public:
     tcp_connection_params_ = params;
   }
 
-#if defined(HAVE_OPENSSL_SSL_H) && defined(USE_OPENSSL)
+#if defined(USE_OPENSSL)
   void SetSslParams(const SslAcceptorParams&
                       ssl_acceptor_params = SslAcceptorParams(),
                     const SslConnectionParams&
@@ -907,7 +924,7 @@ public:
     switch(protocol) {
       case PROTOCOL_TCP:
         return new TcpConnection(selector_, tcp_connection_params_);
-#if defined(HAVE_OPENSSL_SSL_H) && defined(USE_OPENSSL)
+#if defined(USE_OPENSSL)
       case PROTOCOL_SSL:
         return new SslConnection(selector_, ssl_connection_params_);
 #endif
@@ -920,7 +937,7 @@ public:
     switch(protocol) {
       case PROTOCOL_TCP:
         return new TcpAcceptor(selector_, tcp_acceptor_params_);
-#if defined(HAVE_OPENSSL_SSL_H) && defined(USE_OPENSSL)
+#if defined(USE_OPENSSL)
       case PROTOCOL_SSL:
         return new SslAcceptor(selector_, ssl_acceptor_params_);
 #endif
@@ -930,7 +947,7 @@ public:
     }
   }
 
-  ::net::Selector* selector() const {
+  whisper::net::Selector* selector() const {
     return selector_;
   }
 
@@ -941,7 +958,7 @@ public:
     return tcp_connection_params_;
   }
 
-#if defined(HAVE_OPENSSL_SSL_H) && defined(USE_OPENSSL)
+#if defined(USE_OPENSSL)
   const SslAcceptorParams& ssl_acceptor_params() const {
     return ssl_acceptor_params_;
   }
@@ -951,16 +968,17 @@ public:
 #endif
 
 private:
-  ::net::Selector* const selector_;
+  whisper::net::Selector* const selector_;
 
   TcpAcceptorParams tcp_acceptor_params_;
   TcpConnectionParams tcp_connection_params_;
 
-#if defined(HAVE_OPENSSL_SSL_H) && defined(USE_OPENSSL)
+#if defined(USE_OPENSSL)
   SslAcceptorParams ssl_acceptor_params_;
   SslConnectionParams ssl_connection_params_;
 #endif
 };
-}
+}  // namespace net
+}  // namespace whisper
 
 #endif  // __NET_BASE_CONNECTION_H__

@@ -33,17 +33,18 @@
 #include "whisperlib/io/file/file_input_stream.h"
 #include "whisperlib/base/log.h"
 
+namespace whisper {
 namespace io {
 
-string FileInputStream::ReadFileOrDie(const char* filename) {
-  string s;
+std::string FileInputStream::ReadFileOrDie(const char* filename) {
+  std::string s;
   CHECK(TryReadFile(filename, &s));
   return s;
 }
-string FileInputStream::ReadFileOrDie(const string& filename) {
+std::string FileInputStream::ReadFileOrDie(const std::string& filename) {
   return ReadFileOrDie(filename.c_str());
 }
-bool FileInputStream::TryReadFile(const char* filename, string* content) {
+bool FileInputStream::TryReadFile(const char* filename, std::string* content) {
   io::File* const infile = io::File::TryOpenFile(filename);
   if ( infile == NULL ) {
     return false;
@@ -53,15 +54,15 @@ bool FileInputStream::TryReadFile(const char* filename, string* content) {
   if ( size > kMaxInt32 ) {
     return false;
   }
-  string s;
+  std::string s;
   return size == fis.ReadString(content, static_cast<int32>(size));
 }
-bool FileInputStream::TryReadFile(const string& filename, string* content) {
+bool FileInputStream::TryReadFile(const std::string& filename, std::string* content) {
   return TryReadFile(filename.c_str(), content);
 }
 
 FileInputStream::FileInputStream(File* file)
-  : InputStream(NULL, NULL),
+  : InputStream(),
     file_(file) {
 }
 FileInputStream::~FileInputStream() {
@@ -102,5 +103,6 @@ void FileInputStream::MarkerRestore() {
 void FileInputStream::MarkerClear() {
   CHECK(!read_mark_positions_.empty());
   read_mark_positions_.pop_back();
+}
 }
 }

@@ -38,21 +38,24 @@
 #include <set>
 #include <map>
 
-#include <whisperlib/base/types.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/hash.h"
 #include WHISPER_HASH_MAP_HEADER
 
-#include <whisperlib/base/callback.h>
-#include <whisperlib/sync/mutex.h>
-#include <whisperlib/sync/thread.h>
+#include "whisperlib/base/callback.h"
+#include "whisperlib/sync/mutex.h"
+#include "whisperlib/sync/thread.h"
 
 #ifdef __USE_LEAN_SELECTOR__
-#include <whisperlib/sync/producer_consumer_queue.h>
+#include "whisperlib/sync/lock_free_producer_consumer_queue.h"
+// #include "whisperlib/sync/producer_consumer_queue.h"
 #else
-#include <whisperlib/net/selector_base.h>
+#include "whisperlib/net/selector_base.h"
 #endif
 
 // Just a helper function
 
+namespace whisper {
 namespace net {
 
 class Selectable;
@@ -121,7 +124,7 @@ class Selector {
   void RunInSelectLoop(Closure* callback);
   template <typename T> void DeleteInSelectLoop(T* ob) {
     RunInSelectLoop(
-        ::NewCallback(&Selector::GeneralAsynchronousDelete<T>, ob));
+        whisper::NewCallback(&Selector::GeneralAsynchronousDelete<T>, ob));
   }
 
   // Functions for running in the select loop the given Closure after
@@ -165,10 +168,10 @@ class Selector {
   // MakeLoopExits marks this flag. The Loop() thread should end.
   bool should_end_;
 
-  typedef set<Selectable*> SelectableSet;
-  typedef list<Selectable*> SelectableList;
+  typedef std::set<Selectable*> SelectableSet;
+  typedef std::list<Selectable*> SelectableList;
   // typedef multimap<int64, Closure*> AlarmsMap;
-  typedef set< pair<int64, Closure*> > AlarmSet;
+  typedef std::set< std::pair<int64, Closure*> > AlarmSet;
   // Map from alarm to wake up time
   typedef hash_map<Closure*, int64> ReverseAlarmsMap;
 
@@ -180,12 +183,13 @@ class Selector {
   ReverseAlarmsMap reverse_alarms_;
 
   // guards access to closure queue: to_run_
-  synch::Mutex mutex_;
+  synch::Spin mutex_;
 
   // Internal control:
 
 #ifdef __USE_LEAN_SELECTOR__
-  synch::ProducerConsumerQueue<Closure*> to_run_;
+  synch::LockFreeProducerConsumerQueue<Closure> to_run_;
+  // synch::ProducerConsumerQueue<Closure*> to_run_;
 
 #else
   // these file descriptors are for waking the selector when a function
@@ -197,7 +201,7 @@ class Selector {
 #endif
 
     // functions registered to be run in the select loop
-  deque<Closure*> to_run_;
+  std::deque<Closure*> to_run_;
 
     // OS specific selector base implementation
   SelectorBase* base_;
@@ -225,18 +229,24 @@ class Selector {
 class SelectorThread {
  public:
   SelectorThread()
-      : thread_(NewCallback(this, &SelectorThread::Execution)) {
+      : thread_(NewCallback(this, &SelectorThread::Execution)), stopped_(true) {
   }
   ~SelectorThread() {
-      Stop();
+    Stop();
   }
   void Start() {
-    CHECK(thread_.SetJoinable());
-    CHECK(thread_.Start());
+    if (stopped_) {
+      stopped_ = false;
+      CHECK(thread_.SetJoinable());
+      CHECK(thread_.Start());
+    }
   }
   void Stop() {
+    if (!stopped_) {
       selector_.RunInSelectLoop(NewCallback(&selector_, &net::Selector::MakeLoopExit));
       thread_.Join();
+      stopped_ = true;
+    }
   }
   void CleanAndCloseAll() {
     selector_.RunInSelectLoop(NewCallback(&selector_,
@@ -254,10 +264,13 @@ class SelectorThread {
   void Execution() {
     selector_.Loop();
   }
-  thread::Thread thread_;
+  whisper::thread::Thread thread_;
   Selector selector_;
+  bool stopped_;
 
   DISALLOW_EVIL_CONSTRUCTORS(SelectorThread);
 };
-}
+}  // namespace net
+}  // namespace whisper
+
 #endif  // __NET_BASE_SELECTOR__

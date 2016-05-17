@@ -31,40 +31,40 @@
 //
 
 #include <stdio.h>
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/timer.h>
-#include <whisperlib/base/system.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/timer.h"
+#include "whisperlib/base/system.h"
 
-#include <whisperlib/io/buffer/data_block.h>
+#include "whisperlib/io/buffer/data_block.h"
 
 int main(int argc, char* argv[]) {
-  common::Init(argc, argv);
+  whisper::common::Init(argc, argv);
 
 
 #ifdef __USE_VARIANT_MEMORY_STREAM_IMPLEMENTATION__
-  io::DataBlock* scratch = new io::DataBlock(1024);
-  io::BlockDqueue q(scratch);
+  whisper::io::DataBlock* scratch = new whisper::io::DataBlock(1024);
+  whisper::io::BlockDqueue q(scratch);
   q.pop_back();
 #else
-  io::BlockDqueue q;
+  whisper::io::BlockDqueue q;
 #endif
 
-  q.push_back(new io::DataBlock(1024));
-  q.push_back(new io::DataBlock(2048));
-  q.push_back(new io::DataBlock(4096));
-  q.push_back(new io::DataBlock(9192));
+  q.push_back(new whisper::io::DataBlock(1024));
+  q.push_back(new whisper::io::DataBlock(2048));
+  q.push_back(new whisper::io::DataBlock(4096));
+  q.push_back(new whisper::io::DataBlock(9192));
 #ifdef __USE_VARIANT_MEMORY_STREAM_IMPLEMENTATION__
   q.push_back(scratch);
 #endif
 
-  io::DataBlockPointer p0(&q, q.begin_id(), 0);
-  io::DataBlockPointer p1(&q, q.begin_id(), 0);
-  io::DataBlockPointer p2(&q, q.begin_id() + 1, 0);
-  io::DataBlockPointer p3(&q, q.begin_id() + 2, 0);
-  io::DataBlockPointer p4(&q, q.begin_id() + 3, 0);
+  whisper::io::DataBlockPointer p0(&q, q.begin_id(), 0);
+  whisper::io::DataBlockPointer p1(&q, q.begin_id(), 0);
+  whisper::io::DataBlockPointer p2(&q, q.begin_id() + 1, 0);
+  whisper::io::DataBlockPointer p3(&q, q.begin_id() + 2, 0);
+  whisper::io::DataBlockPointer p4(&q, q.begin_id() + 3, 0);
 #ifdef __USE_VARIANT_MEMORY_STREAM_IMPLEMENTATION__
-  io::DataBlockPointer p5(&q, q.begin_id() + 4, 0);
+  whisper::io::DataBlockPointer p5(&q, q.begin_id() + 4, 0);
 #endif
 
   CHECK(p0 == p1) << " - " << p0 << " vs. " << p1;
@@ -123,7 +123,7 @@ int main(int argc, char* argv[]) {
   // Start reading ...
   CHECK_EQ(p1.ReadData(buffer, 2048), 2048);
   for ( int i = 0; i < 2048; ++i ) {
-    CHECK_EQ(static_cast<uint8>(buffer[i]),
+    CHECK_EQ(static_cast<int>(buffer[i]),
              static_cast<int>(i % 256));
   }
   CHECK_EQ(p1.Distance(p2), 1024);
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
 
   CHECK_EQ(p1.ReadData(buffer, 512),  512);
   for ( int i = 0; i < 512; ++i ) {
-    CHECK_EQ(static_cast<uint8>(buffer[i]),
+    CHECK_EQ(static_cast<int>(buffer[i]),
              static_cast<int>(i % 256));
   }
   CHECK_EQ(p1.Distance(p2), 1024 + 512);
@@ -140,18 +140,18 @@ int main(int argc, char* argv[]) {
   CHECK_EQ(p1.ReadData(buffer, 333), 333);
   CHECK_EQ(p1.Distance(p2), 1024 + 512 + 333);
   for ( int i = 0; i < 333; ++i ) {
-    CHECK_EQ(static_cast<uint8>(buffer[i]),
+    CHECK_EQ(static_cast<int>(buffer[i]),
              static_cast<int>(i % 256));
   }
 
   CHECK_EQ(p1.ReadData(buffer, 2048 - 333), 1024 - 333);
   for ( int i = 0; i < 333; ++i ) {
-    CHECK_EQ(static_cast<uint8>(buffer[i]),
+    CHECK_EQ(static_cast<int>(buffer[i]),
              static_cast<int>((333 + i) % 256));
   }
   CHECK(p0 == p1);
   CHECK_EQ(p1.Distance(p2), 2048 + 512);
   CHECK_EQ(p1.Distance(p3), 512);
   printf("PASS\n");
-  common::Exit(0);
+  whisper::common::Exit(0);
 }

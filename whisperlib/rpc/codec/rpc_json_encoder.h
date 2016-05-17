@@ -33,9 +33,10 @@
 #define __NET_RPC_LIB_CODEC_JSON_RPC_JSON_ENCODER_H__
 
 #include <string>
-#include <whisperlib/base/types.h>
-#include <whisperlib/rpc/codec/rpc_encoder.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/rpc/codec/rpc_encoder.h"
 
+namespace whisper {
 namespace codec {
 
 class JsonEncoder : public codec::Encoder {
@@ -48,7 +49,7 @@ class JsonEncoder : public codec::Encoder {
   }
 
   template<class C>
-  static void EncodeToString(const C& obj, string* s) {
+  static void EncodeToString(const C& obj, std::string* s) {
     io::MemoryStream mos;
     codec::JsonEncoder encoder(mos);
     encoder.Encode(obj);
@@ -56,7 +57,7 @@ class JsonEncoder : public codec::Encoder {
   }
 
   template<class C>
-  static string EncodeObject(const C& obj) {
+  static std::string EncodeObject(const C& obj) {
     io::MemoryStream iostream;
     JsonEncoder encoder(iostream);
     encoder.Encode(obj);
@@ -116,7 +117,7 @@ class JsonEncoder : public codec::Encoder {
   void EncodeBody(const double& obj) {
     PrintBody("%.60e", obj);
   }
-  void EncodeBody(const string& obj);
+  void EncodeBody(const std::string& obj);
   void EncodeBody(const char* obj);
 
  private:
@@ -126,5 +127,6 @@ class JsonEncoder : public codec::Encoder {
   bool encoding_map_key_;
   DISALLOW_EVIL_CONSTRUCTORS(JsonEncoder);
 };
+}
 }
 #endif  //  __NET_RPC_LIB_CODEC_JSON_RPC_JSON_CODEC_H__

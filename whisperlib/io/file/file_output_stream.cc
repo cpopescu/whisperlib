@@ -32,10 +32,11 @@
 #include "whisperlib/io/file/file.h"
 #include "whisperlib/io/file/file_output_stream.h"
 
+namespace whisper {
 namespace io {
 
 FileOutputStream::FileOutputStream(File* file)
-  : OutputStream(NULL, NULL),
+  : OutputStream(),
     file_(file) {
 }
 
@@ -44,13 +45,13 @@ FileOutputStream::~FileOutputStream() {
 }
 
 void FileOutputStream::WriteFileOrDie(const char* filename,
-                                      const string& content) {
+                                      const std::string& content) {
   io::File* const outfile = io::File::CreateFileOrDie(filename);
   io::FileOutputStream fis(outfile);
   fis.Write(content.data(), content.size());
 }
 bool FileOutputStream::TryWriteFile(const char* filename,
-                                    const string& content) {
+                                    const std::string& content) {
   io::File* const outfile = io::File::TryCreateFile(filename);
   if ( outfile == NULL )
     return false;
@@ -79,4 +80,5 @@ int32 FileOutputStream::Write(const void* buf, int32 len) {
 int64 FileOutputStream::Writable() const {
   return -1;   // no limit
 }
-}
+}  // namespace io
+}  // namespace whisper

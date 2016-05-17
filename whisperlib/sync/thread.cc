@@ -30,33 +30,26 @@
 // Author: Catalin Popescu
 
 #include <signal.h>
- #include <sched.h>
+#include <sched.h>
 #include "whisperlib/sync/thread.h"
 
-namespace {
-
-void* InternalThreadRun(void* param) {
-  Closure* closure = reinterpret_cast<Closure*>(param);
-  closure->Run();
-  pthread_exit(NULL);
-  return NULL;
-}
-}
-
+namespace whisper {
 namespace thread {
 
 Thread::Thread(Closure* thread_function, bool low_priority)
   : thread_(0),
-    thread_function_(thread_function) {
+    thread_function_(thread_function), self_delete_(false), joinable_(false) {
   pthread_attr_init(&attr_);
-#ifndef NACL
+#if !defined(NACL) && !defined(EMSCRIPTEN)
+#ifdef HAVE_SCHED_GET_PRIORITY_MIN
   if (low_priority) {
       struct sched_param param;
       param.sched_priority = sched_get_priority_min(SCHED_RR);
       const int status = pthread_attr_setschedparam(&attr_, &param);
-      LOG_INFO << " Thread priority set to: " <<  param.sched_priority
-               << " with status: " << status;
+      VLOG(1) << " Thread priority set to: " <<  param.sched_priority
+              << " with status: " << status;
   }
+#endif
 #endif
 }
 
@@ -65,19 +58,36 @@ Thread::~Thread() {
 }
 bool Thread::Start() {
   CHECK(thread_function_ != NULL);
-  const int error = pthread_create(&thread_, &attr_,
-                                   InternalThreadRun, thread_function_);
+  if (!IsJoinable() && !self_delete_) {
+      LOG_ERROR << " --> Non joinable thread w/o self delete.";
+  }
+  const int error = pthread_create(&thread_, &attr_, Thread::InternalRun, this);
   if (error != 0) {
       LOG_ERROR << " Thread starting failed with error: " << error;
   }
   return error == 0;
 }
 bool Thread::Join() {
-  void* status;
+  void* status = NULL;
   return pthread_join(thread_, &status) == 0;
 }
-bool Thread::SetJoinable() {
-  return pthread_attr_setdetachstate(&attr_, PTHREAD_CREATE_JOINABLE) == 0;
+bool Thread::SetJoinable(bool joinable) {
+  joinable_ = joinable;
+  return pthread_attr_setdetachstate(&attr_,
+          joinable ? PTHREAD_CREATE_JOINABLE : PTHREAD_CREATE_DETACHED) == 0;
+}
+bool Thread::IsJoinable() const {
+#if defined(HAVE_PTHREAD_ATTR_GETDETACHSTATE) && !defined(EMSCRIPTEN)
+    int state = 0;
+    const int error = pthread_attr_getdetachstate(&attr_, &state);
+    if (error != 0) {
+        LOG_ERROR << "pthread_attr_getdetachstate() failed, error: " << error;
+        return false;
+    }
+    return state == PTHREAD_CREATE_JOINABLE;
+#else
+    return joinable_;
+#endif
 }
 bool Thread::SetStackSize(size_t stacksize) {
 #ifdef NACL
@@ -100,4 +110,16 @@ bool Thread::Kill() {
 bool Thread::IsInThread() const {
   return thread_ == ::pthread_self();
 }
+void* Thread::InternalRun(void* param) {
+  Thread* th = reinterpret_cast<Thread*>(param);
+  th->thread_function_->Run();
+  if (!th->IsJoinable() && th->self_delete()) {
+    LOG_INFO << " Deleting non joinable self delete thread: " << th;
+    delete th;
+  }
+  pthread_exit(NULL);
+  return NULL;
 }
+
+}  // namespace thread
+}  // namespace whisper

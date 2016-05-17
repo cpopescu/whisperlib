@@ -1,3 +1,4 @@
+// -*- Mode:c++; c-basic-offset:2; indent-tabs-mode:nil; coding:utf-8 -*-
 // Copyright (c) 2009, Whispersoft s.r.l.
 // All rights reserved.
 //
@@ -32,16 +33,22 @@
 #ifndef __WHISPERLIB_BASE_CACHE_H__
 #define __WHISPERLIB_BASE_CACHE_H__
 
-#include <map>
-#include <list>
-#include <vector>
 #include <iostream>
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/strutil.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/timer.h>
-#include <whisperlib/io/ioutil.h>
+#include <list>
+#include <map>
+#include <string>
+#include <vector>
 
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/strutil.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/timer.h"
+#include "whisperlib/sync/mutex.h"
+// #include "whisperlib/io/ioutil.h"
+#include "whisperlib/base/hash.h"
+#include WHISPER_HASH_MAP_HEADER
+
+namespace whisper {
 namespace util {
 
 template <typename V>
@@ -74,40 +81,39 @@ public:
 
 public:
   class Item;
-  typedef map<K, Item*> ItemMap;
-  typedef map<uint64, Item*> ItemByUseMap;
-  typedef list<Item*> ItemList;
+  typedef hash_map<K, Item*> ItemMap;
+  typedef std::map<uint64, Item*> ItemByUseMap;
+  typedef std::list<Item*> ItemList;
   typedef typename ItemMap::iterator ItemMapIterator;
   typedef typename ItemList::iterator ItemListIterator;
 
 public:
   class Item {
   public:
-    Item(V value, ValueDestructor destructor, uint64 use, int64 expiration_ts)
-      : value_(value), destructor_(destructor), use_(use),
-        expiration_ts_(expiration_ts), items_it_(), items_by_exp_it_() {
+    Item(K key, V value, ValueDestructor destructor, uint64 use, int64 expiration_ts)
+      : key_(key), value_(value), destructor_(destructor), use_(use),
+        expiration_ts_(expiration_ts) {
     }
     ~Item() {
       if ( destructor_ != NULL ) {
         (*destructor_)(value_);
       }
     }
+    K key() const { return key_; }
     V value() const { return value_; }
     uint64 use() const { return use_; }
     int64 expiration_ts() const { return expiration_ts_; }
-    ItemMapIterator items_it() { return items_it_; }
     ItemListIterator items_by_exp_it() { return items_by_exp_it_; }
     void set_value(V value) { value_ = value; }
     void set_use(uint64 use) { use_ = use; }
-    void set_items_it(ItemMapIterator it) { items_it_ = it; }
     void set_items_by_exp_it(ItemListIterator it) { items_by_exp_it_ = it; }
-    K key() { return items_it_->first; }
-    string ToString() const {
-      ostringstream oss;
+    std::string ToString() const {
+      std::ostringstream oss;
       oss << "(use_: " << use_ << ", value_: " << value_ << ")";
       return oss.str();
     }
   private:
+    const K key_;
     const V value_;
     // this function is used to delete the 'value_' in destructor
     const ValueDestructor destructor_;
@@ -115,8 +121,6 @@ public:
     uint64 use_;
     // expiration time stamp (ms by CLOCK_MONOTONIC)
     const int64 expiration_ts_;
-    // points to the place of this item inside 'Cache::items_' map
-    ItemMapIterator items_it_;
     // points to the place of this item inside 'Cache::items_by_exp_' list
     ItemListIterator items_by_exp_it_;
   };
@@ -127,12 +131,13 @@ public:
   // destructor: a function which knows how to delete V type
   //             Use &DefaultValueDestructor() for default "delete" operator.
   //             Use NULL is you don't wish to destroy the values.
-  Cache(Algorithm algorithm, uint32 max_size, uint64 expiration_time_ms,
+  Cache(Algorithm algorithm, size_t max_size, int64 expiration_ms,
         ValueDestructor destructor, V null_value)
     : CacheBase(),
+      mutex_(true),  // reentrant
       algorithm_(algorithm),
       max_size_(max_size),
-      expiration_time_ms_(expiration_time_ms),
+      default_expiration_ms_(expiration_ms),
       destructor_(destructor),
       null_value_(null_value),
       items_(),
@@ -150,40 +155,49 @@ public:
   const char* algorithm_name() const {
     return AlgorithmName(algorithm());
   }
-  uint32 Size() const {
+  size_t Size() const {
+    synch::MutexLocker l(&mutex_);
     return items_.size();
   }
-  uint32 Capacity() const {
+  size_t Capacity() const {
     return max_size_;
   }
 
-  void Add(K key, V value) {
+  // expiration_ms: alternative expiration time. If -1, then use default_expiration_ms_.
+  void Add(K key, V value, int64 expiration_ms = -1) {
+    if (expiration_ms == -1) { expiration_ms = default_expiration_ms_; }
     ExpireSomeCache();
-    if ( Find(key) != NULL ) {
+
+    synch::MutexLocker l(&mutex_);
+    if ( FindLocked(key) != NULL ) {
       Del(key);
     }
     if ( items_.size() >= max_size_ ) {
-      DelByAlgorithm();
+      DelByAlgorithmLocked();
       if ( items_.size() >= max_size_ ) {
         return;
       }
     }
-    uint64 use = NextUse();
-    Item* item = new Item(value, destructor_, use,
-        timer::TicksMsec() + expiration_time_ms_);
-    pair<ItemMapIterator, bool> result = items_.insert(make_pair(key, item));
-    item->set_items_it(result.first);
+    const uint64 use = NextUse();
+    Item* const item = new Item(key, value, destructor_, use,
+                          timer::TicksMsec() + expiration_ms);
+    items_.insert(std::make_pair(key, item));
+    // item->set_items_it(result.first);
     items_by_exp_.push_back(item);
     item->set_items_by_exp_it(--items_by_exp_.end());
     items_by_use_[use] = item;
   }
   // Test if the given key is in cache.
   bool Has(K key) const {
-      return Find(key) != NULL;
+    synch::MutexLocker l(&mutex_);
+    return FindLocked(key) != NULL;
   }
   V Get(K key) {
     ExpireSomeCache();
-    Item* item = Find(key);
+    synch::MutexLocker l(&mutex_);
+    DCHECK_EQ(items_by_exp_.size(), items_.size());
+    DCHECK_EQ(items_by_use_.size(), items_.size());
+    Item* item = FindLocked(key);
     if ( item == NULL ) {
       return null_value_;
     }
@@ -192,27 +206,31 @@ public:
     items_by_use_[item->use()] = item;
     return item->value();
   }
-  void GetAll(map<K,V>* out) {
+  void GetAll(std::map<K,V>* out) {
     ExpireSomeCache();
-    for ( typename ItemMap::iterator it = items_.begin(); it != items_.end();
-          ++it ) {
+    synch::MutexLocker l(&mutex_);
+    for ( typename ItemMap::const_iterator it = items_.begin(); it != items_.end(); ++it ) {
       const K& key = it->first;
       const Item* item = it->second;
-      out->insert(make_pair(key, item->value()));
+      out->insert(std::make_pair(key, item->value()));
     }
   }
+#if 0
   // This method exists only for K == string.
   V GetPathBased(K key) {
+    synch::MutexLocker l(&mutex_);
     Item* item = io::FindPathBased(&items_, key);
     if ( item == NULL ) {
       return null_value_;
     }
     return item->value();
   }
+#endif
   // removes a value from the cache, without destroying it.
   V Pop(K key) {
     ExpireSomeCache();
-    Item* item = Find(key);
+    synch::MutexLocker l(&mutex_);
+    Item* const item = FindLocked(key);
     if ( item == NULL ) {
       return null_value_;
     }
@@ -222,25 +240,36 @@ public:
     return v;
   }
   void Del(K key) {
-    Item* item = Find(key);
+    synch::MutexLocker l(&mutex_);
+    Item* item = FindLocked(key);
     if ( item == NULL ) {
       return;
     }
-    DelItem(item);
+    DelItemLocked(item);
+  }
+
+  // Removes one value from the cache, freeing up some space, depending on the algorithm:
+  // LRU - removes the least recently used value
+  // MRU - removes the most recently used value
+  // RANDOM - removes a random value
+  void Del() {
+    synch::MutexLocker l(&mutex_);
+    DelByAlgorithmLocked();
   }
 
   void Clear() {
-    for ( typename ItemMap::iterator it = items_.begin();
+    synch::MutexLocker l(&mutex_);
+    for ( typename ItemMap::const_iterator it = items_.begin();
           it != items_.end(); ++it ) {
-      Item* item = it->second;
-      delete item;
+      delete it->second;
     }
     items_.clear();
     items_by_use_.clear();
   }
 
-  string ToString() const {
-    ostringstream oss;
+  std::string ToString() const {
+    synch::MutexLocker l(&mutex_);
+    std::ostringstream oss;
     oss << "Cache{algorithm_: " << algorithm_name()
         << ", max_size_: " << max_size_
         << ", items: ";
@@ -248,7 +277,7 @@ public:
           it != items_.end(); ++it ) {
       const K& key = it->first;
       const Item* item = it->second;
-      oss << endl << key << " -> " << item->ToString();
+      oss << std::endl << key << " -> " << item->ToString();
     }
     oss << "}";
     return oss.str();
@@ -256,23 +285,26 @@ public:
 
 private:
   uint64 NextUse() {
+    synch::MutexLocker l(&mutex_);
     return next_use_++;
   }
-  const Item* Find(K key) const {
+  const Item* FindLocked(K key) const {
     typename ItemMap::const_iterator it = items_.find(key);
     return it == items_.end() ? NULL : it->second;
   }
-  Item* Find(K key) {
+  Item* FindLocked(K key) {
+    synch::MutexLocker l(&mutex_);
     typename ItemMap::iterator it = items_.find(key);
     return it == items_.end() ? NULL : it->second;
   }
-  void DelItem(Item* item) {
-    items_.erase(item->items_it());
+  void DelItemLocked(Item* item) {
+    synch::MutexLocker l(&mutex_);
+    items_.erase(item->key());
     items_by_use_.erase(item->use());
     items_by_exp_.erase(item->items_by_exp_it());
     delete item;
   }
-  void DelByAlgorithm() {
+  void DelByAlgorithmLocked() {
     Item* to_del = NULL;
     if ( items_by_use_.empty() ) {
       return;
@@ -288,11 +320,12 @@ private:
         to_del = items_.begin()->second;
         break;
     };
-    DelItem(to_del);
+    DelItemLocked(to_del);
   }
   void ExpireSomeCache() {
     int64 now = timer::TicksMsec();
-    vector<Item*> to_del;
+    synch::MutexLocker l(&mutex_);
+    std::vector<Item*> to_del;
     for ( typename ItemList::iterator it = items_by_exp_.begin();
           it != items_by_exp_.end(); ++it ) {
       Item* item = *it;
@@ -303,14 +336,15 @@ private:
       to_del.push_back(item);
     }
     for ( uint32 i = 0; i < to_del.size(); i++ ) {
-      DelItem(to_del[i]);
+      DelItemLocked(to_del[i]);
     }
   }
 
 protected:
+  mutable synch::Mutex mutex_;
   const Algorithm algorithm_;
-  const uint32 max_size_;
-  const uint64 expiration_time_ms_;
+  const size_t max_size_;
+  const int64 default_expiration_ms_;
   ValueDestructor destructor_;
   V null_value_;
 
@@ -329,6 +363,7 @@ protected:
   uint64 next_use_;
 };
 
-}; // namespace util
+}  // namespace util
+}  // namespace whisper
 
 #endif   // __WHISPERLIB_BASE_CACHE_H__

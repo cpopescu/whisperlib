@@ -1,6 +1,7 @@
 AC_PREREQ([2.69])
 AC_INIT([whisperlib], [1.0])
 AM_INIT_AUTOMAKE([foreign color-tests dist-bzip2 parallel-tests subdir-objects])
+# m4_include([../../m4/ax_cxx_compile_stdcxx_11.m4])
 
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_HEADERS([whisperlib/base/core_config.h])
@@ -13,6 +14,7 @@ AC_PROG_LEX
 AC_PROG_RANLIB
 
 AC_LANG(C++)
+AX_CXX_COMPILE_STDCXX_11([noext], [mandatory])
 
 AX_PTHREAD([
   LIBS="$PTHREAD_LIBS $LIBS"

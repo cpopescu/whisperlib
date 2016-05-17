@@ -1,10 +1,9 @@
 
-#include <whisperlib/base/lru_cache.h>
-#include <whisperlib/base/system.h>
+#include "whisperlib/base/lru_cache.h"
+#include "whisperlib/base/system.h"
 void TestCache() {
     SimpleLruCachePolicy<int, int> policy;
-    synch::MutexPool pool(7);
-    LruCache<int, int> cache(2, policy, &pool);
+    LruCache<int, int> cache(2, policy);
     ref_counted<int>* val;
 
     CHECK(!cache.Get(0, &val));
@@ -63,7 +62,7 @@ void TestCache() {
 }
 
 int main(int argc, char* argv[]) {
-    common::Init(argc, argv);
+    whisper::common::Init(argc, argv);
     // TestCache();
     return 0;
 }

@@ -31,16 +31,18 @@
 
 #include <stdlib.h>
 
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/system.h>
-#include <whisperlib/base/gflags.h>
-#include <whisperlib/base/scoped_ptr.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/system.h"
+#include "whisperlib/base/gflags.h"
+#include "whisperlib/base/scoped_ptr.h"
 
-#include <whisperlib/net/timeouter.h>
-#include <whisperlib/net/address.h>
-#include <whisperlib/net/selector.h>
-#include <whisperlib/net/udp_connection.h>
+#include "whisperlib/net/timeouter.h"
+#include "whisperlib/net/address.h"
+#include "whisperlib/net/selector.h"
+#include "whisperlib/net/udp_connection.h"
+
+using namespace std;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -79,17 +81,17 @@ uint8* RandomData(uint32 min_size, uint32 max_size, uint32* out_size) {
     return NULL;
   }
   uint8* data = new uint8[size];
-  CHECK_NOT_NULL(data) << "Out of memory";
+  CHECK(data) << "Out of memory";
   for ( uint32 i = 0; i < size; i++ ) {
     data[i] = ::rand() % 255;
   }
   *out_size = size;
   return data;
 }
-bool operator==(const io::MemoryStream& ca, const io::MemoryStream& cb) {
+bool operator==(const whisper::io::MemoryStream& ca, const whisper::io::MemoryStream& cb) {
   return ca.Equals(cb);
 }
-bool operator!=(const io::MemoryStream& a, const io::MemoryStream& b) {
+bool operator!=(const whisper::io::MemoryStream& a, const whisper::io::MemoryStream& b) {
   return !(a==b);
 }
 
@@ -99,11 +101,11 @@ class EchoServer {
 public:
   static const char* ClassName() { return "SERVER"; };
 public:
-  EchoServer(net::Selector* selector)
+  EchoServer(whisper::net::Selector* selector)
     : selector_(selector),
       udp_connection_(NULL) {
     LOG_TEST << "++EchoServer";
-    selector_->RunInSelectLoop(NewCallback(this, &EchoServer::Start));
+    selector_->RunInSelectLoop(whisper::NewCallback(this, &EchoServer::Start));
   }
   virtual ~EchoServer() {
     LOG_TEST << "--EchoServer";
@@ -113,15 +115,15 @@ public:
 
   void Start() {
     CHECK_NULL(udp_connection_);
-    udp_connection_ = new net::UdpConnection(selector_);
-    udp_connection_->SetReadHandler(NewPermanentCallback(this,
+    udp_connection_ = new whisper::net::UdpConnection(selector_);
+    udp_connection_->SetReadHandler(whisper::NewPermanentCallback(this,
         &EchoServer::ConnectionReadHandler), true);
-    udp_connection_->SetWriteHandler(NewPermanentCallback(this,
+    udp_connection_->SetWriteHandler(whisper::NewPermanentCallback(this,
         &EchoServer::ConnectionWriteHandler), true);
-    udp_connection_->SetCloseHandler(NewPermanentCallback(this,
+    udp_connection_->SetCloseHandler(whisper::NewPermanentCallback(this,
         &EchoServer::ConnectionCloseHandler), true);
     // listen on FLAGS_server_port, receive from anywhere
-    if ( !udp_connection_->Open(net::HostPort(0, FLAGS_server_port)) ) {
+    if ( !udp_connection_->Open(whisper::net::HostPort(0, FLAGS_server_port)) ) {
       LOG_ERROR << " Failed to open udp_connection on port: " << FLAGS_server_port;
       Stop();
     }
@@ -131,11 +133,11 @@ public:
   }
   bool ConnectionReadHandler() {
     while ( true ) {
-      const net::UdpConnection::Datagram* p = udp_connection_->PopRecvDatagram();
+      const whisper::net::UdpConnection::Datagram* p = udp_connection_->PopRecvDatagram();
       if ( p == NULL ) {
         break;
       }
-      scoped_ptr<const net::UdpConnection::Datagram> auto_del_p(p);
+      scoped_ptr<const whisper::net::UdpConnection::Datagram> auto_del_p(p);
       LOG_TEST << "Message from " << p->addr_ << ", #" << p->data_.Size()
                << " bytes, replying with echo...";
       udp_connection_->SendDatagram(p->data_, p->addr_);
@@ -150,8 +152,8 @@ public:
     Stop();
   }
 private:
-  net::Selector* selector_;
-  net::UdpConnection* udp_connection_;
+  whisper::net::Selector* selector_;
+  whisper::net::UdpConnection* udp_connection_;
 };
 
 // This client sends FLAGS_num_packets_per_client UDP packets of random size
@@ -163,22 +165,22 @@ public:
   static const char* ClassName() { return "CLIENT"; };
   struct Packet {
     uint32 try_num_;
-    io::MemoryStream data_;
+    whisper::io::MemoryStream data_;
     Packet() : try_num_(0), data_() {}
   };
   // map: packet number -> packet
-  typedef map<uint32, Packet*> PacketMap;
+  typedef std::map<uint32, Packet*> PacketMap;
   static const int64 kRecvTimeoutIdBase = 1;
   static const int64 kRecvTimeoutValue = 5000;
   static const int64 kMsBetweenPackets = 1000;
   static const uint32 kRetransmission = 5;
   static const uint32 kPacketMinSize = 4; // must include a uint32 in every packet
-  static const uint32 kPacketMaxSize = net::UdpConnection::kDatagramMaxSize/10;
+  static const uint32 kPacketMaxSize = whisper::net::UdpConnection::kDatagramMaxSize/10;
 public:
-  EchoClient(net::Selector* selector)
+  EchoClient(whisper::net::Selector* selector)
     : selector_(selector),
       udp_connection_(NULL),
-      step_callback_(NewPermanentCallback(this, &EchoClient::Step)),
+      step_callback_(whisper::NewPermanentCallback(this, &EchoClient::Step)),
       server_addr_("127.0.0.1", FLAGS_server_port),
       packet_min_size_(kPacketMinSize),
       packet_max_size_(kPacketMaxSize),
@@ -188,9 +190,9 @@ public:
       next_packet_num_(0),
       sent_packets_(),
       timeouter_(selector,
-          NewPermanentCallback(this, &EchoClient::TimeoutHandler)) {
+          whisper::NewPermanentCallback(this, &EchoClient::TimeoutHandler)) {
     LOG_TEST << "++EchoClient";
-    selector_->RunInSelectLoop(NewCallback(this, &EchoClient::Start));
+    selector_->RunInSelectLoop(whisper::NewCallback(this, &EchoClient::Start));
   }
   virtual ~EchoClient() {
     LOG_TEST << "--EchoClient, " << (g_num_clients-1) << " clients left";
@@ -207,14 +209,14 @@ public:
   }
 
   void Start() {
-    udp_connection_ = new net::UdpConnection(selector_);
-    udp_connection_->SetReadHandler(NewPermanentCallback(this,
+    udp_connection_ = new whisper::net::UdpConnection(selector_);
+    udp_connection_->SetReadHandler(whisper::NewPermanentCallback(this,
         &EchoClient::ConnectionReadHandler), true);
-    udp_connection_->SetWriteHandler(NewPermanentCallback(this,
+    udp_connection_->SetWriteHandler(whisper::NewPermanentCallback(this,
         &EchoClient::ConnectionWriteHandler), true);
-    udp_connection_->SetCloseHandler(NewPermanentCallback(this,
+    udp_connection_->SetCloseHandler(whisper::NewPermanentCallback(this,
         &EchoClient::ConnectionCloseHandler), true);
-    if ( !udp_connection_->Open(net::HostPort(0, 0)) ) {
+    if ( !udp_connection_->Open(whisper::net::HostPort(0, 0)) ) {
       LOG_ERROR << " Failed to open udp_connection";
       Stop();
     }
@@ -234,10 +236,10 @@ public:
     uint8* data = RandomData(packet_min_size_ - 4, packet_max_size_ - 4, &size);
     scoped_ptr<uint8> auto_del_data(data);
     Packet* p = new Packet();
-    io::NumStreamer::WriteUInt32(&p->data_, next_packet_num_, common::kByteOrder);
+    whisper::io::NumStreamer::WriteUInt32(&p->data_, next_packet_num_, whisper::common::kByteOrder);
     p->data_.Write(data, size);
 
-    pair<PacketMap::iterator, bool> result =
+    std::pair<PacketMap::iterator, bool> result =
       sent_packets_.insert(make_pair(next_packet_num_, p));
     CHECK(result.second) << " Duplicate packet_num: " << next_packet_num_;
     next_packet_num_++;
@@ -245,9 +247,9 @@ public:
     *out_packet_num = next_packet_num_ - 1;
     return p;
   }
-  void VerifyPacket(const io::MemoryStream& reply, uint32* out_packet_num) {
+  void VerifyPacket(const whisper::io::MemoryStream& reply, uint32* out_packet_num) {
     CHECK_GE(reply.Size(), 4);
-    uint32 packet_num = io::NumStreamer::PeekUInt32(&reply, common::kByteOrder);
+    uint32 packet_num = whisper::io::NumStreamer::PeekUInt32(&reply, whisper::common::kByteOrder);
     PacketMap::iterator it = sent_packets_.find(packet_num);
     CHECK(it != sent_packets_.end()) << " Reply not found in sent packets: " << reply.DebugString();
     Packet* p = it->second;
@@ -299,11 +301,11 @@ public:
 
   bool ConnectionReadHandler() {
     while ( true ) {
-      const net::UdpConnection::Datagram* p = udp_connection_->PopRecvDatagram();
+      const whisper::net::UdpConnection::Datagram* p = udp_connection_->PopRecvDatagram();
       if ( p == NULL ) {
         break;
       }
-      scoped_ptr<const net::UdpConnection::Datagram> auto_del_p(p);
+      scoped_ptr<const whisper::net::UdpConnection::Datagram> auto_del_p(p);
       LOG_TEST << "Reply from " << p->addr_ << ", #" << p->data_.Size()
                << " bytes, still " << (packets_to_send_-next_packet_num_)
                << " packets to send, and " << sent_packets_.size()
@@ -325,11 +327,11 @@ public:
     LOG_TEST << "ConnectionCloseHandler(), err: " << err;
   }
 private:
-  net::Selector* selector_;
-  net::UdpConnection* udp_connection_;
-  Closure* step_callback_;
+  whisper::net::Selector* selector_;
+  whisper::net::UdpConnection* udp_connection_;
+  whisper::Closure* step_callback_;
 
-  const net::HostPort server_addr_;
+  const whisper::net::HostPort server_addr_;
 
   const uint32 packet_min_size_;
   const uint32 packet_max_size_;
@@ -344,12 +346,12 @@ private:
   // packets which were sent, and we're waiting reply for
   PacketMap sent_packets_;
 
-  net::Timeouter timeouter_;
+  whisper::net::Timeouter timeouter_;
 };
 
 int main(int argc, char ** argv) {
-  common::Init(argc, argv);
-  net::Selector selector;
+  whisper::common::Init(argc, argv);
+  whisper::net::Selector selector;
 
   if ( !FLAGS_just_client ) {
     new EchoServer(&selector); // auto deletes
@@ -364,5 +366,5 @@ int main(int argc, char ** argv) {
 
   selector.Loop();
   LOG_INFO << "Pass";
-  common::Exit(0);
+  whisper::common::Exit(0);
 }

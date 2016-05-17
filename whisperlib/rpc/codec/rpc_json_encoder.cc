@@ -33,6 +33,7 @@
 #include "whisperlib/base/strutil.h"
 #include "whisperlib/rpc/codec/rpc_json_encoder.h"
 
+namespace whisper {
 namespace codec {
 
 void JsonEncoder::EncodeBody(const bool& obj) {
@@ -41,7 +42,7 @@ void JsonEncoder::EncodeBody(const bool& obj) {
   out_->Write(kBoolNames[(obj == false)]);
 }
 
-void JsonEncoder::EncodeBody(const string& obj) {
+void JsonEncoder::EncodeBody(const std::string& obj) {
   out_->Write(strutil::StringPrintf(
                   "\"%s\"",
                   strutil::JsonStrEscape(obj.c_str(), obj.size()).c_str()));
@@ -52,4 +53,5 @@ void JsonEncoder::EncodeBody(const char* obj) {
                   strutil::JsonStrEscape(obj, strlen(obj)).c_str()));
 }
 
+}
 }

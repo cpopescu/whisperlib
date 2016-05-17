@@ -33,12 +33,15 @@
 // poll - most portable, epoll - great for linux, kevents - great for bsd
 //
 
-#include <whisperlib/base/core_errno.h>
-#include <whisperlib/net/selector_base.h>
-#include <whisperlib/net/selector.h>
+#include "whisperlib/base/core_errno.h"
+#include "whisperlib/net/selector_base.h"
+#include "whisperlib/net/selector.h"
 #include <unistd.h>
 #include <algorithm>
 
+using namespace std;
+
+namespace whisper {
 namespace net {
 
 //////////////////////////////////////////////////////////////////////
@@ -70,9 +73,9 @@ bool SelectorBase::Add(int fd, void* user_data, int32 desires) {
   epoll_event event = { static_cast<unsigned int>(DesiresToEpollEvents(desires)), };
   event.data.ptr = user_data;
 
-  DLOG_INFO << "  Adding to epoll: " << fd;
+  DVLOG(1) << "  Adding to epoll: " << fd;
   if ( epoll_ctl(epfd_, EPOLL_CTL_ADD, fd, &event) < 0 ) {
-    LOG_ERROR  << "System error on epoll_ctl: "
+    LOG_WARN << "System error on epoll_ctl: "
                << GetLastSystemErrorDescription()
                << " for events: " << hex << event.events << dec;
     return false;
@@ -88,7 +91,7 @@ bool SelectorBase::Update(int fd, void* user_data, int32 desires) {
   event.data.ptr = user_data;
 
   if ( epoll_ctl(epfd_, EPOLL_CTL_MOD, fd, &event) ) {
-    LOG_ERROR << "Error in epoll_ctl: "  << GetLastSystemErrorDescription();
+    LOG_WARN << "Error in epoll_ctl: "  << GetLastSystemErrorDescription();
     return false;
   }
   return true;
@@ -99,9 +102,9 @@ bool SelectorBase::Delete(int fd) {
     return true;
   }
   epoll_event event = { 0, };
-  DLOG_INFO << "  Removing from epoll: " << fd;
+  DVLOG(1) << "  Removing from epoll: " << fd;
   if ( epoll_ctl(epfd_, EPOLL_CTL_DEL, fd, &event) < 0 ) {
-    LOG_ERROR  << "System error on epoll_ctl: "
+    LOG_WARN  << "System error on epoll_ctl: "
                << GetLastSystemErrorDescription()
                << " for fd: " << fd;
     return false;
@@ -126,7 +129,7 @@ bool SelectorBase::LoopStep(int32 timeout_in_ms,
   const int num_events = epoll_wait(epfd_, events_, max_events_per_step_,
                                     timeout_in_ms);
   if ( num_events == -1 && errno != EINTR ) {
-    LOG_ERROR << "epoll_wait() error: " << GetLastSystemErrorDescription();
+    LOG_WARN << "epoll_wait() error: " << GetLastSystemErrorDescription();
     return false;
   }
   for ( int i = 0; i < num_events; ++i ) {
@@ -171,7 +174,7 @@ bool SelectorBase::Add(int fd, void* user_data, int32 desires) {
     return true;
   }
   if (fds_size_ >= kMaxFds) {
-    LOG_ERROR << " Too many fds too listen to in poll";
+    LOG_WARN << " Too many fds too listen to in poll";
     return false;
   }
   fds_[fds_size_].fd = fd;
@@ -188,7 +191,7 @@ bool SelectorBase::Update(int fd, void* user_data, int32 desires) {
   }
   const DataMap::iterator it = fd_data_.find(fd);
   if (it == fd_data_.end()) {
-    LOG_ERROR << "Cannot find poll struct for: " << fd;
+    LOG_WARN << "Cannot find poll struct for: " << fd;
     return false;
   }
   const size_t index = it->second.first;
@@ -202,7 +205,7 @@ bool SelectorBase::Delete(int fd) {
   }
   const DataMap::iterator it = fd_data_.find(fd);
   if (it == fd_data_.end()) {
-    LOG_ERROR << "Cannot find poll struct for: " << fd;
+    LOG_WARN << "Cannot find poll struct for: " << fd;
     return false;
   }
  const size_t index = it->second.first;
@@ -253,7 +256,7 @@ bool SelectorBase::LoopStep(int32 timeout_in_ms,
   Compact();
   int num_events = poll(fds_, fds_size_, timeout_in_ms);
   if ( num_events == -1 && errno != EINTR ) {
-    LOG_ERROR << "epoll_wait() error: " << GetLastSystemErrorDescription();
+    LOG_WARN << "epoll_wait() error: " << GetLastSystemErrorDescription();
     return false;
   }
   for ( int i = 0; i < fds_size_ && num_events > 0 ; ++i ) {
@@ -262,7 +265,7 @@ bool SelectorBase::LoopStep(int32 timeout_in_ms,
       continue;
     }
     int32 desire = 0;
-    if ( event.revents & (POLLERR | POLLHUP | POLLRDHUP | POLLNVAL) ) {
+    if ( event.revents & (POLLERR | POLLHUP | POLLRDHUP) ) {
       desire |= Selector::kWantError;
     }
     if ( event.revents & (POLLIN | POLLPRI) ) {
@@ -285,4 +288,5 @@ bool SelectorBase::LoopStep(int32 timeout_in_ms,
 
 #endif
 
+}
 }

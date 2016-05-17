@@ -31,6 +31,7 @@
 #include <windows.h>
 #endif
 
+#include <string>
 #include <algorithm>
 
 #include "whisperlib/url/google-url/gurl.h"
@@ -39,6 +40,8 @@
 #include "whisperlib/url/google-url/url_canon_stdstring.h"
 #include "whisperlib/url/google-url/url_util.h"
 #include "whisperlib/url/google-url/url_canon_internal.h"
+
+using std::string;
 
 namespace {
 

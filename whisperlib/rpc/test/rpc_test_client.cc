@@ -1,19 +1,19 @@
-// Copyright: 1618labs, Inc. 2011 onwards.
+// Copyright: Urban Engines, Inc. 2011 onwards.
 // All rights reserved.
 
 
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/system.h>
-#include <whisperlib/base/gflags.h>
-#include <whisperlib/net/selector.h>
-#include <whisperlib/http/failsafe_http_client.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/system.h"
+#include "whisperlib/base/gflags.h"
+#include "whisperlib/net/selector.h"
+#include "whisperlib/http/failsafe_http_client.h"
 
-#include <whisperlib/rpc/test/rpc_test_proto.pb.h>
-#include <whisperlib/rpc/rpc_http_client.h>
-#include <whisperlib/rpc/rpc_controller.h>
-#include <whisperlib/http/http_server_protocol.h>
-#include <whisperlib/net/selector.h>
+#include "whisperlib/rpc/test/rpc_test_proto.pb.h"
+#include "whisperlib/rpc/rpc_http_client.h"
+#include "whisperlib/rpc/rpc_controller.h"
+#include "whisperlib/http/http_server_protocol.h"
+#include "whisperlib/net/selector.h"
 
 DEFINE_string(servers, "",
               "Rpc servers to use");
@@ -22,6 +22,7 @@ DEFINE_int32(num_requests, 1,
 DEFINE_int64(min_delay_ms, 100, "Delay the response by at least this time");
 DEFINE_int64(max_delay_ms, 100 + 256, "Delay the response by at most this time");
 
+using namespace whisper;
 
 http::BaseClientConnection* CreateConnection(net::Selector* selector,
                                              net::NetFactory* net_factory,
@@ -36,7 +37,7 @@ Closure* send_callback;
 struct ReqData {
     ReqData(Closure* end_run, int n)
         : end_run_(end_run),
-          done_(::google::protobuf::NewCallback(this, &ReqData::DoneCallback)) {
+          done_(::google::protobuf::internal::NewCallback(this, &ReqData::DoneCallback)) {
         request_.set_x(n);
         request_.set_y(2 * n);
     }

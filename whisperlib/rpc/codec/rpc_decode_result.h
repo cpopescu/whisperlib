@@ -32,6 +32,7 @@
 #ifndef __NET_RPC_LIB_CODEC_RPC_DECODE_RESULT_H__
 #define __NET_RPC_LIB_CODEC_RPC_DECODE_RESULT_H__
 
+namespace whisper {
 namespace codec {
 
 enum DECODE_RESULT {
@@ -39,6 +40,8 @@ enum DECODE_RESULT {
   DECODE_RESULT_NOT_ENOUGH_DATA,
   DECODE_RESULT_ERROR,
 };
+
+}
 }
 
 #endif  // __NET_RPC_LIB_CODEC_RPC_DECODE_RESULT_H__

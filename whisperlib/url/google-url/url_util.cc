@@ -28,10 +28,10 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <string.h>
+#include <mutex>
 #include <vector>
 
 #include "whisperlib/url/google-url/url_util.h"
-
 #include "whisperlib/base/log.h"
 
 namespace url_util {
@@ -56,14 +56,16 @@ inline bool DoLowerCaseEqualsASCII(Iter a_begin, Iter a_end, const char* b) {
 
 const char kFileScheme[] = "file";  // Used in a number of places.
 
-const int kNumStandardURLSchemes = 5;
-const char* kStandardURLSchemes[kNumStandardURLSchemes] = {
+const char* kStandardURLSchemes[] = {
   "http",
   "https",
   kFileScheme,  // Yes, file urls can have a hostname!
   "ftp",
   "gopher",
 };
+const int kNumStandardURLSchemes = NUMBEROF(kStandardURLSchemes);
+
+std::mutex schemes_mutex_;
 
 // List of the currently installed standard schemes. This list is lazily
 // initialized by InitStandardSchemes and is leaked on shutdown to prevent
@@ -73,6 +75,9 @@ std::vector<const char*>* standard_schemes = NULL;
 // Ensures that the standard_schemes list is initialized, does nothing if it
 // already has values.
 void InitStandardSchemes() {
+  if (standard_schemes)
+    return;
+  std::lock_guard<std::mutex> l(schemes_mutex_);
   if (standard_schemes)
     return;
   standard_schemes = new std::vector<const char*>;

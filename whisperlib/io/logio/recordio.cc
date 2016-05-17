@@ -29,12 +29,14 @@
 //
 // Author: Catalin Popescu
 
-#include <whisperlib/io/logio/recordio.h>
+#include "whisperlib/io/logio/recordio.h"
+
+using namespace std;
 
 #define LOG_REC if ( true ); else DLOG_INFO
 
 namespace {
-int32 ComputeCRC(io::MemoryStream* buf) {
+int32 ComputeCRC(whisper::io::MemoryStream* buf) {
   int32 crc = static_cast<int32>(crc32(0L, Z_NULL, 0));
   buf->MarkerSet();
   while ( !buf->IsEmpty() ) {
@@ -48,13 +50,14 @@ int32 ComputeCRC(io::MemoryStream* buf) {
 }
 char* NewZeroes(int32 size) {
   char* p = new char[size];
-  ::bzero(p, size);
+  memset(p, 0, size);
   return p;
 }
 }
 
 // COMPILE_ASSERT(sizeof(uLong) == sizeof(int32),  zlib_uLong_should_be_32_bit);
 
+namespace whisper {
 namespace io {
 
 //////////////////////////////////////////////////////////////////////
@@ -372,4 +375,5 @@ RecordReader::ReadResult RecordReader::ReadRecord(io::MemoryStream* in,
   LOG_FATAL << "Unreachable code";
   return READ_OK;
 }
-}
+}  // namespace io
+}  // namespace whisper

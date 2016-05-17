@@ -32,10 +32,11 @@
 #include <sys/types.h>
 #include "whisperlib/io/file/fd_input_stream.h"
 
+namespace whisper {
 namespace io {
 
 FDInputStream::FDInputStream(FileDescriptor* fd)
-  : InputStream(NULL, NULL),
+  : InputStream(),
     fd_(fd) {
 }
 FDInputStream::~FDInputStream() {
@@ -50,4 +51,5 @@ int64 FDInputStream::Skip(int64 len) {
 bool FDInputStream::IsEos() const {
   return fd_->is_eof();
 }
-}
+}  // namespace io
+}  // namespace whisper

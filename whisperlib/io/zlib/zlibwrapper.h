@@ -36,16 +36,37 @@
 #define __WHISPERLIB_IO_ZLIB_ZLIBWRAPPER_H__
 
 #include <zlib.h>
-#include <whisperlib/io/buffer/memory_stream.h>
+#include "whisperlib/io/buffer/memory_stream.h"
+
+namespace whisper {
+namespace re {
+class RE;
+}
 
 namespace io {
+class Compressor {
+public:
+    Compressor() {
+    }
+    virtual ~Compressor() {
+    }
+    virtual bool Compress(io::MemoryStream* in, io::MemoryStream* out) = 0;
+};
+class Decompressor {
+public:
+    Decompressor() {
+    }
+    virtual ~Decompressor() {
+    }
+    virtual bool Decompress(io::MemoryStream* in, io::MemoryStream* out) = 0;
+};
 
 //////////////////////////////////////////////////////////////////////
 
-class ZlibDeflateWrapper {
+class ZlibDeflateWrapper : public Compressor {
  public:
   explicit ZlibDeflateWrapper(int compress_level = Z_DEFAULT_COMPRESSION);
-  ~ZlibDeflateWrapper();
+  virtual ~ZlibDeflateWrapper();
   void Clear();
   // Compresses *at most* *size bytes from in and writes the result to out.
   // Updates *size to reflect the leftover bytes (*size -= in->Size())
@@ -67,6 +88,10 @@ class ZlibDeflateWrapper {
   // Returns true on success and false on some error.
   bool Deflate(const char* in, int in_size, io::MemoryStream* out);
 
+  virtual bool Compress(io::MemoryStream* in, io::MemoryStream* out) {
+      return Deflate(in, out);
+  }
+
  private:
   bool Initialize();
   const int compress_level_;
@@ -78,10 +103,10 @@ class ZlibDeflateWrapper {
 
 //////////////////////////////////////////////////////////////////////
 
-class ZlibInflateWrapper {
+class ZlibInflateWrapper : public Decompressor {
  public:
   ZlibInflateWrapper();
-  ~ZlibInflateWrapper();
+  virtual ~ZlibInflateWrapper();
   void Clear();
 
   // Decompresses the entire content of in and appends it to out.
@@ -105,6 +130,11 @@ class ZlibInflateWrapper {
   //   -- anything else - some sort of error..
   int InflateSize(io::MemoryStream* in, io::MemoryStream* out,
                   int32* size = NULL);
+
+  bool Decompress(io::MemoryStream* in, io::MemoryStream* out) {
+      const int err = Inflate(in, out);
+      return (err == Z_OK || err == Z_STREAM_END);
+  }
  private:
   bool initialized_;
   z_stream strm_;
@@ -114,10 +144,10 @@ class ZlibInflateWrapper {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class ZlibGzipEncodeWrapper {
+class ZlibGzipEncodeWrapper : public Compressor {
  public:
   explicit ZlibGzipEncodeWrapper(int compress_level = Z_DEFAULT_COMPRESSION);
-  ~ZlibGzipEncodeWrapper();
+  virtual ~ZlibGzipEncodeWrapper();
 
   // Compresses the entire content of in and appends it to out. It
   // writes a new gzip header, computes size and crc
@@ -127,6 +157,11 @@ class ZlibGzipEncodeWrapper {
   void BeginEncoding(io::MemoryStream* out);
   void ContinueEncoding(io::MemoryStream* in, io::MemoryStream* out);
   void EndEncoding(io::MemoryStream* out);
+
+  virtual bool Compress(io::MemoryStream* in, io::MemoryStream* out) {
+      Encode(in, out);
+      return true;
+  }
 
  private:
   void InitStream();
@@ -140,7 +175,7 @@ class ZlibGzipEncodeWrapper {
 
 //////////////////////////////////////////////////////////////////////
 
-class ZlibGzipDecodeWrapper {
+class ZlibGzipDecodeWrapper : public Decompressor {
  public:
   explicit ZlibGzipDecodeWrapper(bool strict_trailer_checking = true);
   ~ZlibGzipDecodeWrapper();
@@ -152,6 +187,10 @@ class ZlibGzipDecodeWrapper {
   //      was decompressed ok
   //   -- anything else - some sort of error..
   int Decode(io::MemoryStream* in, io::MemoryStream* out);
+
+  bool Decompress(io::MemoryStream* in, io::MemoryStream* out) {
+      return Decode(in, out) == Z_OK;
+  }
 
   // Basically if we have less then this, there is no data..
   static const int kMinGzipDataSize = 18;
@@ -177,6 +216,43 @@ class ZlibGzipDecodeWrapper {
 
   DISALLOW_EVIL_CONSTRUCTORS(ZlibGzipDecodeWrapper);
 };
-}
+
+static const int32 kCompressMaxChunkSize = 4 << 20;
+
+/**
+ * Compresses the files under a directory.
+ * @param compressor - knowns how to compress buffers.
+ * @param input_name - name of the file or directory to compress. Please note that
+ *   the last '/' counts for directories: E.g
+ *   If you specify a/b/ to compress, which has inside f1 and
+ *   f2, when we @see InflateToDir to, say a directory c/d/ we will create
+ *   c/d/b/f1 and c/d/b/f2. However, if you specify a/b for dir_name when deflating
+ *   we will create c/d/f1 and c/d/f2
+ * @param regex - when not null we filter the file names to compress using this.
+ * @param append - when append to an already existing archive.
+ * @param recursive - find files under dir_name recursively.
+ * @param chunk_size - chunk the writes at this size (max 4Mb).
+ * @return true on success.
+ */
+bool DeflateDir(Compressor* compressor,
+                const std::string& dir_name,
+                const re::RE* regex,
+                const std::string& file_name,
+                bool append, bool recursive,
+                int32 chunk_size = kCompressMaxChunkSize);
+
+/** Decompresses an archive created w/ DeflateDir.
+ * @param decompressor - knows to decompress buffers compressed by its pairing
+ *   compressor, that was used in DeflateDir.
+ * @param file_name - compressed archive (created w/ DeflateDir)
+ * @param dir_name - decompress to this directory.
+ * @return true on success.
+ */
+bool InflateToDir(Decompressor* decompressor,
+                  const std::string& file_name,
+                  const std::string& dir_name);
+
+}  // namespace io
+}  // namespace whisper
 
 #endif  // __WHISPERLIB_IO_ZLIB_ZLIBWRAPPER_H__

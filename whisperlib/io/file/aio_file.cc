@@ -50,11 +50,10 @@ DEFINE_int32(max_concurrent_aio_ops,
 #undef __AIO_DEEP_LOG__
 
 // Helper Namespace
-
+using namespace whisper;
 namespace {
 
 static const int32 kMaxConcurrentRequests = 65536;
-
 
 // The guy which perfoms the actual reads - run this in a thread -
 void MainAioProcessThread(
@@ -62,7 +61,7 @@ void MainAioProcessThread(
   int lio_opcode,
   io::AioManager::ReqQueue* reqs,
   io::AioManager::ReqQueue* resps) {
-  util::FreeList<struct aiocb> aio_freelist(kMaxConcurrentRequests);
+  util::SimpleFreeList<struct aiocb> aio_freelist(kMaxConcurrentRequests);
   struct aiocb* ops[kMaxConcurrentRequests];
   io::AioManager::Request* crt_reqs[kMaxConcurrentRequests];
 
@@ -151,6 +150,7 @@ void MainAioProcessThread(
 
 //////////////////////////////////////////////////////////////////////
 
+namespace whisper {
 namespace io {
 
 struct aiocb* AioManager::Request::PrepareAioCb(struct aiocb* p,
@@ -184,7 +184,7 @@ AioManager::AioManager(const char* name, net::Selector* selector)
                                      lio_opcode,
                                      request_queues_[ndx],
                                      &response_queue_);
-      aio_threads_[ndx] = new thread::Thread(c);
+      aio_threads_[ndx] = new ::thread::Thread(c);
       // 1MB - over the minimum ..
       CHECK(aio_threads_[ndx]->SetStackSize(PTHREAD_STACK_MIN + (1 << 20)));
       CHECK(aio_threads_[ndx]->SetJoinable());
@@ -235,4 +235,5 @@ void AioManager::Write(Request* req) {
   const int32 ndx = OP_WRITE * kNumBlockTypes + SizePool(req->size_);
   request_queues_[ndx]->Put(req);
 }
-}
+}  // namespace io
+}  // namespace whisper

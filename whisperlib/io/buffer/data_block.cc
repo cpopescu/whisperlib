@@ -32,15 +32,16 @@
 #include "whisperlib/base/log.h"
 #include "whisperlib/io/buffer/data_block.h"
 
+using namespace std;
+
+namespace whisper {
 namespace io {
 
 //////////////////////////////////////////////////////////////////////
 //
 
-synch::MutexPool DataBlock::mutex_pool_(DataBlock::kNumMutexes);
-
 DataBlock::DataBlock(BlockSize buffer_size)
-    : RefCounted(mutex_pool_.GetMutex(this)),
+    : RefCounted(),
       writable_buffer_(new char[buffer_size]),
       readable_buffer_(writable_buffer_),
       alloc_block_(NULL),
@@ -55,7 +56,7 @@ DataBlock::DataBlock(const char* buffer,
                      BlockSize size,
                      Closure* disposer,
                      DataBlock* alloc_block)
-    : RefCounted(mutex_pool_.GetMutex(this)),
+    : RefCounted(),
       writable_buffer_(NULL),
       readable_buffer_(buffer),
       alloc_block_(alloc_block),
@@ -414,4 +415,6 @@ void DataBlockPointer::ReadToString(string* s) {
   CHECK_EQ(ReadStringData(s, len), len);
 }
 //////////////////////////////////////////////////////////////////////
-}
+
+}  // namespace io
+}  // namespace whisper

@@ -35,6 +35,7 @@
 #include <fcntl.h>
 #include "whisperlib/base/core_errno.h"
 
+namespace whisper {
 namespace net {
 
 SelectableFilereader::SelectableFilereader(Selector* selector, int32 block_size)
@@ -89,7 +90,7 @@ bool SelectableFilereader::InitializeFd(int fd,
   return false;
 }
 
-bool SelectableFilereader::HandleReadEvent(const SelectorEventData& event) {
+bool SelectableFilereader::HandleReadEvent(const SelectorEventData& /*event*/) {
   if (fd_ == INVALID_FD_VALUE) {
     return false;
   }
@@ -107,11 +108,11 @@ bool SelectableFilereader::HandleReadEvent(const SelectorEventData& event) {
   return true;
 }
 
-bool SelectableFilereader::HandleWriteEvent(const SelectorEventData& event) {
+bool SelectableFilereader::HandleWriteEvent(const SelectorEventData& /*event*/) {
   LOG_FATAL << " SelectableFilereader should not have write enabled !!";
   return true;
 }
-bool SelectableFilereader::HandleErrorEvent(const SelectorEventData& event) {
+bool SelectableFilereader::HandleErrorEvent(const SelectorEventData& /*event*/) {
   selector_->EnableReadCallback(this, false);
   Close();
   return false;
@@ -128,4 +129,6 @@ void SelectableFilereader::Close() {
     close_callback_ = NULL;
   }
 }
-}
+
+}  // namespace net
+}  // namespace whisper

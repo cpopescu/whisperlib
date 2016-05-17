@@ -32,7 +32,7 @@
 #include <memory.h>
 #include <stdlib.h>
 
-#include <whisperlib/url/google-url/url_parse.h>
+#include "whisperlib/url/google-url/url_parse.h"
 
 namespace url_canon {
 

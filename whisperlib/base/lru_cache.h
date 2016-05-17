@@ -28,12 +28,50 @@
 #ifndef __UTIL_LRU_CACHE_H__
 #define __UTIL_LRU_CACHE_H__
 
-#include <whisperlib/base/types.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/hash.h"
+#include "whisperlib/base/hash.h"
 #include WHISPER_HASH_MAP_HEADER
 #include <list>
-#include <whisperlib/sync/mutex.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/ref_counted.h>
+#include "whisperlib/sync/mutex.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/ref_counted.h"
+
+#ifdef __has_include
+ #if __has_include(<have_includes.h>)
+  #include <have_includes.h>
+ #elif !defined(HAVE_PTHREAD) && __has_include(<pthread.h>)
+  #define HAVE_PTHREAD 1
+  #define HAVE_PTHREAD_H
+  #define HAVE_PTHREAD_RWLOCK 1
+ #endif
+#endif
+
+#if defined(CPP14_SHARED_MUTEX) || (defined(HAVE_PTHREAD_RWLOCK) && HAVE_PTHREAD_RWLOCK == 1)
+#define LRU_USE_RW_MUTEX
+#endif
+
+#ifdef LRU_USE_RW_MUTEX
+#include "ext/base/mutex.h"
+#define LRU_R_LOCKER(m) base::ReaderLock l(m)
+#define LRU_W_LOCKER(m) base::WriterLock l(m)
+#define LRU_R_LOCK(m) (m).LockR()
+#define LRU_W_LOCK(m) (m).LockW()
+#define LRU_UNLOCK(m) (m).Unlock()
+#define LRU_LIST_LOCK(m) (m).Lock()
+#define LRU_LIST_UNLOCK(m) (m).Unlock()
+typedef base::RwMutex LruLockType;
+#else
+#define LRU_R_LOCKER(m) whisper::synch::SpinLocker l(&m)
+#define LRU_W_LOCKER(m) whisper::synch::SpinLocker l(&m)
+#define LRU_R_LOCK(m) (m).Lock()
+#define LRU_W_LOCK(m) (m).Lock()
+#define LRU_UNLOCK(m) (m).Unlock()
+#define LRU_LIST_LOCK(m)
+#define LRU_LIST_UNLOCK(m)
+typedef whisper::synch::Spin LruLockType;
+#endif
+
 
 template<class K, class V>
 class LruCachePolicy {
@@ -54,7 +92,7 @@ public:
      * @param evicted true if the entry is being removed to make space, false
      *     if the removal was caused by a {@link #put} or {@link #remove}.
      */
-    virtual void EntryRemoved(bool evicted, const K& key,
+    virtual void EntryRemoved(bool /*evicted*/, const K& /*key*/,
                               ref_counted<V>* oldValue) const {
         oldValue->DecRef();
     }
@@ -96,8 +134,8 @@ public:
     /**
      * Creates a ref counted for the provided key / value, w/ value incremented.
      */
-    virtual ref_counted<V>* CreateRef(const K& key, V* value, synch::MutexPool* pool) const {
-        ref_counted<V>* const ref = new ref_counted<V>(value, pool->GetMutex(value));
+    virtual ref_counted<V>* CreateRef(const K& /*key*/, V* value) const {
+        ref_counted<V>* const ref = new ref_counted<V>(value);
         ref->IncRef();
         return ref;
     }
@@ -108,29 +146,30 @@ class SimpleLruCachePolicy : public LruCachePolicy<K, V> {
 public:
     SimpleLruCachePolicy() {
     }
-    virtual bool Create(const K& key, V** value) const {
+    virtual bool Create(const K& /*key*/, V** /*value*/) const {
         return false;
     }
-    virtual int SizeOf(const K& key, const V* value) const {
+    virtual int SizeOf(const K& /*key*/, const V* /*value*/) const {
         return 1;
     }
 };
 
 template<class K, class V>
 class LruCache {
-    typedef hash_map< K, pair<ref_counted<V>*, typename list<K>::iterator> > Map;
-
   public:
+    typedef hash_map< K, std::pair<ref_counted<V>*, typename std::list<K>::iterator> > Map;
+
     /**
      * @param max_size for caches that do not override {@link #sizeOf}, this is
      *     the maximum number of entries in the cache. For all other caches,
      *     this is the maximum sum of the sizes of the entries in this cache.
      */
-    LruCache(int64 max_size, const LruCachePolicy<K, V>& policy, synch::MutexPool* pool):
+    LruCache(int64 max_size, const LruCachePolicy<K, V>& policy,
+             bool allow_overshoot = false):
         policy_(policy),
-        pool_(pool),
         size_(0),
         max_size_(max_size),
+        allow_overshoot_(allow_overshoot),
         put_count_(0),
         create_count_(0),
         eviction_count_(0),
@@ -147,7 +186,7 @@ class LruCache {
      * affecting the use count.
      */
     bool HasKey(const K& key) const {
-        synch::MutexLocker l(&mutex_);
+        LRU_R_LOCKER(mutex_);
         typename Map::const_iterator it = map_.find(key);
         return it != map_.end();
     }
@@ -156,7 +195,7 @@ class LruCache {
      * Adjust the size of a key - if it got modified while in cache
      */
     bool AdjustSize(const K& key, int delta) {
-        synch::MutexLocker l(&mutex_);
+        LRU_W_LOCKER(mutex_);
         typename Map::const_iterator it = map_.find(key);
         if (it == map_.end()) {
             return false;
@@ -173,20 +212,25 @@ class LruCache {
      * be created.
      */
     bool Get(const K& key, ref_counted<V>** ret_val) {
-        mutex_.Lock();
+        LRU_R_LOCK(mutex_);
         typename Map::iterator it = map_.find(key);
         if (it != map_.end()) {
             *ret_val = it->second.first;
+            LRU_LIST_LOCK(list_mutex_);
             list_.erase(it->second.second);
             it->second.second = list_.insert(list_.begin(), key);
-
+            LRU_LIST_UNLOCK(list_mutex_);
             ++hit_count_;
             (*ret_val)->IncRef();
-            mutex_.Unlock();
+            LRU_UNLOCK(mutex_);
             return true;
         }
         ++miss_count_;
-        mutex_.Unlock();
+        LRU_UNLOCK(mutex_);
+
+        if (allow_overshoot_) {
+            TrimToSize(max_size_);
+        }
 
         /*
          * Attempt to create a value. This may take a long time, and the map
@@ -200,7 +244,7 @@ class LruCache {
         }
 
         bool createdDumped = false;;
-        mutex_.Lock();
+        LRU_W_LOCK(mutex_);
         ++create_count_;
         it = map_.find(key);
         if (it != map_.end()) {
@@ -209,19 +253,22 @@ class LruCache {
             it->second.second = list_.insert(list_.begin(), key);
             createdDumped = true;
         } else {
-            typename list<K>::iterator it_key = list_.insert(list_.begin(), key);
-            ref_counted<V>* const ref = policy_.CreateRef(key, createdValue, pool_);
+            typename std::list<K>::iterator it_key;
+            it_key = list_.insert(list_.begin(), key);
+            ref_counted<V>* const ref = policy_.CreateRef(key, createdValue);
             *ret_val = ref;
-            map_.insert(make_pair(key, make_pair(ref, it_key)));
+            map_.insert(std::make_pair(key, make_pair(ref, it_key)));
             size_ += SafeSizeOf(key, createdValue);
         }
         (*ret_val)->IncRef();
-        mutex_.Unlock();
+        LRU_UNLOCK(mutex_);
 
         if (createdDumped) {
             policy_.Destroy(createdValue);
         } else {
-            TrimToSize(max_size_);
+            if (!allow_overshoot_) {
+                TrimToSize(max_size_);
+            }
         }
         return true;
     }
@@ -254,7 +301,11 @@ class LruCache {
             *added = NULL;
         }
 
-        mutex_.Lock();
+        if (allow_overshoot_) {
+            TrimToSize(max_size_);
+        }
+
+        LRU_W_LOCK(mutex_);
         ++put_count_;
         typename Map::iterator it = map_.find(key);
         *previous = NULL;
@@ -263,7 +314,7 @@ class LruCache {
             size_ -= SafeSizeOf(key, (*previous)->get());
             list_.erase(it->second.second);
             it->second.second = list_.insert(list_.begin(), key);
-            ref_counted<V>* const ref = policy_.CreateRef(key, value, pool_);
+            ref_counted<V>* const ref = policy_.CreateRef(key, value);
             if (added) {
                 ref->IncRef();
                 *added = ref;
@@ -271,9 +322,10 @@ class LruCache {
             it->second.first = ref;
             entry_removed = true;
         } else {
-            typename list<K>::iterator it_key = list_.insert(list_.begin(), key);
-            ref_counted<V>* const ref = policy_.CreateRef(key, value, pool_);
-            map_.insert(make_pair(key, make_pair(ref, it_key)));
+            typename std::list<K>::iterator it_key;
+            it_key = list_.insert(list_.begin(), key);
+            ref_counted<V>* const ref = policy_.CreateRef(key, value);
+            map_.insert(std::make_pair(key, std::make_pair(ref, it_key)));
             if (added) {
                 ref->IncRef();
                 *added = ref;
@@ -281,7 +333,7 @@ class LruCache {
         }
         size_ += SafeSizeOf(key, value);
 
-        mutex_.Unlock();
+        LRU_UNLOCK(mutex_);
 
         if (*previous) {
             (*previous)->IncRef();
@@ -289,7 +341,9 @@ class LruCache {
         if (entry_removed) {
             policy_.EntryRemoved(false, key, *previous);
         }
-        TrimToSize(max_size_);
+        if (!allow_overshoot_) {
+            TrimToSize(max_size_);
+        }
         return entry_removed;
     }
 
@@ -316,7 +370,7 @@ class LruCache {
     bool Remove(const K& key, ref_counted<V>** previous) {
         bool entry_removed = false;
         *previous = NULL;
-        mutex_.Lock();
+        LRU_W_LOCK(mutex_);
         typename Map::iterator it = map_.find(key);
         if (it != map_.end()) {
             *previous = it->second.first;
@@ -325,7 +379,7 @@ class LruCache {
             map_.erase(it);
             entry_removed = true;
         }
-        mutex_.Unlock();
+        LRU_UNLOCK(mutex_);
 
         if (*previous) {
             (*previous)->IncRef();
@@ -354,7 +408,7 @@ class LruCache {
      * the sizes of the entries in this cache.
      */
     int64 size() const {
-        synch::MutexLocker l(&mutex_);
+        LRU_R_LOCKER(mutex_);
         return size_;
     }
 
@@ -362,7 +416,7 @@ class LruCache {
      * Returns the number of elements in cache
      */
     size_t count() const {
-        synch::MutexLocker l(&mutex_);
+        LRU_R_LOCKER(mutex_);
         return map_.size();
     }
 
@@ -372,7 +426,7 @@ class LruCache {
      * maximum sum of the sizes of the entries in this cache.
      */
     int64 max_size() const {
-        synch::MutexLocker l(&mutex_);
+        LRU_R_LOCKER(mutex_);
         return max_size_;
     }
 
@@ -380,7 +434,7 @@ class LruCache {
      * Returns the number of times {@link #get} returned a value.
      */
     int64 hit_count() const {
-        synch::MutexLocker l(&mutex_);
+        LRU_R_LOCKER(mutex_);
         return hit_count_;
     }
 
@@ -389,7 +443,7 @@ class LruCache {
      * value to be created.
      */
     int64 miss_count() const {
-        synch::MutexLocker l(&mutex_);
+        LRU_R_LOCKER(mutex_);
         return miss_count_;
     }
 
@@ -397,7 +451,7 @@ class LruCache {
      * Returns the number of times {@link #create(Object)} returned a value.
      */
     int64 create_count() const {
-        synch::MutexLocker l(&mutex_);
+        LRU_R_LOCKER(mutex_);
         return create_count_;
     }
 
@@ -405,7 +459,7 @@ class LruCache {
      * Returns the number of times {@link #put} was called.
      */
     int64 put_count() const {
-        synch::MutexLocker l(&mutex_);
+        LRU_R_LOCKER(mutex_);
         return put_count_;
     }
 
@@ -413,11 +467,27 @@ class LruCache {
      * Returns the number of values that have been evicted.
      */
     int eviction_count() const {
-        synch::MutexLocker l(&mutex_);
+        LRU_R_LOCKER(mutex_);
         return eviction_count_;
     }
 
-  private:
+    /**
+     * Is the cache allows overshooting, this is true if the cache is full.
+     */
+    bool is_full() const {
+        LRU_R_LOCKER(mutex_);
+        return size_ >= max_size_;
+    }
+
+    void lock_r() const {
+        LRU_R_LOCK(mutex_);
+    }
+    const Map& get_map() const { return map_; }
+    void unlock() const {
+        LRU_UNLOCK(mutex_);
+    }
+
+private:
     int SafeSizeOf(const K& key, const V* value) const {
         const int result = policy_.SizeOf(key, value);
         CHECK_GE(result, 0);
@@ -434,14 +504,16 @@ class LruCache {
             K key;
             ref_counted<V>* value;
 
-            mutex_.Lock();
+            LRU_R_LOCK(mutex_);
             CHECK(size_ >= 0 && !(map_.empty() && size_ != 0))
                 <<  ".SizeOf() is reporting inconsistent results!";
             if (size_ <= max_size || map_.empty()) {
-                mutex_.Unlock();
+                LRU_UNLOCK(mutex_);
                 break;
             }
-            CHECK(!list_.empty());
+            LRU_UNLOCK(mutex_);
+            LRU_W_LOCK(mutex_);
+            if (list_.empty()) break;
             key = list_.back();
             list_.pop_back();
             typename Map::iterator it = map_.find(key);
@@ -451,20 +523,20 @@ class LruCache {
 
             size_ -= SafeSizeOf(key, value->get());
             ++eviction_count_;
-            mutex_.Unlock();
+            LRU_UNLOCK(mutex_);
 
             policy_.EntryRemoved(true, key, value);
         }
     }
 
     const LruCachePolicy<K, V>& policy_;
-    synch::MutexPool* pool_;
-    list<K> list_;
+    std::list<K> list_;
     Map map_;
 
     /** Size of this cache in units. Not necessarily the number of elements. */
     int64 size_;
     int64 max_size_;
+    bool allow_overshoot_;
 
     int64 put_count_;
     int64 create_count_;
@@ -472,9 +544,17 @@ class LruCache {
     int64 hit_count_;
     int64 miss_count_;
 
-    mutable synch::Mutex mutex_;
+    mutable LruLockType mutex_;
+    mutable whisper::synch::Spin list_mutex_;
 
     DISALLOW_EVIL_CONSTRUCTORS(LruCache);
 };
+#undef LRU_R_LOCKER
+#undef LRU_W_LOCKER
+#undef LRU_R_LOCK
+#undef LRU_W_LOCK
+#undef LRU_UNLOCK
+#undef LRU_LIST_LOCK
+#undef LRU_LIST_UNLOCK
 
 #endif //  __UTIL_LRU_CACHE_H__

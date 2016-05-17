@@ -1,32 +1,71 @@
 // -*- c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil; coding: utf-8 -*-
 //
-// (c) Copyright 2011, 1618labs
+// (c) Copyright 2011, Urban Engines
 // All rights reserved.
-// Author: Catalin Popescu (cp@1618labs.com)
+// Author: Catalin Popescu (cp@urbanengines.com)
 //
 
 #ifndef __WHISPERLIB_RPC_RPC_CONTROLLER_H__
 #define __WHISPERLIB_RPC_RPC_CONTROLLER_H__
 
-#include <whisperlib/base/types.h>
-#include <whisperlib/net/address.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/callback.h"
+#include "whisperlib/net/address.h"
 #include <google/protobuf/service.h>
-#include <whisperlib/sync/mutex.h>
+#include "whisperlib/sync/mutex.h"
+#include <deque>
 
+namespace whisper {
 namespace net {
 class Selector;
 }
 namespace rpc {
+namespace pb {
+class RequestStats;
+class ServerStats;
+class MachineStats;
+class ClientStats;
+}
 
+std::string MachineStatsToHtml(const pb::MachineStats& stat);
+std::string RequestStatsToHtml(const pb::RequestStats& stat, int64 now_ts, int64 now_sec);
+std::string ServerStatsToHtml(const pb::ServerStats& stat);
+std::string ClientStatsToHtml(const pb::ClientStats& stat);
+std::string GetStatuszHeadHtml();
 enum ErrorCode {
-  ERROR_NONE = 0,         // No error - all smooth
-  ERROR_CANCELLED = 1,    // The request is cancelled
-  ERROR_USER = 2,         // Error set by user at server side
-  ERROR_CLIENT = 3,       // Error in the client stack
-  ERROR_NETWORK = 4,      // Error on the network
-  ERROR_SERVER = 5,       // HTTP error from the server
-  ERROR_PARSE = 6,        // Error parsing the protobuf
+  /** No error - all smooth */
+  ERROR_NONE = 0,
+  /** The request is cancelled (probably at client)
+   */
+  ERROR_CANCELLED = 1,
+  /** Error set by user at server side for some usage based reason (bad request / 4xx) ?
+   *  ==> Do not retry.
+   */
+  ERROR_USER = 2,
+  /** Error set at the client side some internal errors
+   *  ==> Can Retry.
+   */
+  ERROR_CLIENT = 3,
+  /** Error set at the client side for bad network error
+   *  ==> Can Retry
+   */
+  ERROR_NETWORK = 4,
+  /** Error set at the server side for some transient server error
+   *  ==> Can Retry
+   */
+  ERROR_SERVER = 5,
+  /** Error parsing the returned protobuf - this may mean that you are
+   *  talking some bad proto.
+   *  ==> Do not retry.
+   */
+  ERROR_PARSE = 6,
 };
+
+/** Returns if an error should be retried. In general you can return */
+inline bool IsErrorRetriable(ErrorCode error_code) {
+  return error_code != ERROR_USER && error_code != ERROR_PARSE;
+}
+/** Name of the error */
 const char* GetErrorCodeString(ErrorCode code);
 
 // Class that contains the networking parameters for a
@@ -140,6 +179,9 @@ public:
   // final "done" callback.
   virtual bool IsCanceled() const;
 
+  // If the request is done.
+  virtual bool IsFinalized() const;
+
   // Asks that the given callback be called when the RPC is canceled.  The
   // callback will always be called exactly once.  If the RPC completes without
   // being canceled, the callback will be called after completion.  If the RPC
@@ -163,7 +205,93 @@ public:
   bool is_urgent() const { return is_urgent_; }
   void set_is_urgent(bool is_urgent) { is_urgent_ = is_urgent; }
 
+  bool compress_transfer() const { return compress_transfer_; }
+  void set_compress_transfer(bool val) { compress_transfer_ = val; }
+
+  // If the request is streaming / not streaming
+  // For non streaming requests the done callback will be called once,
+  // when the request is done.
+  // For streaming the done callback is supposed to be permanent, and will be called for each
+  // new response decoded from the pipe.
+  bool is_streaming() const { return is_streaming_; }
+  void set_is_streaming(bool is_streaming) { is_streaming_ = is_streaming; }
+
+  void set_is_finalized() {
+      synch::MutexLocker l(&mutex_);
+      is_finalized_ = true;
+  }
+
+  // When streaming, new messages parsed from the server are appended to this vector.
+  // Note that a NULL message can be appended when a message was sent but some parsing
+  // error happened (like parsing). You can decide what to do in those cases.
+  // The bool is false when no message is in the stream. You are responsible (new owner)
+  // of any returned messages.
+  std::pair<google::protobuf::Message*, bool> PopStreamedMessage() {
+    synch::MutexLocker l(&mutex_);
+    std::pair<google::protobuf::Message*, bool> ret =
+        std::make_pair((google::protobuf::Message*)(NULL),
+                       !streamed_messages_.empty());
+    if (ret.second) {
+      ret.first = streamed_messages_.front();
+      streamed_messages_.pop_front();
+    }
+    return ret;
+  }
+
+  // Used by the framework to push a new message to the message stream. (on clients used
+  // by the rpc subsystem to push messages received from the server; on servers used by the
+  // server implementation to push more messages to be sent to the client).
+  // VERY IMPORTANT: on servers always
+  void PushStreamedMessage(google::protobuf::Message* msg) {
+    synch::MutexLocker l(&mutex_);
+    streamed_messages_.push_back(msg);
+  }
+
+  // Any messages to be streamed.
+  bool HasStreamedMessage() const {
+    synch::MutexLocker l(&mutex_);
+    return !streamed_messages_.empty();
+  }
+
+  // On servers the implementation can set this closure (permanent) to be used by the rpc
+  // implementation for flow control (when the server can push more messages in the
+  // PushStreamMessage).
+  // If this is null the rpc subsystem takes the signal the implementation finished its
+  // streaming after the current run of streamed_messages_.
+  // We do not own this callback - is your job to delete it. Set a NULL callback when you
+  // finished your data to be sent.
+  void set_server_streaming_callback(whisper::Closure* callback) {
+    synch::MutexLocker l(&mutex_);
+    DCHECK(!callback || callback->is_permanent());
+    server_streaming_callback_ = callback;
+  }
+
+  whisper::Closure* server_streaming_callback() const {
+    synch::MutexLocker l(&mutex_);
+    return server_streaming_callback_;
+  }
+
+  void FinalizeStreamingOnNetworkError() {
+    synch::MutexLocker l(&mutex_);
+    if (server_streaming_callback_) {
+      if (!Failed() && !IsCanceled()) {
+        SetErrorCode(rpc::ERROR_NETWORK);
+      }
+      server_streaming_callback_->Run();
+    }
+    is_finalized_ = true;
+  }
+
+  const string& custom_content_type() const {
+    return custom_content_type_;
+  }
+  void set_custom_content_type(const string& custom_content_type) {
+    custom_content_type_ = custom_content_type;
+  }
+
 private:
+  // reentrant per potential calling loop FinalizeStreamingOnNetworkError ->
+  //   set_server_streaming_callback_se
   mutable synch::Mutex mutex_;
   Transport* transport_;
   google::protobuf::Closure* cancel_callback_;
@@ -171,10 +299,17 @@ private:
   string error_reason_;
   int64 timeout_ms_;    // TODO(cp): actually implement this
   bool is_urgent_;
+  bool is_streaming_;
+  bool is_finalized_;
+  bool compress_transfer_;
+  std::deque<google::protobuf::Message*> streamed_messages_;
+  whisper::Closure* server_streaming_callback_;
+  std::string custom_content_type_;
 
   DISALLOW_EVIL_CONSTRUCTORS(Controller);
 };
 
-}
+}  // namespace rpc
+}  // namespace whisper
 
 #endif

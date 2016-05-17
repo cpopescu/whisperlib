@@ -31,14 +31,13 @@
 
 #include <algorithm>
 #include "whisperlib/io/output_stream.h"
-#include "whisperlib/base/log.h"
+#include "whisperlib/io/input_stream.h"
 
-int32 io::OutputStream::Write(io::InputStream& in, int32 len) {
+int32 whisper::io::OutputStream::Write(io::InputStream& in, int32 len) {
   int32 written = 0;
   uint8 tmp[1024];
   while ( written < len ) {
-    CHECK_LT(written, len);
-    const int32 to_read = min(len - written, static_cast<int32>(sizeof(tmp)));
+    const int32 to_read = std::min(len - written, static_cast<int32>(sizeof(tmp)));
     // "in" -> tmp
     const int32 r = in.Read(tmp, to_read);
     if ( r < 0 ) {

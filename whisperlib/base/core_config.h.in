@@ -63,6 +63,14 @@
 # define USE_GLOG_LOGGING 1
 #endif
 
+#if HAVE_GFLAGS
+# define USE_GFLAGS 1
+#endif
+
+#ifdef HAVE_ICU
+# define USE_ICU 1
+#endif
+
 /* End of section coming from acconfig.h */
 
 /* Define if building universal (internal helper macro) */
@@ -88,6 +96,9 @@
 
 /* Define to 1 if you have the `clock_gettime' function. */
 #undef HAVE_CLOCK_GETTIME
+
+/* define if the compiler supports basic C++11 syntax */
+#undef HAVE_CXX11
 
 /* Define to 1 if you have the declaration of `tzname', and to 0 if you don't.
    */

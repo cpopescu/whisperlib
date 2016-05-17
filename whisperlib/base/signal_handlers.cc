@@ -29,29 +29,26 @@
 //
 // Author: Cosmin Tudorache
 
-#include <whisperlib/base/core_config.h>
-
-#ifdef HAVE_UNISTD_H
-# include <unistd.h>
-#endif
-
 #include <string.h>
+#include <unistd.h>
 #include <signal.h>
-
 #ifdef HAVE_EXECINFO_H
 #include <execinfo.h>
 #endif
 
 #ifdef HAVE_GOOGLE_PERFTOOLS
-#include <google/heap-profiler.h>
+#include <gperftools/heap-profiler.h>
 #endif
 
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/core_errno.h>
-#include <whisperlib/base/system.h>
-#include <whisperlib/base/date.h>
-#include <whisperlib/base/callback.h>
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/core_errno.h"
+#include "whisperlib/base/system.h"
+#include "whisperlib/base/date.h"
+#include "whisperlib/base/callback.h"
 
+using namespace std;
+
+namespace whisper {
 namespace common {
 
 bool g_hang_on_signal_stack_trace = false;
@@ -59,7 +56,7 @@ bool g_hang_on_signal_stack_trace = false;
 bool g_application_is_hanging = false;
 
 #ifndef NACL
-void HandleSignal(int signum, siginfo_t* info, void* context) {
+void HandleSignal(int signum, siginfo_t* /*info*/, void* /*context*/) {
   // [COSMIN] Using LOG functions here is unwise. If the initial exception
   //          happened inside a LOG statement, then using LOG here would
   //          recursively generate a new exception.
@@ -147,4 +144,5 @@ bool IsApplicationHanging() {
 void SetApplicationHanging(bool hanging) {
   g_application_is_hanging = hanging;
 }
-}
+}  // namespace common
+}  // namespace whisper

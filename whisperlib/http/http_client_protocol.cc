@@ -32,9 +32,14 @@
 #include "whisperlib/http/http_client_protocol.h"
 #include "whisperlib/base/core_errno.h"
 
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
+using namespace std;
+
 #define LOG_HTTP \
     LOG_INFO_IF(params_->dlog_level_) << " - HTTP[" << server_ << "]: "
 
+namespace whisper {
 namespace http {
 
 //////////////////////////////////////////////////////////////////////
@@ -330,20 +335,18 @@ void BaseClientProtocol::SendRequestToServer(ClientRequest* req) {
                           max(params_->default_request_timeout_ms_,
                               req->request_timeout_ms()));
   } else if ( params_->read_timeout_ms_ > 0 ) {
-    timeouter_.SetTimeout(kWriteTimeout, params_->read_timeout_ms_);
+    timeouter_.SetTimeout(kReadTimeout, params_->read_timeout_ms_);
   }
 
   connection_->NotifyWrite();
-  // TODO(cosmin): We should NEVER disable read events.
-  //connection_->RequestReadEvents(true);
 }
 
 void BaseClientProtocol::NotifyConnectionDeletion() {
-  LOG_HTTP << "Server closed on us - closing all stuff.. ";
+  LOG_HTTP << "Server closed on us - closing all stuff.. , conn_error: "
+           << ClientErrorName(conn_error_);
   connection_ = NULL;
   timeouter_.UnsetAllTimeouts();
-  if ( conn_error_ == http::CONN_INCOMPLETE ||
-       conn_error_ == http::CONN_OK ) {
+  if ( conn_error_ == http::CONN_INCOMPLETE ) {
     conn_error_ = http::CONN_CONNECTION_CLOSED;
   }
 }
@@ -357,12 +360,20 @@ bool BaseClientProtocol::NotifyConnectionRead() {
   }
 
   if ( params_->read_timeout_ms_ > 0 ) {
-    timeouter_.SetTimeout(kWriteTimeout, params_->read_timeout_ms_);
+    timeouter_.SetTimeout(kReadTimeout, params_->read_timeout_ms_);
   }
+  const int32 in_size = connection_->inbuf()->Size();
+  const int32 server_data_size = current_request_->request()->server_data()->Size();
   do {
     parser_read_state_ = parser_.ParseServerReply(
         connection_->inbuf(), current_request_->request());
   } while ( parser_read_state_ & http::RequestParser::CONTINUE );
+
+  current_request_->request()->mutable_stats()->server_raw_size_ +=
+      in_size - connection_->inbuf()->Size();
+  current_request_->request()->mutable_stats()->server_size_ +=
+      current_request_->request()->server_data()->Size() - server_data_size;
+
   if ( !parser_.InFinalState() ) {
     return true;
   }
@@ -569,7 +580,7 @@ ClientStreamReceiverProtocol::~ClientStreamReceiverProtocol() {
 
 void ClientStreamReceiverProtocol::BeginStreamReceiving(
     ClientRequest* request,
-    Closure* streaming_callback) {
+    ResultClosure<bool>* streaming_callback) {
   CHECK(streaming_callback->is_permanent());
   CHECK(current_request_ == NULL);
   current_request_ = request;
@@ -587,9 +598,10 @@ void ClientStreamReceiverProtocol::BeginStreamReceiving(
 
 bool ClientStreamReceiverProtocol::NotifyConnectionRead() {
   const bool ret = BaseClientProtocol::NotifyConnectionRead();
+  bool client_ret = true;
   if ( current_request_->is_finalized() ) {
     current_request_ = NULL;
-    streaming_callback_->Run();
+    client_ret = streaming_callback_->Run();
   } else if ( ((parser_read_state_ & http::RequestParser::HEADER_READ) ==
                http::RequestParser::HEADER_READ) ) {
     // If chunked (or even unchunked) we need to disable the request timeout
@@ -600,9 +612,9 @@ bool ClientStreamReceiverProtocol::NotifyConnectionRead() {
 
     // Call for a new chunk of data - insure that the first happens
     // after the header is completed.
-    streaming_callback_->Run();
+    client_ret = streaming_callback_->Run();
   }
-  return ret;
+  return ret && client_ret;
 }
 
 void ClientStreamReceiverProtocol::NotifyConnectionDeletion() {
@@ -647,7 +659,12 @@ void ClientProtocol::SendRequest(
     done_callback->Run();
     return;
   }
-  request->set_request_id(crt_id_++);
+  CHECK(connection_->selector()->IsInSelectThread());
+  if (request->request_id() > crt_id_) {
+      crt_id_ = request->request_id() + 1;
+  } else {
+      request->set_request_id(crt_id_++);
+  }
   if ( waiting_requests_.size() >= params_->max_waiting_requests_ ) {
     request->set_error(CONN_TOO_MANY_REQUESTS);
     connection_->selector()->RunInSelectLoop(done_callback);
@@ -680,6 +697,21 @@ bool ClientProtocol::NotifyConnected() {
 }
 
 bool ClientProtocol::NotifyConnectionRead() {
+  do {
+      const ClientProtocol::ProcessMoreDataResult result = ProcessMoreData();
+      switch (result) {
+      case ClientProtocol::ProcessMoreDataResult_ERROR:
+          return false;
+      case ClientProtocol::ProcessMoreDataResult_NEEDMORE:
+          return true;
+      case ClientProtocol::ProcessMoreDataResult_COMPLETE:
+          continue;
+      }
+  } while (connection_->inbuf()->Size());
+  return true;
+
+}
+ClientProtocol::ProcessMoreDataResult ClientProtocol::ProcessMoreData() {
   if ( reading_request_  == NULL ) {
     parser_read_state_ = 0;
     parser_.Clear();
@@ -706,7 +738,7 @@ bool ClientProtocol::NotifyConnectionRead() {
   } while ( parser_read_state_ & http::RequestParser::CONTINUE );
   // We need more data (and no error happened)
   if ( !parser_.InFinalState() ) {
-    return true;
+     return ProcessMoreDataResult_NEEDMORE;
   }
   LOG_HTTP << "Request finished in state: "
            << parser_.ParseStateName()
@@ -734,21 +766,24 @@ bool ClientProtocol::NotifyConnectionRead() {
     delete reading_request_;
     // We cannot trust this connection any more
     conn_error_ = CONN_DEPENDENCY_FAILURE;
-    return false;
+    return ProcessMoreDataResult_ERROR;
   }
   reading_request_ = NULL;
   if ( parser_.InErrorState() ) {
-    LOG_WARNING << "HTTP[" << server_ << "]: "
-                << "Exiting the connection due to broken parser state: "
-                << parser_.ParseStateName()
-                << " [ header parsing error: "
-                << http::Header::ParseErrorName(err) << " ]";
+    LOG_WARN << "HTTP[" << server_ << "]: "
+             << "Exiting the connection due to broken parser state: "
+             << parser_.ParseStateName()
+             << " [ header parsing error: "
+             << http::Header::ParseErrorName(err) << " ]";
     conn_error_ = CONN_DEPENDENCY_FAILURE;
-    return false;
+    return ProcessMoreDataResult_ERROR;
   }
   // Putting more requests on line
   WriteRequestsToServer();
-  return true;
+  if (connection_ && !active_requests_.empty()) {
+      connection_->RequestReadEvents(true);
+  }
+  return ProcessMoreDataResult_COMPLETE;
 }
 
 void ClientProtocol::NotifyConnectionDeletion() {
@@ -797,9 +832,9 @@ bool ClientProtocol::IdentifyReadingRequest() {
   if (req_id != -1) {
       const RequestMap::const_iterator it = active_requests_.find(req_id);
       if ( it == active_requests_.end() ) {
-        LOG_WARNING  << "HTTP[" << server_ << "]: "
-                     << " Orphaned response received from the server:\n"
-                     << hs->ToString();
+        LOG_WARN << "HTTP[" << server_ << "]: "
+                 << " Orphaned response received from the server:\n"
+                 << hs->ToString();
         reading_request_->set_request_id(-1);
       } else {
         Header* const hs2 = it->second->request()->server_header();
@@ -814,10 +849,10 @@ bool ClientProtocol::IdentifyReadingRequest() {
         reading_request_ = it->second;
       }
   } else {
-    LOG_WARNING << "HTTP[" << server_ << "]: "
-                << " - Expecting a request-id header from "
-                << " the server and got noting (header:\n"
-                << hs->ToString();
+    LOG_WARN << "HTTP[" << server_ << "]: "
+             << " - Expecting a request-id header from "
+             << " the server and got noting (header:\n"
+             << hs->ToString();
     reading_request_->set_request_id(-1);
   }
   CHECK_NE(reading_request_->request_id(), 0);
@@ -837,8 +872,9 @@ void ClientProtocol::ResolveAllRequestsWithError() {
     //   Can actually happen when requested
     for ( RequestMap::const_iterator it = active_requests_.begin();
           it != active_requests_.end(); ++it ) {
-      it->second->set_error(conn_error_);
-      to_resolve.push_back(callback_map_[it->second]);
+      ClientRequest* req = it->second;
+      req->set_error(conn_error_);
+      to_resolve.push_back(callback_map_[req]);
     }
   }
   for ( RequestsQueue::const_iterator it = waiting_requests_.begin();
@@ -870,16 +906,18 @@ void ClientProtocol::WriteRequestsToServer() {
     CHECK(!hc->IsChunkedTransfer())
         << " No chuncked transer encoding for client requests "
         << " w/ ClientProtocol please.";
-    LOG_HTTP << " Sending request to server: "
-             << current_request_->name();
+    LOG_HTTP << " Sending request to server: " << current_request_->name();
     CHECK(active_requests_.insert(
               make_pair(current_request_->request_id(),
-                        current_request_)).second);
+                        current_request_)).second)
+        << " for id: " << current_request_->request_id()
+        << " crt_id_: " << crt_id_;
     SendRequestToServer(current_request_);
     current_request_ = NULL;
   }
   LOG_HTTP << " WriteRequestsToServer ended with: " << active_requests_.size()
-           << " waiting and " << waiting_requests_.size() << " active. ";
+           << " active and " << waiting_requests_.size() << " waiting. "
+           << " / " << params_->max_concurrent_requests_;
 }
 
 string ClientProtocol::StatusString() const {
@@ -918,5 +956,6 @@ const char* ClientErrorName(ClientError err) {
     CONSIDER(CONN_TOO_MANY_RETRIES);
   }
   return "UNKNOWN";
+}
 }
 }

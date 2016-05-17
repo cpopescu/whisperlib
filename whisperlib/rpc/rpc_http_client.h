@@ -32,9 +32,9 @@
 //
 // Protobuf adaptation:
 //
-// (c) Copyright 2011, 1618labs
+// (c) Copyright 2011, Urban Engines
 // All rights reserved.
-// Author: Catalin Popescu (cp@1618labs.com)
+// Author: Catalin Popescu (cp@urbanengines.com)
 //
 
 #ifndef __WHISPERLIB_RPC_RPC_CLIENT_H__
@@ -43,14 +43,22 @@
 #include <map>
 #include <string>
 #include <vector>
-#include <whisperlib/base/types.h>
-#include <whisperlib/sync/mutex.h>
+#include <deque>
+#include <atomic>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/callback.h"
+#include "whisperlib/sync/mutex.h"
 #include <google/protobuf/service.h>
+#include "whisperlib/base/hash.h"
 #include WHISPER_HASH_SET_HEADER
 
+using std::string;
+
+namespace whisper {
 namespace http {
 class FailSafeClient;
 class ClientRequest;
+class ClientStreamReceiverProtocol;
 }
 namespace net {
 class Selector;
@@ -58,6 +66,11 @@ class Selector;
 
 namespace rpc {
 class Controller;
+namespace pb {
+class RequestStats;
+class ClientStats;
+class MachineStats;
+}
 
 //
 // This is a failsafe transport over HTTP connection from client side.
@@ -76,16 +89,17 @@ class HttpClient : public google::protobuf::RpcChannel {
  public:
   // Constructor w/ no extra parameters
   HttpClient(http::FailSafeClient* failsafe_client,
-         const string& http_request_path);
+             const string& http_request_path);
 
   // Constructor that allows the user to set authorization cookies or user / pass
   // parameters.
   HttpClient(http::FailSafeClient* failsafe_client,
-         const string& http_request_path,
-         const vector< pair<string, string> >& request_headers,
-         const string& auth_user,
-         const string& auth_pass);
-  // Don't call the destructor directly, instead call StartClose that will eventually delete the client
+             const string& http_request_path,
+             const std::vector< std::pair<string, string> >& request_headers,
+             const string& auth_user,
+             const string& auth_pass);
+  // Don't call the destructor directly, instead call StartClose that will
+  // eventually delete the client
   virtual ~HttpClient();
 
   // Starte the close / delete of the client.
@@ -124,15 +138,22 @@ class HttpClient : public google::protobuf::RpcChannel {
     return selector_;
   }
 
- private:
+  void set_stats_msg_text_size(size_t sz) {
+    stats_msg_text_size_ = sz;
+  }
+  void set_stats_msg_history_size(size_t sz) {
+    stats_msg_history_size_ = sz;
+  }
+  void GetClientStats(pb::ClientStats* stats) const;
+
+private:
   // We set this callback as cancel callback for the rpc controller this function.
   void CallbackCancelRequested(int64 xid);
 
   // Returns the next request id for this client - attached in the header - identifies
   // an rpc for debugging - not necessary unique among clients.
   int64 GetNextXid() {
-    synch::MutexLocker l(&mutex_);
-    return xid_++;
+    return xid_.fetch_add(1);
   }
 
   //////////////////////////////////////////////////////////////////////
@@ -149,25 +170,23 @@ class HttpClient : public google::protobuf::RpcChannel {
     google::protobuf::Closure* cancel_callback_;
     bool cancelled_;
     bool started_;
+    http::ClientStreamReceiverProtocol* protocol_;
+    whisper::ResultClosure<bool>* stream_callback_;
+    int32 next_message_size_;
+
+    pb::RequestStats* stats_;
 
     QueryStruct(http::ClientRequest* req,
                 int64 xid,
                 const google::protobuf::MethodDescriptor* method,
                 rpc::Controller* controller,
+                const google::protobuf::Message* request,
                 google::protobuf::Message* response,
                 google::protobuf::Closure* done,
-                google::protobuf::Closure* cancel_callback)
-      : req_(req),
-        xid_(xid),
-        method_(method),
-        controller_(controller),
-        response_(response),
-        done_(done),
-        cancel_callback_(cancel_callback),
-        cancelled_(false),
-        started_(false) {
-    }
+                google::protobuf::Closure* cancel_callback,
+                size_t limit_print);
     ~QueryStruct();
+    pb::RequestStats* GrabStats(size_t limit_print);
   };
 
   // Debug string for a query
@@ -177,8 +196,8 @@ class HttpClient : public google::protobuf::RpcChannel {
   void StartRequest(QueryStruct* qs);
 
   // Cancels an RPC from the selector thread
-  void CancelRequest(int64 xid);
-  bool CancelRequestVerified(int64 xid);
+  void CancelRequest(int64 xid);   // non bool returning (can be used for Closures)
+  bool CancelRequestVerified(int64 xid);    // if one wants the return value
 
 
   // Called by the selector after a http request receives full response
@@ -186,26 +205,39 @@ class HttpClient : public google::protobuf::RpcChannel {
   // when launching the query (you probably want to delete it).
   void CallbackRequestDone(QueryStruct* qs);
 
+  // For streaming requests, this will be called when some new data is available.
+  bool CallbackRequestStream(HttpClient::QueryStruct* qs);
+
+  // Helper to maybe parse a new message from the stream.
+  void MaybeReadNextMessages(HttpClient::QueryStruct* qs);
+
   //////////////////////////////////////////////////////////////////////
 
   net::Selector* const selector_;
   http::FailSafeClient* const failsafe_client_;
+  const string server_name_;  // for debug purposes
   const string http_request_path_;
-  const vector< pair<string, string> > request_headers_;
+  const std::vector< std::pair<string, string> > request_headers_;
   const string auth_user_;
   const string auth_pass_;
 
   // Protects internal data:
-  synch::Mutex mutex_;
-  int64 xid_;      // next request id
+  mutable synch::Spin mutex_;
+  std::atomic_int_fast64_t xid_;      // next request id
   bool closing_;   // set to true after StartClose
   hash_set<int64> to_wait_cancel_;
 
-  typedef map<int64, QueryStruct*> QueryMap;
+  typedef std::map<int64, QueryStruct*> QueryMap;
   QueryMap queries_;
+  std::deque<pb::RequestStats*> completed_queries_;
+
+  // Save at most these many bytes from response / reply
+  size_t stats_msg_text_size_;
+  size_t stats_msg_history_size_;
  private:
   DISALLOW_EVIL_CONSTRUCTORS(HttpClient);
 };
 
-}
+}  // namespace rpc
+}  // namespace whisper
 #endif  // __WHISPERLIB_RPC_RPC_CLIENT_H__

@@ -35,8 +35,11 @@
 #include <time.h>
 #include <iostream>
 #include <string>
-#include <whisperlib/base/types.h>
+#include "whisperlib/base/types.h"
 
+using std::string;
+
+namespace whisper {
 namespace timer {
 
 class Date {
@@ -89,6 +92,8 @@ class Date {
 
   // returns: the number of milliseconds since January 1, 1970, 00:00:00 UTC
   static int64 Now();
+  // return: seconds since January 1, 1970, 00:00:00 UTC
+  static time_t NowSec();
 
   // returns: the time on a different day at the same 'time' (hour, minute, second).
   // For UTC time this is simple: just shift time by 'days' * 24 * 3600000 ms .
@@ -189,8 +194,10 @@ class Date {
   string ToString() const;
 };
 
-ostream& operator<<(ostream& os, const Date& date);
-}
+std::ostream& operator<<(std::ostream& os, const Date& date);
+
+}  // namespace timer
+}  // namespace whisper
 
 
 #endif   // __COMMON_BASE_DATE_H__

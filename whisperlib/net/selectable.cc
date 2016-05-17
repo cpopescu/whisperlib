@@ -41,6 +41,9 @@
 #include "whisperlib/base/core_errno.h"
 #include "whisperlib/base/gflags.h"
 
+using namespace std;
+
+namespace whisper {
 namespace net {
 
 int32 Selectable::Write(const char* buf, int32 size) {
@@ -197,18 +200,14 @@ int32 Selectable::Read(io::MemoryStream* ms, int32 size) {
     int32 scratch;
     ms->GetScratchSpace(&buffer, &scratch);
     const int32 received = Read(buffer, scratch);
-    const int err = errno;
     if ( received <= 0 ) {
       ms->ConfirmScratch(0);
       return cb;
     }
     cb += received;
     ms->ConfirmScratch(received);
-
-    if ( err ) {
-      break;
-    }
   }
   return cb;
 }
-}
+}  // namespace net
+}  // namespace whisper

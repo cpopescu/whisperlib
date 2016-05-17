@@ -37,8 +37,10 @@
 #define __NET_BASE_SELECTOR_BASE_H__
 
 #include <vector>
-#include <whisperlib/base/types.h>
-#include <whisperlib/net/selector_event_data.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/net/selector_event_data.h"
+
+using std::vector;
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -56,6 +58,7 @@
 
 #elif defined(HAVE_POLL_H) || defined(HAVE_SYS_POLL_H)
 
+#include "whisperlib/base/hash.h"
 #include WHISPER_HASH_MAP_HEADER
 
 #ifdef HAVE_POLL_H
@@ -80,6 +83,7 @@
 
 // COMMON part
 
+namespace whisper {
 namespace net {
 
 class Selectable;
@@ -139,7 +143,7 @@ class SelectorBase {
   // how many in fds are used
   size_t fds_size_;
   // maps from fd to index in fds_ and user data
-  typedef hash_map< int, pair<size_t, void*> > DataMap;
+  typedef hash_map< int, std::pair<size_t, void*> > DataMap;
   DataMap fd_data_;
   // indices that we need to compact at the end of the step
   vector<size_t> indices_to_compact_;
@@ -150,6 +154,7 @@ class SelectorBase {
   DISALLOW_EVIL_CONSTRUCTORS(SelectorBase);
 };
 
-}
+}  // namespace net
+}  // namespace whisper
 
 #endif  // __NET_BASE_SELECTOR_BASE_H__

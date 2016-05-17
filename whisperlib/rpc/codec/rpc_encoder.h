@@ -32,9 +32,11 @@
 #ifndef __NET_RPC_LIB_CODEC_RPC_ENCODER_H__
 #define __NET_RPC_LIB_CODEC_RPC_ENCODER_H__
 
-#include <whisperlib/io/num_streaming.h>
-#include <whisperlib/io/buffer/memory_stream.h>
+#include <map>
+#include "whisperlib/io/num_streaming.h"
+#include "whisperlib/io/buffer/memory_stream.h"
 
+namespace whisper {
 namespace codec {
 
 class Encoder {
@@ -82,10 +84,10 @@ class Encoder {
   virtual void EncodeBody(const uint64& obj) = 0;
   virtual void EncodeBody(const double& obj) = 0;
   virtual void EncodeBody(const char* obj) = 0;
-  virtual void EncodeBody(const string& obj) = 0;
+  virtual void EncodeBody(const std::string& obj) = 0;
 
   template<typename T>
-  void EncodeBody(const vector<T>& obj) {
+  void EncodeBody(const std::vector<T>& obj) {
     uint32 count = obj.size();
     EncodeArrayStart(count);            // encode the items count
     for ( uint32 i = 0; i < count; i++ ) {
@@ -100,11 +102,11 @@ class Encoder {
   }
 
   template<typename K, typename V>
-  void EncodeBody(const map<K, V>& obj) {
+      void EncodeBody(const std::map<K, V>& obj) {
     uint32 count = obj.size();          // count
     EncodeMapStart(count);              // encode the items count
     uint32 i = 0;
-    for ( typename map<K, V>::const_iterator it = obj.begin();
+    for ( typename std::map<K, V>::const_iterator it = obj.begin();
           it != obj.end(); ++it, ++i ) {
       EncodeMapPairStart();
       Encode(it->first);                // encode the key for an item
@@ -151,5 +153,6 @@ class Encoder {
 
   DISALLOW_EVIL_CONSTRUCTORS(Encoder);
 };
+}
 }
 #endif   // __NET_RPC_LIB_CODEC_RPC_ENCODER_H__

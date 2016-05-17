@@ -40,6 +40,9 @@
 #include "whisperlib/base/log.h"
 #include "whisperlib/io/file/fd.h"
 
+using namespace std;
+
+namespace whisper {
 namespace io {
 
 FileDescriptor::FileDescriptor()
@@ -130,4 +133,5 @@ int32 FileDescriptor::Skip(int32 len) {
   }
   return total_read;
 }
-}
+}  // namespace io
+}  // namespace whisper

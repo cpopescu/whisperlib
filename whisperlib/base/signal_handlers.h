@@ -32,6 +32,7 @@
 #ifndef __COMMON_BASE_SIGNAL_HANDLERS_H__
 #define __COMMON_BASE_SIGNAL_HANDLERS_H__
 
+namespace whisper {
 namespace common {
 
 // Sets default signal handlers for SIGABRT and SIGSEGV.
@@ -45,6 +46,8 @@ bool InstallDefaultSignalHandlers(bool hangOnBadSignals);
 //  - false otherwise
 bool IsApplicationHanging();
 void SetApplicationHanging(bool hanging);
+
+}
 }
 
 #endif  // __COMMON_BASE_SIGNAL_HANDLERS_H__

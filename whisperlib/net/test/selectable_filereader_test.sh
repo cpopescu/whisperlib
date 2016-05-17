@@ -31,13 +31,13 @@
 #
 # outputs : 27059 bytes of data
 echo "1234567890"
-# sleep 1
+sleep 1
 for i in `seq 1000`; do
   echo $i + " == AHAHAH AHAKJHKHA"
 done
-# sleep 2
+sleep 2
 for i in `seq 10`; do
   echo $i + " JUJUBUJU "
-#  sleep 1
+  sleep 1
 done
 echo "FIN"

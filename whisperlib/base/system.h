@@ -32,20 +32,10 @@
 #ifndef __WHISPERLIB_BASE_SYSTEM_H__
 #define __WHISPERLIB_BASE_SYSTEM_H__
 
-#include <whisperlib/base/core_config.h>
-#include <string>
 #include <stdarg.h>
+#include "whisperlib/base/types.h"
 
-#if defined(HAVE_NAMESER8_COMPAT_H)
-#include <nameser8_compat.h>
-#elif defined(HAVE_ENDIAN_H)
-#include <endian.h>
-#elif defined(HAVE_MACHINE_ENDIAN_H)
-#include <machine/endian.h>
-#endif
-
-#include <whisperlib/base/types.h>
-
+namespace whisper {
 namespace common {
 
 // This function does all the good stuff needed when a program is
@@ -56,49 +46,9 @@ namespace common {
 //   -- writes some stuff in the log
 void Init(int& argv, char**& argc);
 int Exit(int error, bool forced = false);
+void CloseForExit();
 
-// considering int value 0x01020304
-enum ByteOrder {
-  BIGENDIAN,  // written as: 0x01, 0x02, 0x03, 0x04 ;
-              //                     PowerPC, SGI Origin, Sun Sparc
-  LILENDIAN,  // written as: 0x04, 0x03, 0x02, 0x01 ; Intel x86, Alpha AXP
-  PDPENDIAN,  // written as: 0x03, 0x04, 0x01, 0x02 ; ARM -- NO SUPPORTED
-  UNKNOWNENDIAN
-};
-
-// returns:
-//  the name of the given byte order
-const char* ByteOrderName(ByteOrder order);
-
-//////////////////////////////////////////////////////////////////////
-//
-// Determine byte order at compile time
-//
-#ifdef BYTE_ORDER
-# if defined BYTE_ORDER && defined LITTLE_ENDIAN && defined BIG_ENDIAN
-#   if BYTE_ORDER == LITTLE_ENDIAN
-#      define LOCAL_MACHINE_BYTE_ORDER_DEFINED
-const ByteOrder kByteOrder = LILENDIAN;
-#   elif BYTE_ORDER == BIG_ENDIAN
-#     define LOCAL_MACHINE_BYTE_ORDER_DEFINED
-const ByteOrder kByteOrder = BIGENDIAN;
-#   endif
-# endif
-#else
-# if defined __BYTE_ORDER && defined __LITTLE_ENDIAN && defined __BIG_ENDIAN
-#   if __BYTE_ORDER == __LITTLE_ENDIAN
-#      define LOCAL_MACHINE_BYTE_ORDER_DEFINED
-const ByteOrder kByteOrder = LILENDIAN;
-#   elif __BYTE_ORDER == __BIG_ENDIAN
-#     define LOCAL_MACHINE_BYTE_ORDER_DEFINED
-const ByteOrder kByteOrder = BIGENDIAN;
-#   endif
-# endif
-#endif
-
-# if !defined LOCAL_MACHINE_BYTE_ORDER_DEFINED
-#   error "We should have the byteorder defined at compile time"
-# endif
-}
+}  // namespace common
+}  // namespace whisper
 
 #endif  // __WHISPERLIB_BASE_SYSTEM_H__

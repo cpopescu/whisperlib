@@ -1,7 +1,7 @@
-// Copyright: 1618labs, Inc. 2011 onwards.
+// Copyright: Urban Engines, Inc. 2011 onwards.
 // All rights reserved.
 
-package rpc;
+package whisper.rpc;
 option java_package = "com.whisperlib.test.rpc";
 option java_outer_classname = "TextProto";
 
@@ -22,4 +22,33 @@ service TestService {
   rpc Mirror(TestReq) returns (TestReq);
   rpc Sum(TestReq) returns (TestReply);
   rpc Multiply(TestReq) returns (TestReply);
+}
+
+message TestPubData {
+    optional string s = 1;
+    repeated string t = 2;
+}
+message TestPubReq {
+    required TestPubData data = 1;
+}
+message TestPubReply {
+    optional int64 seq = 3;
+    repeated string fluff = 1;
+}
+
+message TestSubReq {
+    repeated string t = 1;
+    optional int64 seq = 2;
+    optional int64 end_seq = 3;
+}
+
+message TestSubReply {
+    required TestPubData data = 1;
+    required int64 seq = 2;
+}
+
+
+service TestStreamService {
+    rpc Publish(TestPubReq) returns (TestPubReply);
+    rpc Subscribe(TestSubReq) returns (TestSubReply);
 }

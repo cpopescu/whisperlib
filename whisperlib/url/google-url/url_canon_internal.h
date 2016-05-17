@@ -35,14 +35,12 @@
 #ifndef GOOGLEURL_SRC_URL_CANON_INTERNAL_H__
 #define GOOGLEURL_SRC_URL_CANON_INTERNAL_H__
 
-#include <whisperlib/base/core_config.h>
 #include <stdlib.h>
+#include <unicode/utf.h>
 
-#if HAVE_ICU
-# include <unicode/utf.h>
-#endif
+#include "whisperlib/url/google-url/url_canon.h"
 
-#include <whisperlib/url/google-url/url_canon.h>
+#pragma GCC diagnostic ignored "-Wunused-variable"
 
 namespace url_canon {
 
@@ -338,7 +336,7 @@ inline bool AppendUTF8EscapedChar(const char* str, int* begin, int length,
 // sequence so that when called with the index of a for loop, the next time
 // through it will point to the next character to be considered. On failure,
 // |*begin| will be unchanged.
-inline bool Is8BitChar(char c) {
+inline bool Is8BitChar(char /*c*/) {
   return true;  // this case is specialized to avoid a warning
 }
 inline bool Is8BitChar(UTF16Char c) {

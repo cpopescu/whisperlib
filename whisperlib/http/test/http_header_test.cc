@@ -29,13 +29,13 @@
 //
 // Author: Catalin Popescu
 
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/system.h>
-#include <whisperlib/base/gflags.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/system.h"
+#include "whisperlib/base/gflags.h"
 
-#include <whisperlib/http/http_header.h>
-#include <whisperlib/io/buffer/memory_stream.h>
+#include "whisperlib/http/http_header.h"
+#include "whisperlib/io/buffer/memory_stream.h"
 
 //////////////////////////////////////////////////////////////////////
 
@@ -52,7 +52,7 @@ DEFINE_int32(memstream_bufsize,
 struct TestData {
   bool is_strict;
   const char header[1024];
-  http::Header::ParseError expected_error;
+  whisper::http::Header::ParseError expected_error;
   const char test_field_name[256];
   const char test_field_content[256];
 };
@@ -67,7 +67,7 @@ const TestData test[] = {
     "Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==\r\n"
     "Connection: Keep-Alive\r\n"
     "\r\n",
-    http::Header::READ_OK,
+    whisper::http::Header::READ_OK,
     "User-Agent", "Wget/1.10.2 GIGI MARGA"
   }, {
     false,
@@ -77,7 +77,7 @@ const TestData test[] = {
     "   xxx abcd\r\n"
     "Connection: Keep-Alive\r\n"
     "\r\n",
-    http::Header::READ_BAD_FIELD_SPEC,
+    whisper::http::Header::READ_BAD_FIELD_SPEC,
     "Host", "en-us\0300.add-ons.mozilla.com xxx abcd"
   }, {
     true,
@@ -87,7 +87,7 @@ const TestData test[] = {
     "   xxx abcd\r\n"
     "Connection: Keep-Alive\r\n"
     "\r\n",
-    http::Header::READ_BAD_FIELD_SPEC,
+    whisper::http::Header::READ_BAD_FIELD_SPEC,
     "Host", ""
   }, {
     false,
@@ -96,7 +96,7 @@ const TestData test[] = {
     "Host: en-us\0300.add-ons.mozilla.com\r\n"
     "Connection: Keep-Alive\r\n"
     "\r\n",
-    http::Header::READ_NO_REQUEST_VERSION,
+    whisper::http::Header::READ_NO_REQUEST_VERSION,
     "Host", "en-us\0300.add-ons.mozilla.com"
   }, {
     true,
@@ -107,17 +107,17 @@ const TestData test[] = {
     "Connection: Keep-Alive\r\n"
     "User-Agent: GIGI MARGA\r\n"
     "\r\n",
-    http::Header::READ_OK,
+    whisper::http::Header::READ_OK,
     "User-Agent", "Wget/1.10.2, GIGI MARGA"
   },
 };
 
 void RunSimpleTests() {
   for ( int i = 0; i < NUMBEROF(test); ++i ) {
-    http::Header headers(test[i].is_strict);
+    whisper::http::Header headers(test[i].is_strict);
     LOG_INFO << " ======================================== \n"
              << " TEST " << i;
-    io::MemoryStream ms;
+    whisper::io::MemoryStream ms;
     ms.Write(test[i].header);
     headers.Clear();
     CHECK(headers.ParseHttpRequest(&ms));
@@ -137,10 +137,10 @@ void RunSimpleTests() {
 }
 
 int main(int argc, char* argv[]) {
-  common::Init(argc, argv);
+  whisper::common::Init(argc, argv);
 
-  http::Header htest(true);
-  io::MemoryStream mstest;
+  whisper::http::Header htest(true);
+  whisper::io::MemoryStream mstest;
   mstest.Write("GET /en-US/firefox/bookmarks/%0A HTTP/1.0\r\n"
                "Date1: Sun, 06 Nov 1994 08:49:37 GMT\r\n"
                "Date2: Sunday, 06-Nov-94 08:49:37 GMT\r\n"
@@ -159,36 +159,36 @@ int main(int argc, char* argv[]) {
   CHECK_EQ(htest.GetDateField("Date1"), htest.GetDateField("Date2"));
   // This can be in different time zone - just make sure divides by 3600
   CHECK_EQ((htest.GetDateField("Date1") - htest.GetDateField("Date3")) % 3600, 0);
-  CHECK_EQ(htest.method(), http::METHOD_GET);
-  CHECK_EQ(htest.http_version(), http::VERSION_1_0);
+  CHECK_EQ(htest.method(), whisper::http::METHOD_GET);
+  CHECK_EQ(htest.http_version(), whisper::http::VERSION_1_0);
   CHECK(htest.IsChunkedTransfer());
   float value;
   value = htest.GetHeaderAcceptance(
-    http::kHeaderAccept, "text/plain", "text/*", "*/*");
+    whisper::http::kHeaderAccept, "text/plain", "text/*", "*/*");
   CHECK_EQ(value, 0.5f);
   value = htest.GetHeaderAcceptance(
-    http::kHeaderAccept, "gigi/marga", "gigi/*", "*/*");
+    whisper::http::kHeaderAccept, "gigi/marga", "gigi/*", "*/*");
   CHECK_EQ(value, 0.01f);
   value = htest.GetHeaderAcceptance(
-    http::kHeaderAccept, "text/x-dvi", "text/*", "*/*");
+    whisper::http::kHeaderAccept, "text/x-dvi", "text/*", "*/*");
   CHECK_EQ(value, 0.8f);
   value = htest.GetHeaderAcceptance(
-    http::kHeaderAccept, "audio/x-dvi", "audio/*", "*/*");
+    whisper::http::kHeaderAccept, "audio/x-dvi", "audio/*", "*/*");
   CHECK_EQ(value, 0.3f);
   value = htest.GetHeaderAcceptance(
-    http::kHeaderAccept, "audio/mp3", "audio/*", "*/*");
+    whisper::http::kHeaderAccept, "audio/mp3", "audio/*", "*/*");
   CHECK_EQ(value, 0.7f);
   value = htest.GetHeaderAcceptance(
-    http::kHeaderAcceptCharset, "iso-8859-5", "", "*");
+    whisper::http::kHeaderAcceptCharset, "iso-8859-5", "", "*");
   CHECK_EQ(value, 1.0f);
   value = htest.GetHeaderAcceptance(
-    http::kHeaderAcceptCharset, "UNICODE-1-1", "", "*");
+    whisper::http::kHeaderAcceptCharset, "UNICODE-1-1", "", "*");
   CHECK_EQ(value, 0.8f);
   value = htest.GetHeaderAcceptance(
-    http::kHeaderAcceptEncoding, "deflate", "", "*");
+    whisper::http::kHeaderAcceptEncoding, "deflate", "", "*");
   CHECK_EQ(value, 0.0f);
   value = htest.GetHeaderAcceptance(
-    http::kHeaderAcceptEncoding, "identity", "", "*");
+    whisper::http::kHeaderAcceptEncoding, "identity", "", "*");
   CHECK_EQ(value, 0.5f);
 
   CHECK(htest.IsGzipAcceptableEncoding());
@@ -201,31 +201,31 @@ int main(int argc, char* argv[]) {
   CHECK_EQ(user, string("gigi_marga"));
   CHECK_EQ(passwd, string("zuzub0#$A"));
 
-  string ss = http::Header::NormalizeFieldName(
+  string ss = whisper::http::Header::NormalizeFieldName(
     string(" ABC DEF  \t "));
   CHECK_EQ(ss, "Abc-Def");
-  ss = http::Header::NormalizeFieldName("GiGi--MarG A  \t ");
+  ss = whisper::http::Header::NormalizeFieldName("GiGi--MarG A  \t ");
   CHECK_EQ(ss, "Gigi--Marg-A");
 
-  CHECK(!http::Header::IsValidFieldName("  \t Gigi Marga "));
-  CHECK(http::Header::IsValidFieldName("Gigi \t Marga "));
-  CHECK(!http::Header::IsValidFieldName("Gigi \t Ma\0340rga "));
-  CHECK(http::Header::IsValidFieldName("Content-Length"));
-  CHECK(!http::Header::IsValidFieldName("\t  "));
-  CHECK(!http::Header::IsValidFieldName(""));
-  CHECK(!http::Header::IsValidFieldName("Content:Length"));
-  CHECK(!http::Header::IsValidFieldName("Content<Length"));
+  CHECK(!whisper::http::Header::IsValidFieldName("  \t Gigi Marga "));
+  CHECK(whisper::http::Header::IsValidFieldName("Gigi \t Marga "));
+  CHECK(!whisper::http::Header::IsValidFieldName("Gigi \t Ma\0340rga "));
+  CHECK(whisper::http::Header::IsValidFieldName("Content-Length"));
+  CHECK(!whisper::http::Header::IsValidFieldName("\t  "));
+  CHECK(!whisper::http::Header::IsValidFieldName(""));
+  CHECK(!whisper::http::Header::IsValidFieldName("Content:Length"));
+  CHECK(!whisper::http::Header::IsValidFieldName("Content<Length"));
 
-  CHECK(http::Header::IsValidFieldContent(""));
-  CHECK(http::Header::IsValidFieldContent("\t sds "));
-  CHECK(!http::Header::IsValidFieldContent("\t sd\0300s "));
-  CHECK(http::Header::IsValidFieldContent(
+  CHECK(whisper::http::Header::IsValidFieldContent(""));
+  CHECK(whisper::http::Header::IsValidFieldContent("\t sds "));
+  CHECK(!whisper::http::Header::IsValidFieldContent("\t sd\0300s "));
+  CHECK(whisper::http::Header::IsValidFieldContent(
           "\t !@#$%^&*()_+{}[]|:;\"'\\<>,./?"));
 
   RunSimpleTests();
 
   if ( !FLAGS_data_file.empty() ) {
-    io::MemoryStream ms(FLAGS_memstream_bufsize);
+    whisper::io::MemoryStream ms(FLAGS_memstream_bufsize);
     FILE* f = fopen(FLAGS_data_file.c_str(), "r");
     CHECK_NOT_NULL(f);
     static const size_t max_buf_size = 1000000;
@@ -235,7 +235,7 @@ int main(int argc, char* argv[]) {
     ms.AppendRaw(buffer, cb);
     const int32 size = ms.Size();
 
-    http::Header headers(true);
+    whisper::http::Header headers(true);
     int64 parsed_bytes = 0;
     bool is_req = true;
     while ( !ms.IsEmpty() ) {
@@ -248,9 +248,9 @@ int main(int argc, char* argv[]) {
         CHECK(headers.ParseHttpReply(&ms));
       }
       parsed_bytes += headers.bytes_parsed();
-      CHECK_EQ(headers.parse_error(), http::Header::READ_OK);
+      CHECK_EQ(headers.parse_error(), whisper::http::Header::READ_OK);
 
-      io::MemoryStream ss;
+      whisper::io::MemoryStream ss;
       string s;
       headers.AppendToStream(&ss);
       CHECK(ss.ReadString(&s));

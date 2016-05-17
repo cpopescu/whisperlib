@@ -1,3 +1,4 @@
+// -*- c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil; coding: utf-8 -*-
 // Copyright (c) 2009, Whispersoft s.r.l.
 // All rights reserved.
 //
@@ -30,8 +31,10 @@
 // Author: Catalin Popescu
 //
 
-#include <whisperlib/http/failsafe_http_client.h>
-#include <whisperlib/base/gflags.h>
+#include "whisperlib/http/failsafe_http_client.h"
+#include "whisperlib/base/gflags.h"
+
+using namespace std;
 
 #define LOG_HTTP                                                        \
     LOG_INFO_IF(client_params_->dlog_level_) << " - HTTP Failsafe: "
@@ -39,6 +42,7 @@
 DEFINE_int32(http_failsafe_max_log_size, 100,
              "Keep a history of at most this size");
 
+namespace whisper {
 namespace http {
 
 FailSafeClient::FailSafeClient(
@@ -65,6 +69,12 @@ FailSafeClient::FailSafeClient(
       closing_(false) {
   CHECK(connection_factory_->is_permanent());
   CHECK(!servers_.empty());
+  // Since this an HTTP client, default to port 80 when no port specified
+  for (uint32 i = 0; i < servers_.size(); ++i) {
+      if (servers_[i].port() == 0) {
+          servers_[i].set_port(80);
+      }
+  }
 
   requeue_pending_callback_ = NewPermanentCallback(
       this, &FailSafeClient::RequeuePendingAlarm);
@@ -74,10 +84,10 @@ FailSafeClient::FailSafeClient(
 }
 
 FailSafeClient::~FailSafeClient() {
-  LOG_INFO << " Deleting failsafe connection: " << this;
   closing_ = true;
   ForceCloseAll();
-  LOG_INFO << " Deleting pending requests " << pending_requests_->size();
+  LOG_INFO << " Deleting failsafe connection: " << this
+           << " with: " << pending_requests_->size() << " pending requests.";
   while ( !pending_requests_->empty() ) {
     PendingStruct* const ps = pending_requests_->front();
     if (!ps->canceled_) {
@@ -94,7 +104,6 @@ FailSafeClient::~FailSafeClient() {
   if ( auto_delete_connection_factory_ ) {
       delete connection_factory_;
   }
-  LOG_INFO << " Failsafe connection deleted:" << this;
 }
 
 void FailSafeClient::ForceCloseAll() {
@@ -207,13 +216,14 @@ void FailSafeClient::CompleteWithError(PendingStruct* ps,
 
 bool FailSafeClient::InternalStartRequest(PendingStruct* ps) {
   if ( closing_ ) {
+    CompleteWithError(ps, CONN_CLIENT_CLOSE);
     return false;
   }
   if ( selector_->now() - ps->start_time_ > request_timeout_ms_ ) {
     CompleteWithError(ps, CONN_REQUEST_TIMEOUT);
     return true;
   }
-  if ( ps->retries_left_ <= 0 ) {
+  if ( ps->retries_left_ == 0 ) {
     CompleteWithError(ps, CONN_TOO_MANY_RETRIES);
     return true;
   }
@@ -237,12 +247,10 @@ bool FailSafeClient::InternalStartRequest(PendingStruct* ps) {
         }
         if ( selector_->now() - death_time_[i] >
              reopen_connection_interval_ms_ && death_time_[i] > 0) {
-          LOG_INFO << " Reopening client for: " << servers_[i].ToString()
+          LOG_HTTP << " Reopening client for: " << servers_[i].ToString()
                    << " // " << selector_->now() << " // " << death_time_[i]
                    << " @" << reopen_connection_interval_ms_;
-          clients_[i] = new ClientProtocol(client_params_,
-                                           connection_factory_->Run(),
-                                           servers_[i]);
+          clients_[i] = CreateClient(i);
           death_time_[i] = selector_->now();
           min_load = 0; min_id = i;
         } else if (death_time_[i] == 0) {
@@ -254,9 +262,7 @@ bool FailSafeClient::InternalStartRequest(PendingStruct* ps) {
       if (clients_.size() < servers_.size() ) {
         min_id = clients_.size();
         min_load = 0;
-        clients_.push_back(new ClientProtocol(
-                               client_params_, connection_factory_->Run(),
-                           servers_[clients_.size()]));
+        clients_.push_back(CreateClient(clients_.size()));
         death_time_.push_back(0);
       } else {
           break;
@@ -264,8 +270,9 @@ bool FailSafeClient::InternalStartRequest(PendingStruct* ps) {
     }
   }
 
-  if ( min_id < 0 || min_load > 0 ) {
-//       (min_load > 0 && client_params_->keep_alive_sec_ == 0) ) {
+  if ( min_id < 0 || // min_load > 0 ) {
+       (min_load > 0 && client_params_->keep_alive_sec_ == 0) ||
+       (min_load >= client_params_->max_concurrent_requests_) ) {
     pending_map_->insert(make_pair(ps->req_, ps));
     if (!ps->urgent_) {
       pending_requests_->push_back(ps);
@@ -274,7 +281,11 @@ bool FailSafeClient::InternalStartRequest(PendingStruct* ps) {
     }
     return false;
   }
-  ps->retries_left_--;
+
+  if (ps->retries_left_ > 0) {
+        ps->retries_left_--;
+  }
+
   LOG_HTTP << " Sending request: " << ps->req_->name()
            << " to " << servers_[min_id].ToString() << " id: " << min_id
            << " load: " << min_load;
@@ -320,7 +331,9 @@ void FailSafeClient::CompletionCallback(PendingStruct* ps, int client_id) {
     ps->req_->request()->client_data()->MarkerClear();
     completion_events_.push_back(make_pair(now, ps->ToString(now) + " => closed w/ " +
         http::GetHttpReturnCodeName(ps->req_->request()->server_header()->status_code())));
-
+    if (ps->req_->request()->server_header()->status_code() == http::UNKNOWN) {
+      LOG_WARNING << " Completed Request in UNKNOWN state: " << ps->ToString(now);
+    }
     Closure* completion_closure = ps->completion_closure_;
     delete ps;
 
@@ -337,6 +350,23 @@ void FailSafeClient::CompletionCallback(PendingStruct* ps, int client_id) {
   while (completion_events_.size() > FLAGS_http_failsafe_max_log_size) {
       completion_events_.pop_front();
   }
+}
+ClientStreamReceiverProtocol* FailSafeClient::CreateStreamReceiveClient(size_t ndx) {
+    if (servers_.empty()) { return NULL; }
+    http::BaseClientConnection* connection = connection_factory_->Run();
+    if (ndx > servers_.size()) {
+        ndx = size_t(connection) % servers_.size();
+    }
+    return new ClientStreamReceiverProtocol(client_params_, connection, servers_[ndx]);
+}
+
+ClientProtocol* FailSafeClient::CreateClient(size_t ndx) {
+    if (servers_.empty()) { return NULL; }
+    http::BaseClientConnection* connection = connection_factory_->Run();
+    if (ndx > servers_.size()) {
+        ndx = size_t(connection) % servers_.size();
+    }
+    return new ClientProtocol(client_params_, connection, servers_[ndx]);
 }
 
 void FailSafeClient::ClearClient(ClientProtocol* client) {
@@ -435,4 +465,5 @@ void FailSafeClient::Reset() {
    }
 }
 
-}
+}  // namespace http
+}  // namespace whisper

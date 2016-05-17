@@ -33,9 +33,10 @@
 #define __NET_RPC_LIB_CODEC_JSON_RPC_JSON_DECODER_H__
 
 #include <string>
-#include <whisperlib/rpc/codec/rpc_decoder.h>
-#include <whisperlib/base/core_errno.h>
+#include "whisperlib/rpc/codec/rpc_decoder.h"
+#include "whisperlib/base/core_errno.h"
 
+namespace whisper {
 namespace codec {
 
 class JsonDecoder : public codec::Decoder {
@@ -72,7 +73,7 @@ class JsonDecoder : public codec::Decoder {
   DECODE_RESULT DecodeBody(int64& out);
   DECODE_RESULT DecodeBody(uint64& out);
   DECODE_RESULT DecodeBody(double& out);
-  DECODE_RESULT DecodeBody(string& out);
+  DECODE_RESULT DecodeBody(std::string& out);
 
   void Reset();
 
@@ -97,13 +98,17 @@ class JsonDecoder : public codec::Decoder {
  public:
 
   template<class C>
-  static bool DecodeObject(const string& s, C* obj) {
+  static bool DecodeObject(const std::string& s, C* obj) {
     io::MemoryStream iomis;
     iomis.Write(s.c_str(), s.size());
     codec::JsonDecoder decoder(iomis);
     const codec::DECODE_RESULT result = decoder.Decode(*obj);
     return result == codec::DECODE_RESULT_SUCCESS;
   }
+  DECODE_RESULT DecodeSkipBody() {
+      return DecodeRaw(NULL);
+  }
+
  private:
   DECODE_RESULT DecodeElementContinue(bool& more_attribs,
                                       const char* separator);
@@ -115,7 +120,7 @@ class JsonDecoder : public codec::Decoder {
   DECODE_RESULT ReadNumber(T& out,
                            bool is_floating_point = false,
                            bool has_quotes = false) {
-    string s;
+    std::string s;
     const io::TokenReadError res = in_.ReadNextAsciiToken(&s);
     switch ( res ) {
       case io::TOKEN_NO_DATA:
@@ -167,6 +172,7 @@ class JsonDecoder : public codec::Decoder {
   bool decoding_map_key_;
   bool is_first_item_;
 };
+}
 }
 
 #endif   // __NET_RPC_LIB_CODEC_JSON_RPC_JSON_DECODER_H__

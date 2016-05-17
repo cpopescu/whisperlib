@@ -37,19 +37,21 @@
 //  - you provide us w/ a selector where we run your completed callbacks.
 //  - upon error we automatically delete the guilty file descriptor.
 //
-// IMPORTANT - use one AioManager per physical disk !!
+// IMPORTANT - use one AioManager per phisical disk !!
 //
 #ifndef __COMMON_IO_FILE_AIO_FILE__
 #define __COMMON_IO_FILE_AIO_FILE__
 
 #include <aio.h>
+#include <string>
 
-#include <whisperlib/net/selector.h>
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/callback.h>
-#include <whisperlib/sync/thread.h>
-#include <whisperlib/sync/producer_consumer_queue.h>
+#include "whisperlib/net/selector.h"
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/callback.h"
+#include "whisperlib/sync/thread.h"
+#include "whisperlib/sync/producer_consumer_queue.h"
 
+namespace whisper {
 namespace io {
 
 class AioManager {
@@ -101,7 +103,7 @@ class AioManager {
   // Initiate a write request, as instructed by 'req'
   void Write(Request* req);
 
-  const string& name() const { return name_; }
+  const std::string& name() const { return name_; }
 
   // For passing messages between different threads ..
   typedef synch::ProducerConsumerQueue<Request*> ReqQueue;
@@ -135,12 +137,12 @@ class AioManager {
     return static_cast<int32>(op);
   }
 
-  const string name_;   // you can give a name to this guy..
+  const std::string name_;   // you can give a name to this guy..
   net::Selector* const selector_;   // all requests should come through
                                     // this selector thread
 
   // We run one thread per operation x request size bucket
-  thread::Thread* aio_threads_[NUM_OPS * kNumBlockTypes];
+  whisper::thread::Thread* aio_threads_[NUM_OPS * kNumBlockTypes];
 
 
   // These threads read their requests through a reques queue..
@@ -150,11 +152,12 @@ class AioManager {
 
   // this guy reads responses from 'response_queue_' and calls the
   // corresponding closures in the selector
-  thread::Thread response_thread_;
+  whisper::thread::Thread response_thread_;
 
   // TODO(cpopescu):  More statistics then that ugly log
 
   DISALLOW_EVIL_CONSTRUCTORS(AioManager);
 };
-}
+}  // namespace io
+}  // namespace whisper
 #endif  // __COMMON_IO_FILE_AIO_FILE__

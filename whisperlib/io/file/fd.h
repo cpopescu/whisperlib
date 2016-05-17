@@ -26,14 +26,15 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//// Copyright 2009 WhisperSoft s.r.l.
+//
 // Author: Cosmin Tudorache
 
 #ifndef __COMMON_IO_FILE_FD_H__
 #define __COMMON_IO_FILE_FD_H__
 
-#include <whisperlib/base/types.h>
+#include "whisperlib/base/types.h"
 
+namespace whisper {
 namespace io {
 
 class FileDescriptor {
@@ -90,5 +91,6 @@ class FileDescriptor {
 
   DISALLOW_EVIL_CONSTRUCTORS(FileDescriptor);
 };
-}
+}  // namespace io
+}  // namespace whisper
 #endif  // __COMMON_IO_FILE_FD_H__

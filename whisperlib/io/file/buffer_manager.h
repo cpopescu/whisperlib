@@ -74,13 +74,15 @@
 #include <sys/types.h>
 #include <map>
 #include <set>
-#include <whisperlib/base/types.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/hash.h"
 #include WHISPER_HASH_SET_HEADER
 
-#include <whisperlib/base/callback.h>
-#include <whisperlib/sync/mutex.h>
-#include <whisperlib/base/free_list.h>
+#include "whisperlib/base/callback.h"
+#include "whisperlib/sync/mutex.h"
+#include "whisperlib/base/free_list.h"
 
+namespace whisper {
 namespace io {
 
 class BufferManager {
@@ -182,7 +184,7 @@ class BufferManager {
   // Allocates buffers for us
   util::MemAlignedFreeArrayList* const freelist_;
 
-  typedef map<string, Buffer*> BufferMap;
+  typedef std::map<string, Buffer*> BufferMap;
   mutable synch::Mutex mutex_;
   // Buffers that were get
   BufferMap active_buffers_;
@@ -190,7 +192,7 @@ class BufferManager {
   BufferMap free_buffers_;
   // Buffers to be reassigned - sorted by release time.
   // They are in free_buffers_ too.
-  typedef set< pair<int64, Buffer*> > UsageSet;
+  typedef std::set< std::pair<int64, Buffer*> > UsageSet;
   UsageSet usage_set_;
 
   friend class Buffer;
@@ -198,7 +200,8 @@ class BufferManager {
   DISALLOW_EVIL_CONSTRUCTORS(BufferManager);
 };
 
-}
+}  // namespace io
+}  // namespace whisper
 
 
 #endif //  __COMMON_IO_FILE_BUFFER_MANAGER_H__

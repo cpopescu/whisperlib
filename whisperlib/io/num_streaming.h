@@ -1,3 +1,4 @@
+// -*- c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil; coding: utf-8 -*-
 // Copyright (c) 2009, Whispersoft s.r.l.
 // All rights reserved.
 //
@@ -36,11 +37,15 @@
 #define __WHISPERLIB_IO_NUM_STREAMING_H__
 
 #include <algorithm>
-#include <whisperlib/io/output_stream.h>
-#include <whisperlib/io/input_stream.h>
-#include <whisperlib/base/system.h>
-#include <whisperlib/base/log.h>
+#include "whisperlib/io/output_stream.h"
+#include "whisperlib/io/input_stream.h"
+// #include "whisperlib/base/system.h"
+#include "whisperlib/base/log.h"
 
+// This gives some errors - unknown - very noisy
+// #pragma GCC diagnostic ignored "-Wunused-local-typedef"
+
+namespace whisper {
 namespace io {
 
 template<class R, class W>
@@ -81,7 +86,7 @@ class BaseNumStreamer {
     uint8* p1 = reinterpret_cast<uint8*>(data);
     uint8* p2 = p1 + sizeof(*data) - 1;
     while ( p1 < p2 ) {
-      swap(*p1++, *p2--);
+      std::swap(*p1++, *p2--);
     }
   }
 
@@ -94,22 +99,26 @@ class BaseNumStreamer {
   // Input streaming -- by default we use the stream default endianess
   //
   template<typename N> static N ReadNumber(R* is,
-                                           common::ByteOrder order) {
+                                           common::ByteOrder order,
+                                           bool* success) {
     COMPILE_ASSERT(sizeof(N) <= kMaxSize, size_too_big_for_ReadNumber);
     N result;
     const int32 i = is->Read(&result, sizeof(N));
-    CHECK_EQ(sizeof(N), i);
+    if (success) *success = (sizeof(N) == i);
+    else CHECK_EQ(sizeof(N), i);
     if ( common::kByteOrder != order ) {
       SwapBytes(&result);
     }
     return result;
   }
   template<typename N> static N PeekNumber(const R* is,
-                                           common::ByteOrder order) {
+                                           common::ByteOrder order,
+                                           bool* success) {
     COMPILE_ASSERT(sizeof(N) <= kMaxSize, size_too_big_for_ReadNumber);
     N result;
     const int32 i = is->Peek(&result, sizeof(N));
-    CHECK_EQ(sizeof(N), i);
+    if (success) *success = sizeof(N) == i;
+    else CHECK_EQ(sizeof(N), i);
     if ( common::kByteOrder != order ) {
       SwapBytes(&result);
     }
@@ -119,88 +128,107 @@ class BaseNumStreamer {
 
   // Pops a single byte from the buffer. If the stream is empty, it returns 0.
   // The number of bytes read are written in "bytes_read" if not NULL.
-  static uint8 ReadByte(R* is) {
-    return ReadNumber<uint8>(is, common::kByteOrder);
+  static uint8 ReadByte(R* is, bool* success = NULL) {
+    return ReadNumber<uint8>(is, common::kByteOrder, success);
   }
   // Functions for popping various number types from the stream (written in
   // the given byteorder)
   static int16 ReadInt16(R* is,
-                         common::ByteOrder order) {
-    return ReadNumber<int16>(is, order);
+                         common::ByteOrder order,
+                         bool* success = NULL) {
+    return ReadNumber<int16>(is, order, success);
   }
   static uint16 ReadUInt16(R* is,
-                           common::ByteOrder order) {
-    return ReadNumber<uint16>(is, order);
+                           common::ByteOrder order,
+                           bool* success = NULL) {
+    return ReadNumber<uint16>(is, order, success);
   }
   static uint32 ReadUInt24(R* is,
-                           common::ByteOrder order) {
-    return static_cast<uint32>(ReadNumber<uint24>(is, order));
+                           common::ByteOrder order,
+                           bool* success = NULL) {
+    return static_cast<uint32>(ReadNumber<uint24>(is, order, success));
   }
   static int32 ReadInt32(R* is,
-                         common::ByteOrder order) {
-    return ReadNumber<int32>(is, order);
+                         common::ByteOrder order,
+                         bool* success = NULL) {
+    return ReadNumber<int32>(is, order, success);
   }
   static uint32 ReadUInt32(R* is,
-                           common::ByteOrder order) {
-    return ReadNumber<uint32>(is, order);
+                           common::ByteOrder order,
+                           bool* success = NULL) {
+    return ReadNumber<uint32>(is, order, success);
   }
   static int64 ReadInt64(R* is,
-                         common::ByteOrder order) {
-    return ReadNumber<int64>(is, order);
+                         common::ByteOrder order,
+                         bool* success = NULL) {
+    return ReadNumber<int64>(is, order, success);
   }
   static uint64 ReadUInt64(R* is,
-                          common::ByteOrder order) {
-    return ReadNumber<uint64>(is, order);
+                           common::ByteOrder order,
+                           bool* success = NULL) {
+    return ReadNumber<uint64>(is, order, success);
   }
   static float ReadFloat(R* is,
-                         common::ByteOrder order) {
-    return ReadNumber<float>(is, order);
+                         common::ByteOrder order,
+                         bool* success = NULL) {
+    return ReadNumber<float>(is, order, success);
   }
   static double ReadDouble(R* is,
-                           common::ByteOrder order) {
-    return ReadNumber<double>(is, order);
+                           common::ByteOrder order,
+                           bool* success = NULL) {
+    return ReadNumber<double>(is, order, success);
   }
 
   // Functions for peeking various number types from the stream (written in
   // the given byteorder)
-  static uint8 PeekByte(const R* is) {
-    return PeekNumber<uint8>(is, common::kByteOrder);
+  static uint8 PeekByte(const R* is,
+                        bool* success = NULL) {
+    return PeekNumber<uint8>(is, common::kByteOrder, success);
   }
   static int16 PeekInt16(const R* is,
-                         common::ByteOrder order) {
-    return PeekNumber<int16>(is, order);
+                         common::ByteOrder order,
+                         bool* success = NULL) {
+    return PeekNumber<int16>(is, order, success);
   }
   static uint16 PeekUInt16(const R* is,
-                           common::ByteOrder order) {
-    return PeekNumber<uint16>(is, order);
+                           common::ByteOrder order,
+                           bool* success = NULL) {
+    return PeekNumber<uint16>(is, order, success);
   }
   static uint32 PeekUInt24(const R* is,
-                           common::ByteOrder order) {
-    return static_cast<uint32>(PeekNumber<uint24>(is, order));
+                           common::ByteOrder order,
+                           bool* success = NULL) {
+    return static_cast<uint32>(PeekNumber<uint24>(is, order, success));
   }
   static int32 PeekInt32(const R* is,
-                         common::ByteOrder order) {
-    return PeekNumber<int32>(is, order);
+                         common::ByteOrder order,
+                         bool* success = NULL) {
+    return PeekNumber<int32>(is, order, success);
   }
   static uint32 PeekUInt32(const R* is,
-                           common::ByteOrder order) {
-    return PeekNumber<uint32>(is, order);
+                           common::ByteOrder order,
+                           bool* success = NULL) {
+    return PeekNumber<uint32>(is, order, success);
   }
   static int64 PeekInt64(const R* is,
-                         common::ByteOrder order) {
-    return PeekNumber<int64>(is, order);
+                         common::ByteOrder order,
+                         bool* success = NULL) {
+    return PeekNumber<int64>(is, order, success);
   }
   static uint64 PeekUInt64(const R* is,
-                          common::ByteOrder order) {
-    return PeekNumber<uint64>(is, order);
+                           common::ByteOrder order,
+                           bool* success = NULL) {
+    return PeekNumber<uint64>(is, order, success);
   }
   static float PeekFloat(const R* is,
-                         common::ByteOrder order) {
-    return PeekNumber<float>(is, order);
+                         common::ByteOrder order,
+                         bool* success = NULL) {
+    return PeekNumber<float>(is, order, success);
   }
   static double PeekDouble(const R* is,
-                           common::ByteOrder order) {
-    return PeekNumber<double>(is, order);
+                           common::ByteOrder order,
+                           bool* success = NULL) {
+    return PeekNumber<double>(is, order, success);
   }
 
 
@@ -330,6 +358,7 @@ private:
   // bit index inside current byte (i.e. inside data_[head_])
   uint32 head_bit_; // [7..0] . 7 is MSB, 0 is LSB
 };
-} // namespace io
+}  // namespace io
+}  // namespace whisper
 
 #endif  // __WHISPERLIB_IO_NUM_STREAMING_H__

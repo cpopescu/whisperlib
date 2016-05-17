@@ -30,13 +30,24 @@
 // Authors: Catalin Popescu
 
 #include "whisperlib/io/zlib/zlibwrapper.h"
+#include "whisperlib/base/re.h"
+#include "whisperlib/base/strutil.h"
+#include "whisperlib/base/scoped_ptr.h"
+#include "whisperlib/io/ioutil.h"
+#include "whisperlib/io/file/file.h"
+#include "whisperlib/io/file/file_input_stream.h"
+#include "whisperlib/io/file/file_output_stream.h"
+#include "whisperlib/io/num_streaming.h"
 
+using namespace std;
+
+namespace whisper {
 namespace io {
 
 #define ZLOG_ERROR(fname, err, strm) {\
     const char* str_err = zError(err);\
-    LOG_ERROR << "ZLIB " << fname << "() failed, err: " << (str_err ? str_err : "NULL")\
-              << ", msg: " << (strm.msg ? strm.msg : "NULL");\
+    LOG_WARN << "ZLIB " << fname << "() failed, err: " << (str_err ? str_err : "NULL")\
+             << ", msg: " << (strm.msg ? strm.msg : "NULL");            \
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -448,8 +459,8 @@ int ZlibGzipDecodeWrapper::Decode(io::MemoryStream* in,
     const int32 expected_crc = NumStreamer::ReadInt32(in, common::LILENDIAN);
     const int32 expected_size = NumStreamer::ReadInt32(in, common::LILENDIAN);
     if ( expected_crc != running_crc_ && strict_trailer_checking_ ) {
-      LOG_WARNING << " Invalid CRC - got: 0x" << hex << running_crc_
-                  << " excpected: 0x" << hex << expected_crc << dec;
+      LOG_WARN << " Invalid CRC - got: 0x" << hex << running_crc_
+               << " excpected: 0x" << hex << expected_crc << dec;
       zlib_err = Z_DATA_ERROR;
     }
     if ( expected_size != running_size_ && strict_trailer_checking_ ) {
@@ -460,4 +471,241 @@ int ZlibGzipDecodeWrapper::Decode(io::MemoryStream* in,
   }
   return zlib_err;
 }
+static const int32 kMaxFileNameSize = 2048;
+static int32 kZipFileHeader = 0xdcc0ffee;
+static const char kPathSplit[] = {PATH_SEPARATOR, '\0' };
+
+bool DeflateDir(Compressor* compressor,
+                const string& input_name,
+                const re::RE* regex,
+                const string& file_name,
+                bool append, bool recursive,
+                int32 chunk_size) {
+    CHECK_LE(chunk_size, kCompressMaxChunkSize);
+    if (!append && io::IsReadableFile(file_name)) {
+        if (!io::Rm(file_name)) {
+            LOG_ERROR << " Cannot erase file: " << file_name;
+            return false;
+        }
+    }
+    io::File* out_file = new io::File();
+    vector<string> in_files;
+    string dir_name;
+    string bn;
+    if (io::IsReadableFile(input_name)) {
+        in_files.push_back(strutil::Basename(input_name));
+        dir_name = strutil::Dirname(input_name);
+    } else {
+        bn = strutil::Basename(input_name);
+        if (!DirList(input_name, io::LIST_FILES | (recursive ? 0 : io::LIST_RECURSIVE),
+                     regex, &in_files)) {
+            LOG_ERROR << "Cannot list directory: " << input_name;
+            return false;
+        }
+        dir_name = input_name;
+    }
+    if (in_files.empty()) {
+        LOG_ERROR << "No files found to compact.";
+        return false;
+    }
+    if (io::IsReadableFile(file_name)) {
+        if (!out_file->Open(file_name, io::File::GENERIC_WRITE,
+                            io::File::OPEN_EXISTING)) {
+            LOG_INFO << " Cannot open file: " << file_name;
+            return false;
+        }
+        out_file->SetPosition(0, io::File::FILE_END);
+    } else {
+        if (!out_file->Open(file_name, io::File::GENERIC_WRITE,
+                            io::File::CREATE_ALWAYS)) {
+            LOG_INFO << " Cannot create file: " << file_name;
+            return false;
+        }
+    }
+    chunk_size = min(chunk_size, kCompressMaxChunkSize);
+    io::MemoryStream ms, ms_compact;
+    FileOutputStream fout(out_file);
+    if (out_file->Size() == 0) {
+        if (io::IONumStreamer::WriteInt32(&fout, int32(kZipFileHeader),
+                                          common::BIGENDIAN) != sizeof(kZipFileHeader)) {
+            LOG_ERROR << " Error writing file header to " << file_name;
+            return false;
+        }
+    }
+    for (int i = 0; i < in_files.size(); ++i) {
+        string arch_file_name = bn.empty() ? in_files[i]
+            : strutil::JoinPaths(bn, in_files[i]);
+        vector<string> pieces;
+
+        strutil::SplitString(arch_file_name, kPathSplit, &pieces);
+        arch_file_name = strutil::JoinStrings(pieces, "/");
+        if (arch_file_name.size() > kMaxFileNameSize) {
+            LOG_WARN << " File name to large, skipping: " << arch_file_name.size()
+                     << " / " << arch_file_name;
+            continue;
+        }
+        scoped_ptr<File> fin(io::File::TryOpenFile(strutil::JoinPaths(
+                                                       dir_name, in_files[i]).c_str()));
+        if (fin.get() == NULL) {
+            LOG_WARN << "Cannot open file for reading: " << in_files[i];
+            continue;
+        }
+        int64 sz = fin->Size();
+        const int64 pos = out_file->Position();
+        if (io::IONumStreamer::WriteInt32(&fout, int32(arch_file_name.size()),
+                                          common::BIGENDIAN) != sizeof(int32) ||
+            fout.Write(arch_file_name.data(),
+                       arch_file_name.size()) != arch_file_name.size() ||
+            io::IONumStreamer::WriteInt64(&fout, sz,
+                                          common::BIGENDIAN) != sizeof(int64)) {
+            LOG_ERROR << " Error writing file header to " << file_name;
+            return false;
+        }
+        bool error = false;
+        while (sz > 0 && !error) {
+            int64 read_sz = min(sz, int64(chunk_size));
+            ms.Clear();
+            if (read_sz != fin->Read(&ms, read_sz)) {
+                LOG_WARN << " Error reading data from " << in_files[i] << " / skipping. ";
+                error = true;
+                break;
+            }
+            sz -= read_sz;
+            ms_compact.Clear();
+            if (!compressor->Compress(&ms, &ms_compact)) {
+                LOG_WARN << " Error deflating " << ms.Size()
+                         << " bytes for " << in_files[i] << " / skipping. ";
+                error = true;
+                break;
+            }
+            const int32 comp_sz = ms_compact.Size();
+            if (io::IONumStreamer::WriteInt32(&fout, int32(read_sz),
+                                              common::BIGENDIAN) != sizeof(int32) ||
+                io::IONumStreamer::WriteInt32(&fout, int32(comp_sz),
+                                              common::BIGENDIAN) != sizeof(comp_sz)) {
+                LOG_ERROR << " Error writing chunk header to " << file_name;
+                return false;
+            }
+            LOG_INFO << " Adding chunk: " << in_files[i]
+                     << " size: " << read_sz << " => " << comp_sz;
+            if (out_file->Write(&ms_compact) != comp_sz) {
+                LOG_ERROR << " Error writing " << comp_sz << " bytes to " << file_name;
+                return false;
+            }
+        }
+        if (error) {
+            out_file->Truncate(pos);
+            out_file->SetPosition(0, io::File::FILE_END);
+        }
+    }
+    out_file->Close();
+    return true;
 }
+
+bool InflateToDir(Decompressor* decompressor,
+                  const string& file_name,
+                  const string& dir_name) {
+    io::File* in_file = io::File::TryOpenFile(file_name.c_str());
+    if (!in_file) {
+        LOG_ERROR << " Cannot open file to inflate: " << file_name;
+        return false;
+    }
+    FileInputStream fin(in_file);
+    if (!io::IsDir(dir_name)) {
+        if (!io::Mkdir(dir_name, true)) {
+            LOG_ERROR << "Error creating output dir: " << dir_name;
+            return false;
+        }
+    }
+    io::MemoryStream ms, ms_decomp;
+    bool success;
+    const int32 header = io::IONumStreamer::ReadInt32(&fin, common::BIGENDIAN, &success);
+    if (!success || header != kZipFileHeader) {
+        LOG_ERROR << " Error reading input file header for " << file_name;
+        return false;
+    }
+    char out_fn[kMaxFileNameSize + 1];
+    while (in_file->Remaining() > 0) {
+        const int32 sz_name = io::IONumStreamer::ReadInt32(&fin, common::BIGENDIAN, &success);
+        if (!success || sz_name > kMaxFileNameSize) {
+            LOG_ERROR << " Error reading file name size: " << sz_name;
+            return false;
+        }
+        const int32 cb_name = fin.Read(out_fn, sz_name);
+        if (cb_name != sz_name) {
+            LOG_ERROR << " Cannot read internal file name.";
+            return false;
+        }
+        out_fn[sz_name] = '\0';
+        string fn(out_fn);
+        vector<string> pieces;
+        strutil::SplitString(fn, "/", &pieces);
+        fn = strutil::JoinStrings(pieces, kPathSplit);
+        string fn_dir_name(strutil::JoinPaths(dir_name, strutil::Dirname(fn)));
+        if (!io::IsDir(fn_dir_name)) {
+            if (!io::Mkdir(fn_dir_name, true)) {
+                LOG_ERROR << "Error creating output dir: " << fn_dir_name;
+                return false;
+            }
+        }
+        io::File* out_file = io::File::TryCreateFile(strutil::JoinPaths(
+                                                         dir_name, string(fn)).c_str());
+        if (out_file == NULL) {
+            LOG_ERROR << " Error creating output file: " << fn << " under " << dir_name;
+            return false;
+        }
+        int64 sz = io::IONumStreamer::ReadInt64(&fin, common::BIGENDIAN, &success);
+        if (!success || sz < 0) {
+            LOG_ERROR << "Bad file size read from input file";
+            return false;
+        }
+        io::FileOutputStream fout(out_file);
+        if (sz == 0) {
+            LOG_INFO << "Created empty file: " << fn;
+            continue;
+        }
+        while (sz > 0) {
+            const int32 read_sz = io::IONumStreamer::ReadInt32(
+                &fin, common::BIGENDIAN, &success);
+            if (!success || read_sz < 0 || kCompressMaxChunkSize < read_sz) {
+                LOG_WARN << "Invalid chunk size read from the input.";
+                return false;
+            }
+            const int32 comp_sz = io::IONumStreamer::ReadInt32(
+                &fin, common::BIGENDIAN, &success);
+            if (!success || comp_sz < 0 || kCompressMaxChunkSize * 1.2 < comp_sz) {
+                LOG_WARN << "Invalid compaction size read from the input.";
+                return false;
+            }
+            ms.Clear();
+            const int32 cb = in_file->Read(&ms, comp_sz);
+            if (cb != comp_sz) {
+                LOG_WARN << "Cannot read " << comp_sz << " expected bytes for "
+                         << " file: " << fn;
+                return false;
+            }
+            ms_decomp.Clear();
+            if (!decompressor->Decompress(&ms, &ms_decomp)) {
+                LOG_WARN << "Error decompressing: " << comp_sz << " bytes for "
+                         << " file: " << fn;
+                return false;
+            }
+            if (read_sz != ms_decomp.Size()) {
+                LOG_WARN << "Decompressed size does not match the original reported size: "
+                         << read_sz << " vs. " << ms_decomp.Size();
+                return false;
+            }
+            if (read_sz != out_file->Write(&ms_decomp)) {
+                LOG_WARN << " Error writing : " << read_sz << " bytes to: " << out_file;
+                return false;
+            }
+            LOG_INFO << " Written to : " << fn << " - " << read_sz
+                     << " bytes from " << cb << " compressed bytes.";
+            sz -= read_sz;
+        }
+    }
+    return true;
+}
+
+}  // namespace io
+}  // namespace whisper

@@ -31,13 +31,13 @@
 //
 
 #include <stdio.h>
-#include <whisperlib/base/types.h>
-#include <whisperlib/base/log.h>
-#include <whisperlib/base/system.h>
-#include <whisperlib/base/gflags.h>
+#include "whisperlib/base/types.h"
+#include "whisperlib/base/log.h"
+#include "whisperlib/base/system.h"
+#include "whisperlib/base/gflags.h"
 
-#include <whisperlib/http/http_request.h>
-#include <whisperlib/io/buffer/memory_stream.h>
+#include "whisperlib/http/http_request.h"
+#include "whisperlib/io/buffer/memory_stream.h"
 
 //////////////////////////////////////////////////////////////////////
 
@@ -55,9 +55,9 @@ DEFINE_bool(require_success,
 //////////////////////////////////////////////////////////////////////
 
 int main(int argc, char* argv[]) {
-  common::Init(argc, argv);
+  whisper::common::Init(argc, argv);
 
-  io::MemoryStream ms;
+  whisper::io::MemoryStream ms;
 
   FILE* f = fopen(FLAGS_input_file.c_str(), "r");
   CHECK_NOT_NULL(f);
@@ -68,19 +68,19 @@ int main(int argc, char* argv[]) {
   ms.AppendRaw(buffer, cb);
 
 
-  http::RequestParser parser(FLAGS_input_file.c_str());
+  whisper::http::RequestParser parser(FLAGS_input_file.c_str());
   parser.set_dlog_level(true);
-  http::Request req;
+  whisper::http::Request req;
   parser.Clear();
   if ( FLAGS_is_server ) {
     req.client_header()->PrepareRequestLine("/");
     const int ret = parser.ParseServerReply(&ms, &req);
     LOG_INFO << parser.name() << " Returned: "
-             << http::RequestParser::ReadStateName(ret)
+             << whisper::http::RequestParser::ReadStateName(ret)
              << " [" << ret << "] "
              << " in " << parser.ParseStateName()
              << " with: " << ms.Size() << " left in the input buffer !!";
-    if ( ret & http::RequestParser::REQUEST_FINISHED ) {
+    if ( ret & whisper::http::RequestParser::REQUEST_FINISHED ) {
       CHECK(parser.InFinalState());
       if ( parser.InErrorState() ) {
         LOG_INFO << parser.name() << " ended in error: "
@@ -99,11 +99,11 @@ int main(int argc, char* argv[]) {
   } else {
     const int ret = parser.ParseClientRequest(&ms, &req);
     LOG_INFO << parser.name() << " Returned: "
-             << http::RequestParser::ReadStateName(ret)
+             << whisper::http::RequestParser::ReadStateName(ret)
              << " [" << ret << "] "
              << " in " << parser.ParseStateName()
              << " with: " << ms.Size() << " left in the input buffer !!";
-    if ( ret & http::RequestParser::REQUEST_FINISHED ) {
+    if ( ret & whisper::http::RequestParser::REQUEST_FINISHED ) {
       CHECK(parser.InFinalState());
       if ( parser.InErrorState() ) {
         LOG_INFO << parser.name() << " ended in error: "
@@ -120,4 +120,5 @@ int main(int argc, char* argv[]) {
     }
     printf("%d %d\n", static_cast<int>(ret), static_cast<int>(ms.Size()));
   }
+  return 0;
 }

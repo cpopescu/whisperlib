@@ -30,9 +30,9 @@
 // Author: Catalin Popescu
 
 #include <pthread.h>
-#include <whisperlib/net/ipclassifier.h>
-#include <whisperlib/io/file/file_input_stream.h>
-#include <whisperlib/base/gflags.h>
+#include "whisperlib/net/ipclassifier.h"
+#include "whisperlib/io/file/file_input_stream.h"
+#include "whisperlib/base/gflags.h"
 
 //////////////////////////////////////////////////////////////////////
 /*
@@ -45,28 +45,29 @@ DEFINE_string(ip2location_classifier_db,
 namespace {
 template <class C>
 void SplitClassifiers(C* c, const char* members) {
-  vector<string> components;
+  std::vector<std::string> components;
   CHECK(strutil::SplitBracketedString(members, ',', '(', ')',  &components))
         << " Invalid classifier spec: [" << members << "]";
   for ( int i = 0; i < components.size(); ++i ) {
-    c->Add(net::IpClassifier::CreateClassifier(components[i]));
+    c->Add(whisper::net::IpClassifier::CreateClassifier(components[i]));
   }
 }
 }
 
+namespace whisper {
 namespace net {
-IpClassifier* IpClassifier::CreateClassifier(const string& spec) {
+IpClassifier* IpClassifier::CreateClassifier(const std::string& spec) {
   size_t pos_open = spec.find("(");
   size_t pos_close = spec.rfind(")");
-  CHECK(pos_open != string::npos)
+  CHECK(pos_open != std::string::npos)
     << " Invalid IpClassifier specication (missing '(') : ["
     << spec << "]";
-  CHECK(pos_close != string::npos)
+  CHECK(pos_close != std::string::npos)
     << " Invalid IpClassifier specication (missing ')') : ["
     << spec << "]";
   CHECK_GT(pos_close, pos_open);
-  const string name = strutil::StrTrim(spec.substr(0, pos_open));
-  const string arg = strutil::StrTrim(spec.substr(pos_open + 1,
+  const std::string name = strutil::StrTrim(spec.substr(0, pos_open));
+  const std::string arg = strutil::StrTrim(spec.substr(pos_open + 1,
                                                   pos_close - pos_open - 1));
   LOG_INFO << "Creating " << name << " classifier w/ arg: [" << arg << "]";
   if ( name == "NONE" ) {
@@ -94,15 +95,15 @@ IpClassifier* IpClassifier::CreateClassifier(const string& spec) {
 
 // Logical classifiers
 
-IpOrClassifier::IpOrClassifier(const string& members)
+IpOrClassifier::IpOrClassifier(const std::string& members)
   : IpClassifier() {
   SplitClassifiers<IpOrClassifier>(this, members.c_str());
 }
-IpAndClassifier::IpAndClassifier(const string& members)
+IpAndClassifier::IpAndClassifier(const std::string& members)
   : IpClassifier() {
   SplitClassifiers<IpAndClassifier>(this, members.c_str());
 }
-IpNotClassifier::IpNotClassifier(const string& member)
+IpNotClassifier::IpNotClassifier(const std::string& member)
   : IpClassifier(),
     member_(IpClassifier::CreateClassifier(member)) {
 }
@@ -114,14 +115,14 @@ IpNotClassifier::IpNotClassifier(const string& member)
 static pthread_once_t resolver_control;
 net::Ip2Location* IpLocationClassifier::resolver_ = NULL;
 
-IpLocationClassifier::IpLocationClassifier(const string& spec) {
+IpLocationClassifier::IpLocationClassifier(const std::string& spec) {
   CHECK_SYS_FUN(
     pthread_once(&resolver_control, &IpLocationClassifier::InitResolver), 0);
-  vector< pair<string, string> > conditions;
+  std::vector< std::pair<std::string, std::string> > conditions;
   strutil::SplitPairs(spec, ",", ":", &conditions);
   for ( int i = 0; i < conditions.size(); ++i ) {
-    const string& key = conditions[i].first;
-    const string& val = conditions[i].second;
+    const std::string& key = conditions[i].first;
+    const std::string& val = conditions[i].second;
     if ( key == "C" ) {
       countries_.insert(val);
     } else if ( key == "CS" ) {
@@ -133,7 +134,7 @@ IpLocationClassifier::IpLocationClassifier(const string& spec) {
     } else if ( key == "ISP" ) {
       isps_.insert(val);
     } else {
-      LOG_ERROR << "===> UNRECOGNIZED IpLocationClassifier key: " << key;
+      LOG_WARNING << "===> UNRECOGNIZED IpLocationClassifier key: " << key;
     }
   }
 }
@@ -171,21 +172,22 @@ void IpLocationClassifier::InitResolver() {
 */
 
 
-IpFilterFileClassifier::IpFilterFileClassifier(const string& spec) {
-  const string content(io::FileInputStream::ReadFileOrDie(spec.c_str()));
-  vector<string> ips;
-  strutil::SplitString(string(content), "\n", &ips);
+IpFilterFileClassifier::IpFilterFileClassifier(const std::string& spec) {
+  const std::string content(io::FileInputStream::ReadFileOrDie(spec.c_str()));
+  std::vector<std::string> ips;
+  strutil::SplitString(std::string(content), "\n", &ips);
   for ( int i = 0; i < ips.size(); ++i ) {
     filter_.Add(strutil::StrTrim(ips[i]).c_str());
   }
 }
 
-IpFilterStringClassifier::IpFilterStringClassifier(const string& spec) {
-  vector<string> ips;
+IpFilterStringClassifier::IpFilterStringClassifier(const std::string& spec) {
+  std::vector<std::string> ips;
   strutil::SplitString(spec, ",", &ips);
   for ( int i = 0; i < ips.size(); ++i ) {
     filter_.Add(strutil::StrTrim(ips[i]).c_str());
   }
 }
 
-}
+}  // namespace net
+}  // namespace whisper
