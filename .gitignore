@@ -28,3 +28,5 @@ whisperlib/net/test/udp_connection_test
 whisperlib/rpc/test/rpc_test_client
 whisperlib/rpc/test/rpc_test_server
 whisperlib/url/test/url_test
+whisperlib/rpc/RpcStats.pb.*
+whisperlib/rpc/test/rpc_test_proto.pb.*
