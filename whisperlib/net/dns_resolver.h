@@ -83,11 +83,16 @@ struct DnsHostInfo : public RefCounted {
         strutil::ToString(ipv4_).c_str(),
         strutil::ToString(ipv6_).c_str());
   }
-  bool is_valid() {
-      return valid_;
+  bool is_valid() const {
+      return valid_ && (!ipv4_.empty() || !ipv6_.empty());
   }
-  bool is_expired() {
+  bool is_expired() const {
       return !valid_ && (timer::TicksNsec() - time_) > 5000000000LL;  // 5 sec
+  }
+  IpAddress GetFirstAddress() const {
+      if (!ipv4_.empty()) return ipv4_.front();
+      if (!ipv6_.empty()) return ipv6_.front();
+      return IpAddress();
   }
 };
 typedef Callback1< scoped_ref<DnsHostInfo> > DnsResultHandler;

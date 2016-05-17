@@ -1122,15 +1122,14 @@ void TcpConnection::HandleDnsResult(scoped_ref<DnsHostInfo> info) {
   if (state() != RESOLVING) {
     return;   // probably in course of closing
   }
-  if ( info.get() == NULL || info->ipv4_.empty() ) {
+  if ( info.get() == NULL || !info->is_valid() ) {
     LOG_WARN << "Cannot resolve: " << remote_address_.host()
               << ", info: " << info.ToString();
     set_state(DISCONNECTED);
     InvokeCloseHandler(0, CLOSE_READ_WRITE);
     return;
   }
-  const IpAddress& ip = info->ipv4_[0];
-  if ( !Connect(HostPort(ip, remote_address_.port())) ) {
+  if ( !Connect(HostPort(info->GetFirstAddress(), remote_address_.port())) ) {
     InvokeCloseHandler(0, CLOSE_READ_WRITE);
     return;
   }

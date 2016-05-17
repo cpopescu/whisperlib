@@ -55,7 +55,8 @@ whisper::net::Selector* g_selector = NULL;
 
 void HandleDnsResult(string hostname, bool expected_success,
     scoped_ref<whisper::net::DnsHostInfo> info) {
-  CHECK(expected_success == (info.get() != NULL))
+  CHECK_NOT_NULL(info.get());
+  CHECK(expected_success == info.get()->is_valid())
       << "For hostname: [" << hostname
       << "], expected_success: " << strutil::BoolToString(expected_success)
       << ", result: " << info.ToString();
@@ -83,6 +84,7 @@ void TestDnsQuery(const string& hostname, bool expected_success) {
 
 int main(int argc, char ** argv) {
   whisper::common::Init(argc, argv);
+  whisper::net::DnsInit();
   g_selector = new whisper::net::Selector();
 
   TestDnsQuery("google.com", true);
@@ -94,5 +96,6 @@ int main(int argc, char ** argv) {
   g_selector = NULL;
 
   LOG_INFO << "Pass";
+  whisper::net::DnsExit();
   whisper::common::Exit(0);
 }

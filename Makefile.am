@@ -260,8 +260,8 @@ driver_check_programs = \
   whisperlib/net/test/selectable_filereader_test
 
 driver_test_scripts = \
-  whisperlib/http/test/test_failsafe.sh \
-  whisperlib/http/test/http_request_test.sh \
+  whisperlib/http/test/test_failsafe_ac.sh \
+  whisperlib/http/test/http_request_test_ac.sh \
   whisperlib/net/test/selectable_filereader_test_cmd.sh
 
 check_PROGRAMS = \

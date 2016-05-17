@@ -102,7 +102,8 @@ int main(int argc, char* argv[]) {
 
   // Write stuff
   char buffer[16384];
-  for ( int32 i = 0; i < NUMBEROF(buffer); ++i ) {
+  unsigned char* pbuf = reinterpret_cast<unsigned char*>(buffer);
+  for ( uint32_t i = 0; i < NUMBEROF(buffer); ++i ) {
     buffer[i] = i % 256;
   }
   CHECK_EQ(p0.WriteData(buffer, 512), 512);
@@ -122,32 +123,29 @@ int main(int argc, char* argv[]) {
 
   // Start reading ...
   CHECK_EQ(p1.ReadData(buffer, 2048), 2048);
-  for ( int i = 0; i < 2048; ++i ) {
-    CHECK_EQ(static_cast<int>(buffer[i]),
-             static_cast<int>(i % 256));
+  for ( uint32_t i = 0; i < 2048; ++i ) {
+    CHECK_EQ(static_cast<uint32_t>(pbuf[i]),
+             i % 256);
   }
   CHECK_EQ(p1.Distance(p2), 1024);
   CHECK_EQ(p1.Distance(p3), 1024);
 
   CHECK_EQ(p1.ReadData(buffer, 512),  512);
-  for ( int i = 0; i < 512; ++i ) {
-    CHECK_EQ(static_cast<int>(buffer[i]),
-             static_cast<int>(i % 256));
+  for ( uint32_t i = 0; i < 2048; ++i ) {
+    CHECK_EQ(static_cast<uint32_t>(pbuf[i]), i % 256);
   }
   CHECK_EQ(p1.Distance(p2), 1024 + 512);
   CHECK_EQ(p1.Distance(p3), 512);
 
   CHECK_EQ(p1.ReadData(buffer, 333), 333);
   CHECK_EQ(p1.Distance(p2), 1024 + 512 + 333);
-  for ( int i = 0; i < 333; ++i ) {
-    CHECK_EQ(static_cast<int>(buffer[i]),
-             static_cast<int>(i % 256));
+  for ( uint32_t i = 0; i < 333; ++i ) {
+    CHECK_EQ(static_cast<uint32_t>(pbuf[i]), i % 256);
   }
 
   CHECK_EQ(p1.ReadData(buffer, 2048 - 333), 1024 - 333);
-  for ( int i = 0; i < 333; ++i ) {
-    CHECK_EQ(static_cast<int>(buffer[i]),
-             static_cast<int>((333 + i) % 256));
+  for ( uint32_t i = 0; i < 333; ++i ) {
+    CHECK_EQ(static_cast<uint32_t>(pbuf[i]), (333 + i) % 256);
   }
   CHECK(p0 == p1);
   CHECK_EQ(p1.Distance(p2), 2048 + 512);

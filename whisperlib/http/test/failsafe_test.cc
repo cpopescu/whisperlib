@@ -73,6 +73,8 @@ void RequestDone(whisper::net::Selector* selector,
   string content = req->request()->server_data()->ToString();
   // LOG_INFO << "Body:\n" << content;
 
+  LOG_INFO << "========= Done requests: " << glb_num_request;
+  CHECK_GE(glb_num_request, 0);
   --glb_num_request;
   if ( glb_num_request <= 0 ) {
     selector->DeleteInSelectLoop(fsc);
@@ -92,10 +94,12 @@ void CancelRequest(whisper::net::Selector* selector,
                    whisper::http::ClientRequest* req) {
     if (fsc->CancelRequest(req)) {
         LOG_INFO << "#######################################\n Request canceled: "  << req->name();
+        LOG_INFO << "========= Done requests: " << glb_num_request;
+        --glb_num_request;
     } else {
         LOG_INFO << " Request already done..";
     }
-    --glb_num_request;
+    CHECK_GE(glb_num_request, 0);
     if ( glb_num_request <= 0 ) {
         selector->DeleteInSelectLoop(fsc);
         selector->RunInSelectLoop(
@@ -170,5 +174,6 @@ int main(int argc, char* argv[]) {
     }
   }
   selector.Loop();
+  printf("DONE\n");
   return 0;
 }
