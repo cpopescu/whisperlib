@@ -7,9 +7,10 @@
 #
 AC_DEFUN([AX_CHECK_GFLAGS], [
   ax_save_LIBS="$LIBS"
-  LIBS="-lgflags"
+  LIBS="-L $LIBGFLAGS_LIB -lgflags"
+  CPPFLAGS="$CPPFLAGS -I $LIBGFLAGS_INCLUDE"
 
-  AC_LANG_PUSH([C++])
+AC_LANG_PUSH([C++])
   AC_MSG_CHECKING([for usable gflags library])
 AC_TRY_LINK([
 #include <gflags/gflags.h>
@@ -30,7 +31,7 @@ DEFINE_bool(test, false, "help string");
     LIBS=$ax_save_LIBS
     ifelse([$2], , :, [$2])
   else
-    LIBS="-lgflags $ax_save_LIBS"
+    LIBS="-L $LIBGFLAGS_LIB -lgflags $ax_save_LIBS"
     ifelse([$1], , :, [$1])
   fi
 ])

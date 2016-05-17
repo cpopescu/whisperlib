@@ -7,8 +7,8 @@
 #
 AC_DEFUN([AX_CHECK_PROTOBUF], [
   ax_save_LIBS="$LIBS"
-  LIBS="-lprotobuf"
-
+  LIBS="-L $LIBPROTOBUF_LIB -lprotobuf"
+  CPPFLAGS="$CPPFLAGS -I $LIBPROTOBUF_INCLUDE"
   AC_LANG_PUSH([C++])
   AC_MSG_CHECKING([for protobuf library])
 AC_TRY_LINK([
@@ -26,7 +26,7 @@ google::protobuf::compiler::Parser parser;
     LIBS=$ax_save_LIBS
     ifelse([$2], , :, [$2])
   else
-    LIBS="-lprotobuf $ax_save_LIBS"
+    LIBS="-L $LIBPROTOBUF_LIB -lprotobuf $ax_save_LIBS"
     ifelse([$1], , :, [$1])
   fi
 ])

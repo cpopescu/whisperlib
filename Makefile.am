@@ -5,6 +5,10 @@ AM_DEFAULT_SOURCE_EXT = .cc
 lib_LIBRARIES = whisperlib/libwhisperlib.a
 
 LDADD = whisperlib/libwhisperlib.a $(ICU_LIBS)
+# -L $(LIBPROTOBUF_LIB) -lprotobuf
+AM_CXXFLAGS=$(ICU_CXXFLAGS)
+AM_CFLAGS=$(ICU_CFLAGS)
+AM_CPPFLAGS=$(ICU_CPPFLAGS)
 
 if HAVE_ICU
 EXTRA_whisperlib_libwhisperlib_a_SOURCES = \
@@ -45,7 +49,6 @@ extra_whisperlib_libwhisperlib_a_headers = \
 
 endif
 
-if HAVE_PROTOBUF
 rpc_protobuf_sources = \
   whisperlib/rpc/RpcStats.pb.cc \
   whisperlib/rpc/rpc_http_client.cc \
@@ -57,8 +60,6 @@ rpc_protobuf_headers = \
   whisperlib/rpc/rpc_controller.h \
   whisperlib/rpc/rpc_http_client.h \
   whisperlib/rpc/rpc_http_server.h
-
-endif
 
 if ! HAVE_GLOG
 whisperlib_log_sources = \
@@ -210,7 +211,6 @@ nobase_include_HEADERS = \
   $(extra_whisperlib_libwhisperlib_a_headers) \
   $(rpc_protobuf_headers)
 
-if HAVE_GLOG
 glog_check_programs = \
   whisperlib/io/logio/test/logio_test \
   whisperlib/io/logio/test/recordio_test
@@ -220,21 +220,18 @@ glog_icu_check_programs = \
   whisperlib/url/test/url_test
 endif
 
-if HAVE_PROTOBUF
-rpc_test_programs = \
-  whisperlib/rpc/test/rpc_test_client \
-  whisperlib/rpc/test/rpc_test_server
-endif
+# rpc_test_programs = \
+#  whisperlib/rpc/test/rpc_test_client \
+#   whisperlib/rpc/test/rpc_test_server
 
-whisperlib_rpc_test_rpc_test_client_LDADD = whisperlib/rpc/test/rpc_test_proto.pb.o $(LDADD)
-whisperlib_rpc_test_rpc_test_server_LDADD = whisperlib/rpc/test/rpc_test_proto.pb.o $(LDADD)
+# whisperlib_rpc_test_rpc_test_client_LDADD = whisperlib/rpc/test/rpc_test_proto.pb.o $(LDADD)
+# whisperlib_rpc_test_rpc_test_server_LDADD = whisperlib/rpc/test/rpc_test_proto.pb.o $(LDADD)
 
 whisperlib/rpc/test/rpc_test_proto.pb.cc: whisperlib/rpc/test/rpc_test_proto.proto
 	protoc $< --cpp_out=.
 
 whisperlib/rpc/RpcStats.pb.cc: whisperlib/rpc/RpcStats.proto
 	protoc $< --cpp_out=.
-endif
 
 TEST_EXTENSIONS = .sh
 

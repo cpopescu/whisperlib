@@ -30,9 +30,23 @@ AC_DEFUN([AX_CHECK_ICU], [
   fi
 
   if test "$ICU_CONFIG" = "no" ; then
-    echo "*** The icu-config script could not be found. Make sure it is"
-    echo "*** in your path, and that taglib is properly installed."
-    echo "*** Or see http://ibm.com/software/globalization/icu/"
+    if test -f /usr/local/opt/icu4c/include/unicode/calendar.h; then
+        # For systems like OSX, the icu is available in a standard location, but no icu-config is available
+        ICU_CPPFLAGS=-I/usr/local/opt/icu4c/include
+	ICU_CXXFLAGS=${ICU_CPPFLAGS}
+        ICU_CFLAGS=${ICU_CPPFLAGS}
+        ICU_LIBS="-L/usr/local/opt/icu4c/lib -licui18n -licuuc -licudata  -licuio -ldl -lm"
+        AC_SUBST(ICU_CPPFLAGS)
+        AC_SUBST(ICU_CFLAGS)
+        AC_SUBST(ICU_CXXFLAGS)
+        AC_SUBST(ICU_LIBS)
+        AC_MSG_RESULT(yes)
+        succeeded=yes
+    else
+        echo "*** The icu-config script could not be found. Make sure it is"
+        echo "*** in your path, and that taglib is properly installed."
+        echo "*** Or see http://ibm.com/software/globalization/icu/"
+    fi
   else
     ICU_VERSION=`$ICU_CONFIG --version`
     AC_MSG_CHECKING(for ICU >= $1)

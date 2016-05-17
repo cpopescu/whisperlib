@@ -265,6 +265,13 @@ if test "x$ax_pthread_ok" = xyes; then
                                [Define to necessary symbol if this constant
                                 uses a non-standard name on your system.])
         fi
+        AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <pthread.h>],
+                       [pthread_rwlock_t rwl; int i = pthread_rwlock_init(&rwl, NULL) /* ; */ ])],
+                [ax_cv_PTHREAD_RWLOCK=yes],
+                [ax_cv_PTHREAD_RWLOCK=no])
+        if test "x$ax_cv_PTHREAD_RWLOCK" != xno; then
+            AC_DEFINE([HAVE_PTHREAD_RWLOCK], [1], [Have PTHREAD_RWLOCK.])
+        fi
 
         AC_MSG_CHECKING([if more special flags are required for pthreads])
         flag=no
@@ -294,6 +301,7 @@ if test "x$ax_pthread_ok" = xyes; then
             ])
         AS_IF([test "x$ax_cv_PTHREAD_PRIO_INHERIT" = "xyes"],
             [AC_DEFINE([HAVE_PTHREAD_PRIO_INHERIT], [1], [Have PTHREAD_PRIO_INHERIT.])])
+
 
         LIBS="$save_LIBS"
         CFLAGS="$save_CFLAGS"

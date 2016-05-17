@@ -48,7 +48,8 @@
 #endif
 
 #if defined(CPP14_SHARED_MUTEX) || (defined(HAVE_PTHREAD_RWLOCK) && HAVE_PTHREAD_RWLOCK == 1)
-#define LRU_USE_RW_MUTEX
+// Not yet ready for this
+// #define LRU_USE_RW_MUTEX
 #endif
 
 #ifdef LRU_USE_RW_MUTEX

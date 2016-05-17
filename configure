@@ -756,6 +756,9 @@ enable_silent_rules
 enable_dependency_tracking
 with_icu
 with_zlib
+with_libglog
+with_libgflags
+with_libprotobuf
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1404,6 +1407,9 @@ Optional Packages:
   --with-zlib=DIR         root directory path of zlib installation [defaults to
                           /usr/local or /usr if not found in /usr/local]
   --without-zlib          to disable zlib usage completely
+  --with-libglog=PATH     path to installed libglog [default=/usr/local]
+  --with-libgflags=PATH   path to installed libgflags [default=/usr/local]
+  --with-libprotobuf=PATH path to installed libprotobuf [default=/usr/local]
 
 Some influential environment variables:
   CC          C compiler command
@@ -2776,7 +2782,7 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
-am__api_version='1.14'
+am__api_version='1.15'
 
 ac_aux_dir=
 for ac_dir in "$srcdir" "$srcdir/.." "$srcdir/../.."; do
@@ -2977,8 +2983,8 @@ test "$program_suffix" != NONE &&
 ac_script='s/[\\$]/&&/g;s/;s,x,x,$//'
 program_transform_name=`$as_echo "$program_transform_name" | sed "$ac_script"`
 
-# expand $ac_aux_dir to an absolute path
-am_aux_dir=`cd $ac_aux_dir && pwd`
+# Expand $ac_aux_dir to an absolute path.
+am_aux_dir=`cd "$ac_aux_dir" && pwd`
 
 if test x"${MISSING+set}" != xset; then
   case $am_aux_dir in
@@ -2997,7 +3003,7 @@ else
 $as_echo "$as_me: WARNING: 'missing' script is too old or missing" >&2;}
 fi
 
-if test x"${install_sh}" != xset; then
+if test x"${install_sh+set}" != xset; then
   case $am_aux_dir in
   *\ * | *\	*)
     install_sh="\${SHELL} '$am_aux_dir/install-sh'" ;;
@@ -3325,8 +3331,8 @@ MAKEINFO=${MAKEINFO-"${am_missing_run}makeinfo"}
 # <http://lists.gnu.org/archive/html/automake/2012-07/msg00014.html>
 mkdir_p='$(MKDIR_P)'
 
-# We need awk for the "check" target.  The system "awk" is bad on
-# some platforms.
+# We need awk for the "check" target (and possibly the TAP driver).  The
+# system "awk" is bad on some platforms.
 # Always define AMTAR for backward compatibility.  Yes, it's still used
 # in the wild :-(  We should find a proper way to deprecate it ...
 AMTAR='$${TAR-tar}'
@@ -3383,6 +3389,7 @@ END
     as_fn_error $? "Your 'rm' program is bad, sorry." "$LINENO" 5
   fi
 fi
+
 # m4_include([../../m4/ax_cxx_compile_stdcxx_11.m4])
 
 ac_config_files="$ac_config_files Makefile"
@@ -5623,6 +5630,29 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
         fi
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <pthread.h>
+int
+main ()
+{
+pthread_rwlock_t rwl; int i = pthread_rwlock_init(&rwl, NULL) /* ; */
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ax_cv_PTHREAD_RWLOCK=yes
+else
+  ax_cv_PTHREAD_RWLOCK=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+        if test "x$ax_cv_PTHREAD_RWLOCK" != xno; then
+
+$as_echo "#define HAVE_PTHREAD_RWLOCK 1" >>confdefs.h
+
+        fi
 
         { $as_echo "$as_me:${as_lineno-$LINENO}: checking if more special flags are required for pthreads" >&5
 $as_echo_n "checking if more special flags are required for pthreads... " >&6; }
@@ -5678,6 +5708,7 @@ $as_echo "$ax_cv_PTHREAD_PRIO_INHERIT" >&6; }
 $as_echo "#define HAVE_PTHREAD_PRIO_INHERIT 1" >>confdefs.h
 
 fi
+
 
         LIBS="$save_LIBS"
         CFLAGS="$save_CFLAGS"
@@ -5833,9 +5864,24 @@ fi
   fi
 
   if test "$ICU_CONFIG" = "no" ; then
-    echo "*** The icu-config script could not be found. Make sure it is"
-    echo "*** in your path, and that taglib is properly installed."
-    echo "*** Or see http://ibm.com/software/globalization/icu/"
+    if test -f /usr/local/opt/icu4c/include/unicode/calendar.h; then
+        # For systems like OSX, the icu is available in a standard location, but no icu-config is available
+        ICU_CPPFLAGS=-I/usr/local/opt/icu4c/include
+	ICU_CXXFLAGS=${ICU_CPPFLAGS}
+        ICU_CFLAGS=${ICU_CPPFLAGS}
+        ICU_LIBS="-L/usr/local/opt/icu4c/lib -licui18n -licuuc -licudata  -licuio -ldl -lm"
+
+
+
+
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+        succeeded=yes
+    else
+        echo "*** The icu-config script could not be found. Make sure it is"
+        echo "*** in your path, and that taglib is properly installed."
+        echo "*** Or see http://ibm.com/software/globalization/icu/"
+    fi
   else
     ICU_VERSION=`$ICU_CONFIG --version`
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ICU >= 4.8" >&5
@@ -6448,8 +6494,28 @@ fi
 
 
 
+# Check whether --with-libglog was given.
+if test "${with_libglog+set}" = set; then :
+  withval=$with_libglog;
+  LIBGLOG_INCLUDE="${withval}/include"
+  LIBGLOG_LIB="${withval}/lib"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"${withval}\"" >&5
+$as_echo "\"${withval}\"" >&6; }
+
+else
+
+  LIBGLOG_INCLUDE="/usr/local/include"
+  LIBGLOG_LIB="/usr/local/lib"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: /usr/local" >&5
+$as_echo "/usr/local" >&6; }
+
+fi
+
+
+
   ax_save_LIBS="$LIBS"
-  LIBS="-lglog"
+  LIBS="-L $LIBGLOG_LIB  -lglog"
+  CPPFLAGS="$CPPFLAGS -I $LIBGLOG_INCLUDE"
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for glog library" >&5
 $as_echo_n "checking for glog library... " >&6; }
@@ -6496,7 +6562,7 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
     LIBS=$ax_save_LIBS
     have_glog=no
   else
-    LIBS="-lglog $ax_save_LIBS"
+    LIBS="-L $LIBGLOG_LIB -lglog $ax_save_LIBS"
     $as_echo "#define HAVE_GLOG 1" >>confdefs.h
 
    have_glog=yes
@@ -6512,10 +6578,30 @@ fi
 
 
 
-  ax_save_LIBS="$LIBS"
-  LIBS="-lgflags"
+# Check whether --with-libgflags was given.
+if test "${with_libgflags+set}" = set; then :
+  withval=$with_libgflags;
+  LIBGFLAGS_INCLUDE="${withval}/include"
+  LIBGFLAGS_LIB="${withval}/lib"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"${withval}\"" >&5
+$as_echo "\"${withval}\"" >&6; }
 
-  ac_ext=cpp
+else
+
+  LIBGFLAGS_INCLUDE="/usr/local/include"
+  LIBGFLAGS_LIB="/usr/local/lib"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: /usr/local" >&5
+$as_echo "/usr/local" >&6; }
+
+fi
+
+
+
+  ax_save_LIBS="$LIBS"
+  LIBS="-L $LIBGFLAGS_LIB -lgflags"
+  CPPFLAGS="$CPPFLAGS -I $LIBGFLAGS_INCLUDE"
+
+ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
@@ -6562,7 +6648,7 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
     LIBS=$ax_save_LIBS
     have_gflags=no
   else
-    LIBS="-lgflags $ax_save_LIBS"
+    LIBS="-L $LIBGFLAGS_LIB -lgflags $ax_save_LIBS"
     $as_echo "#define HAVE_GFLAGS 1" >>confdefs.h
 
    have_gflags=yes
@@ -6578,90 +6664,9 @@ fi
 
 
 # Determine the name of namespace used by the gflags library
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for gflags namespace" >&5
-$as_echo_n "checking for gflags namespace... " >&6; }
-  ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <gflags/gflags.h>
-int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-}
-/* override the definition of main, since we do not want to interfere with
-   ours */
-#define main test
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  GFLAGS_NAMESPACE=gflags
-       found=yes
-
-else
-  found=no
-
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-
-  if test "$found" = no; then
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <gflags/gflags.h>
-int main(int argc, char** argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
-}
-/* override the definition of main, since we do not want to interfere with
-   ours */
-#define main test
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  GFLAGS_NAMESPACE=google
-         found=yes
-
-else
-  found=no
-
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-  fi
-  ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $GFLAGS_NAMESPACE" >&5
-$as_echo "$GFLAGS_NAMESPACE" >&6; }
-
-
-cat >>confdefs.h <<_ACEOF
-#define GFLAGS_NAMESPACE $GFLAGS_NAMESPACE
-_ACEOF
-
+# AX_GFLAGS_NAMESPACE(GFLAGS_NAMESPACE)
+# AC_DEFINE_UNQUOTED(
+#   [GFLAGS_NAMESPACE],[$GFLAGS_NAMESPACE],[Namespace used by the gflags library])
 
 if test "$have_glog" = "yes" -a "$have_gflags" = "no"; then
    as_fn_error $? "
@@ -6670,9 +6675,28 @@ You must also install the gflags library!" "$LINENO" 5
 fi
 
 
-  ax_save_LIBS="$LIBS"
-  LIBS="-lprotobuf"
+# Check whether --with-libprotobuf was given.
+if test "${with_libprotobuf+set}" = set; then :
+  withval=$with_libprotobuf;
+  LIBPROTOBUF_INCLUDE="${withval}/include"
+  LIBPROTOBUF_LIB="${withval}/lib"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"${withval}\"" >&5
+$as_echo "\"${withval}\"" >&6; }
 
+else
+
+  LIBPROTOBUF_INCLUDE="/usr/local/include"
+  LIBPROTOBUF_LIB="/usr/local/lib"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: /usr/local" >&5
+$as_echo "/usr/local" >&6; }
+
+fi
+
+
+
+  ax_save_LIBS="$LIBS"
+  LIBS="-L $LIBPROTOBUF_LIB -lprotobuf"
+  CPPFLAGS="$CPPFLAGS -I $LIBPROTOBUF_INCLUDE"
   ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -6714,12 +6738,11 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
   if test "$have_protobuf" = "no"; then
     LIBS=$ax_save_LIBS
-    have_protobuf=no
+    as_fn_error $? "Cannot find google protobuf library" "$LINENO" 5
   else
-    LIBS="-lprotobuf $ax_save_LIBS"
+    LIBS="-L $LIBPROTOBUF_LIB -lprotobuf $ax_save_LIBS"
     $as_echo "#define HAVE_PROTOBUF 1" >>confdefs.h
-
-   have_protobuf=yes
+ have_protobuf=yes
   fi
 
  if test "$have_protobuf" = "yes"; then
@@ -6730,6 +6753,10 @@ else
   HAVE_PROTOBUF_FALSE=
 fi
 
+
+if test "$have_protobuf" = "no"; then
+   as_fn_error $? "Cannot find protobuf library" "$LINENO" 5
+fi
 
  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether byte ordering is bigendian" >&5
 $as_echo_n "checking whether byte ordering is bigendian... " >&6; }
@@ -8553,7 +8580,7 @@ fi
 
 fi
 
-for ac_func in atexit bzero clock_gettime ftruncate getcwd gethostbyname gettimeofday localeconv localtime_r memmove memset mkdir regcomp rmdir setlocale socket strcasecmp strchr strdup strerror strncasecmp strpbrk strrchr strtol strtoul strtoull readdir_r lseek64 fdatasync stat64 fpathconf dirfd getaddrinfo inet_pton
+for ac_func in atexit bzero clock_gettime ftruncate getcwd gethostbyname gettimeofday localeconv localtime_r memmove memset mkdir regcomp rmdir setlocale socket strcasecmp strchr strdup strerror strncasecmp strpbrk strrchr strtol strtoul strtoull readdir_r lseek64 fdatasync stat64 fpathconf dirfd getaddrinfo inet_pton fdatasync
 do :
   as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
 ac_fn_cxx_check_func "$LINENO" "$ac_func" "$as_ac_var"

@@ -76,9 +76,6 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
-/* Namespace used by the gflags library */
-#undef GFLAGS_NAMESPACE
-
 /* Define to 1 if you have the `alarm' function. */
 #undef HAVE_ALARM
 
@@ -224,6 +221,9 @@
 
 /* Have PTHREAD_PRIO_INHERIT. */
 #undef HAVE_PTHREAD_PRIO_INHERIT
+
+/* Have PTHREAD_RWLOCK. */
+#undef HAVE_PTHREAD_RWLOCK
 
 /* Define to 1 if the system has the type `ptrdiff_t'. */
 #undef HAVE_PTRDIFF_T

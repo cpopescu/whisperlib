@@ -47,7 +47,8 @@ using namespace std;
 #define __LSEEK lseek
 #endif
 
-#ifdef HAVE_FDATASYNC
+#if defined(HAVE_FDATASYNC) && !defined(__APPLE__)
+#include <unistd.h>
 #define __FDATASYNC(fd) fdatasync(fd)
 #else
   #ifdef F_FULLFSYNC

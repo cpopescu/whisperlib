@@ -7,7 +7,8 @@
 #
 AC_DEFUN([AX_CHECK_GLOG], [
   ax_save_LIBS="$LIBS"
-  LIBS="-lglog"
+  LIBS="-L $LIBGLOG_LIB  -lglog"
+  CPPFLAGS="$CPPFLAGS -I $LIBGLOG_INCLUDE"
 
   AC_MSG_CHECKING([for glog library])
   AC_LANG_PUSH([C++])
@@ -28,7 +29,7 @@ AC_TRY_LINK([
     LIBS=$ax_save_LIBS
     ifelse([$2], , :, [$2])
   else
-    LIBS="-lglog $ax_save_LIBS"
+    LIBS="-L $LIBGLOG_LIB -lglog $ax_save_LIBS"
     ifelse([$1], , :, [$1])
   fi
 ])

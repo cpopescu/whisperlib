@@ -49,11 +49,33 @@ AS_IF([test "x$have_icu" = "xyes"],
 AX_CHECK_ZLIB([],
     [AC_MSG_ERROR([Zlib was not found])])
 
+AC_ARG_WITH([libglog],
+        [AC_HELP_STRING([--with-libglog=PATH], [path to installed libglog [default=/usr/local]])], [
+  LIBGLOG_INCLUDE="${withval}/include"
+  LIBGLOG_LIB="${withval}/lib"
+  AC_MSG_RESULT("${withval}")
+], [
+  LIBGLOG_INCLUDE="/usr/local/include"
+  LIBGLOG_LIB="/usr/local/lib"
+  AC_MSG_RESULT(/usr/local)
+])
+
 AX_CHECK_GLOG(
   [AC_DEFINE(HAVE_GLOG)
    have_glog=yes],
   [have_glog=no])
 AM_CONDITIONAL([HAVE_GLOG], [test "$have_glog" = "yes"])
+
+AC_ARG_WITH([libgflags],
+        [AC_HELP_STRING([--with-libgflags=PATH], [path to installed libgflags [default=/usr/local]])], [
+  LIBGFLAGS_INCLUDE="${withval}/include"
+  LIBGFLAGS_LIB="${withval}/lib"
+  AC_MSG_RESULT("${withval}")
+], [
+  LIBGFLAGS_INCLUDE="/usr/local/include"
+  LIBGFLAGS_LIB="/usr/local/lib"
+  AC_MSG_RESULT(/usr/local)
+])
 
 AX_CHECK_GFLAGS(
   [AC_DEFINE(HAVE_GFLAGS)
@@ -62,9 +84,9 @@ AX_CHECK_GFLAGS(
 AM_CONDITIONAL([HAVE_GFLAGS], [test "$have_gflags" = "yes"])
 
 # Determine the name of namespace used by the gflags library
-AX_GFLAGS_NAMESPACE(GFLAGS_NAMESPACE)
-AC_DEFINE_UNQUOTED(
-  [GFLAGS_NAMESPACE],[$GFLAGS_NAMESPACE],[Namespace used by the gflags library])
+# AX_GFLAGS_NAMESPACE(GFLAGS_NAMESPACE)
+# AC_DEFINE_UNQUOTED(
+#   [GFLAGS_NAMESPACE],[$GFLAGS_NAMESPACE],[Namespace used by the gflags library])
 
 if test "$have_glog" = "yes" -a "$have_gflags" = "no"; then
    AC_MSG_ERROR([
@@ -72,11 +94,25 @@ You have the glog library installed.
 You must also install the gflags library!])
 fi
 
+AC_ARG_WITH([libprotobuf],
+        [AC_HELP_STRING([--with-libprotobuf=PATH], [path to installed libprotobuf [default=/usr/local]])], [
+  LIBPROTOBUF_INCLUDE="${withval}/include"
+  LIBPROTOBUF_LIB="${withval}/lib"
+  AC_MSG_RESULT("${withval}")
+], [
+  LIBPROTOBUF_INCLUDE="/usr/local/include"
+  LIBPROTOBUF_LIB="/usr/local/lib"
+  AC_MSG_RESULT(/usr/local)
+])
+
 AX_CHECK_PROTOBUF(
-  [AC_DEFINE(HAVE_PROTOBUF)
-   have_protobuf=yes],
-  [have_protobuf=no])
+  [AC_DEFINE(HAVE_PROTOBUF) have_protobuf=yes],
+  [AC_MSG_ERROR([Cannot find google protobuf library])])
 AM_CONDITIONAL([HAVE_PROTOBUF], [test "$have_protobuf" = "yes"])
+
+if test "$have_protobuf" = "no"; then
+   AC_MSG_ERROR([Cannot find protobuf library])
+fi
 
 AC_C_BIGENDIAN
 
@@ -113,6 +149,6 @@ AC_FUNC_MKTIME
 AC_FUNC_MMAP
 AC_FUNC_REALLOC
 AC_FUNC_STRTOD
-AC_CHECK_FUNCS([atexit bzero clock_gettime ftruncate getcwd gethostbyname gettimeofday localeconv localtime_r memmove memset mkdir regcomp rmdir setlocale socket strcasecmp strchr strdup strerror strncasecmp strpbrk strrchr strtol strtoul strtoull readdir_r lseek64 fdatasync stat64 fpathconf dirfd getaddrinfo inet_pton])
+AC_CHECK_FUNCS([atexit bzero clock_gettime ftruncate getcwd gethostbyname gettimeofday localeconv localtime_r memmove memset mkdir regcomp rmdir setlocale socket strcasecmp strchr strdup strerror strncasecmp strpbrk strrchr strtol strtoul strtoull readdir_r lseek64 fdatasync stat64 fpathconf dirfd getaddrinfo inet_pton fdatasync])
 
 AC_OUTPUT
