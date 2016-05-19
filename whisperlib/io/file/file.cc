@@ -47,15 +47,16 @@ using namespace std;
 #define __LSEEK lseek
 #endif
 
-#ifdef HAVE_FDATASYNC
-#define __FDATASYNC(fd) fdatasync(fd)
+#ifdef F_FULLFSYNC
+# define __FDATASYNC(fd) fcntl((fd), F_FULLFSYNC)
 #else
-  #ifdef F_FULLFSYNC
-  #define __FDATASYNC(fd) fcntl((fd), F_FULLFSYNC)
-  #else
-  #define __FDATASYNC(fd) fsync(fd)
-  #endif
+# ifdef HAVE_FDATASYNC
+#  define __FDATASYNC(fd) fdatasync(fd)
+# else
+#  define __FDATASYNC(fd) fsync(fd)
+# endif
 #endif
+
 
 #ifndef O_LARGEFILE
 #define O_LARGEFILE 0;
