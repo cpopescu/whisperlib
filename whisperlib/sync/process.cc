@@ -1,7 +1,35 @@
 // Copyright (c) 2013, Whispersoft s.r.l.
 // All rights reserved.
 //
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above
+// copyright notice, this list of conditions and the following disclaimer
+// in the documentation and/or other materials provided with the
+// distribution.
+// * Neither the name of Whispersoft s.r.l nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
 // Author: Cosmin Tudorache
+//
+
 
 #include "whisperlib/sync/process.h"
 
@@ -10,7 +38,7 @@
 #include <unistd.h>
 #include <signal.h>
 
-#include "whisperlib/base/errno.h"
+#include "whisperlib/base/core_errno.h"
 #include "whisperlib/base/system.h"
 #include "whisperlib/base/timer.h"
 #include "whisperlib/base/scoped_ptr.h"
@@ -36,23 +64,20 @@ extern char** environ;
 #endif
 #include <stdarg.h>
 
-using std::string;
-using std::vector;
-
 namespace whisper {
 namespace process {
 
 namespace {
-void MakeStringVector(const char* const argv[], vector<string>* out) {
+void MakeStringVector(const char* const argv[], std::vector<std::string>* out) {
   if ( argv ) {
     for ( int i = 0; argv[i] != NULL; i++ ) {
-      out->push_back(string(argv[i]));
+      out->push_back(std::string(argv[i]));
     }
   }
 }
 // The result is dynamically allocated, but the elements are referenced;
 // just call: delete[] result;
-char** MakeCharArray(const char* first, const vector<string>& v) {
+char** MakeCharArray(const char* first, const std::vector<std::string>& v) {
   char** out = new char*[v.size() + 2];
   uint32 out_index = 0;
   if ( first != NULL ) {
@@ -77,8 +102,8 @@ void RunPtrCallback(Callback1<T>* callback, T result) {
 
 const pid_t Process::kInvalidPid = pid_t(-1);
 
-Process::Process(const string& exe, const vector<string>& argv,
-                 const vector<string>* envp)
+Process::Process(const std::string& exe, const std::vector<std::string>& argv,
+                 const std::vector<std::string>* envp)
   : exe_(exe),
     argv_(argv),
     pid_(kInvalidPid),
@@ -115,9 +140,9 @@ std::string Process::ToString() const {
 }
 
 
-bool Process::Start(Callback1<const string*>* stdout_reader,
+bool Process::Start(Callback1<const std::string*>* stdout_reader,
                     bool auto_delete_stdout_reader,
-                    Callback1<const string*>* stderr_reader,
+                    Callback1<const std::string*>* stderr_reader,
                     bool auto_delete_stderr_reader,
                     Callback1<int>* exit_callback,
                     net::Selector* selector) {
@@ -333,7 +358,7 @@ void Process::Runner() {
         }
     }
     // report lines
-    string line;
+    std::string line;
     while ( stdout_ms.ReadLine(&line) ) { RunStdoutReader(&line); }
     while ( stderr_ms.ReadLine(&line) ) { RunStderrReader(&line); }
   }
@@ -368,10 +393,10 @@ void Process::RunExitCallback(int exit_code) {
   }
 }
 
-void Process::RunStdoutReader(const string* line) {
+void Process::RunStdoutReader(const std::string* line) {
   if ( stdout_reader_ ) RunReaderCallback(stderr_reader_, line);
 }
-void Process::RunStderrReader(const string* line) {
+void Process::RunStderrReader(const std::string* line) {
   if ( stderr_reader_ ) RunReaderCallback(stderr_reader_, line);
 }
 
@@ -382,7 +407,8 @@ void Process::RunReaderCallback(Callback1<const std::string*>* reader,
         // by the time of selector run
         selector_->RunInSelectLoop(
             whisper::NewCallback(&RunPtrCallback, reader,
-                          static_cast<const std::string*>(new std::string(*line))));
+                          static_cast<const std::string*>(
+                              new std::string(*line))));
     } else {
         reader->Run(line);
     }

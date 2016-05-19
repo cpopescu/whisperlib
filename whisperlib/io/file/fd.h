@@ -71,15 +71,15 @@ class FileDescriptor {
 
   // Reads len data bytes from the file to given buffer.
   // Returns # of bytes read / negative on error.
-  virtual int32 Read(void* buf, int32 len);
+  virtual ssize_t Read(void* buf, size_t len);
 
   // Skips len data bytes in the file.
   // Returns # of skiped bytes / negative on error.
-  virtual int32 Skip(int32 len);
+  virtual int64_t Skip(int64_t len);
 
   // Writes len data bytes from buffer to the file.
   // Returns # of written bytes / negative on error.
-  virtual int32 Write(const void* buf, int32 len);
+  virtual ssize_t Write(const void* buf, size_t len);
 
  protected:
   int fd_;                 // file descriptor

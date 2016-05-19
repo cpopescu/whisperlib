@@ -43,8 +43,6 @@
 #include "whisperlib/net/selector.h"
 #include "whisperlib/sync/mutex.h"
 
-using std::string;
-
 namespace whisper {
 namespace net {
 
@@ -61,22 +59,23 @@ namespace net {
 
 struct DnsHostInfo : public RefCounted {
   bool valid_;
-  string hostname_;
+  std::string hostname_;
   int64 time_;
   std::vector<IpAddress> ipv4_;
   std::vector<IpAddress> ipv6_;
-    DnsHostInfo(const string& hostname)
+    DnsHostInfo(const std::string& hostname)
     : RefCounted(),
       valid_(false), hostname_(hostname), time_(timer::TicksNsec()){
   }
-  DnsHostInfo(const string& hostname, std::set<IpAddress> ipv4, std::set<IpAddress> ipv6)
+  DnsHostInfo(const std::string& hostname,
+              std::set<IpAddress> ipv4, std::set<IpAddress> ipv6)
     : RefCounted(),
       valid_(true),
       hostname_(hostname),
       time_(timer::TicksNsec()),
       ipv4_(ipv4.begin(), ipv4.end()),
       ipv6_(ipv6.begin(), ipv6.end()) {}
-  string ToString() const {
+  std::string ToString() const {
     return strutil::StringPrintf(
         "DnsHostInfo{hostname_: '%s', ipv4_: %s, ipv6_: %s}",
         hostname_.c_str(),
@@ -104,7 +103,7 @@ void DnsInit();
 // on the given 'selector'.
 // On success, the result is a vector containing all host IPs.
 // On error, an the result is an empty vector.
-void DnsResolve(net::Selector* selector, const string& hostname,
+void DnsResolve(net::Selector* selector, const std::string& hostname,
                 DnsResultHandler* result_handler);
 
 // Cancel a pending DNS query.
@@ -114,7 +113,7 @@ void DnsCancel(DnsResultHandler* result_handler);
 void DnsExit();
 
 // Synchronous DNS query.
-scoped_ref<DnsHostInfo> DnsBlockingResolve(const string& hostname);
+scoped_ref<DnsHostInfo> DnsBlockingResolve(const std::string& hostname);
 
 }  // namespace net
 }  // namespace whisper

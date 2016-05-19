@@ -78,12 +78,12 @@ int main(int argc, char* argv[]) {
 
   //////////////////////////////////////////////////////////////////////////
   // auto-detect part
-  string file_base = FLAGS_file_base;
+  std::string file_base = FLAGS_file_base;
   int32 block_size = FLAGS_block_size;
   int32 blocks_per_file = FLAGS_blocks_per_file;
   if ( file_base == "" || block_size == 0 || blocks_per_file == 0 ) {
-    string f;
-    int32 bs, bpf;
+    std::string f;
+    size_t bs, bpf;
     if ( !whisper::io::DetectLogSettings(FLAGS_dir, &f, &bs, &bpf) ) {
       LOG_ERROR << "DetectLogSettings failed for dir: [" << FLAGS_dir << "]";
       whisper::common::Exit(1);
@@ -122,7 +122,7 @@ int main(int argc, char* argv[]) {
     }
     uint32 rec_size = rec.Size();
 
-    string content;
+    std::string content;
     if ( FLAGS_log_records_text ) {
       rec.ReadString(&content);
       content = strutil::StrEscape(content, '%', "");

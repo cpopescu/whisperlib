@@ -51,18 +51,18 @@ class InputStream {
   // Reads "len" bytes of data into the given "buffer".
   // Returns the number of bytes read. Can be less than "len" if less bytes
   // are available.
-  virtual int32 Read(void* buffer, int32 len) = 0;
+  virtual ssize_t ReadBuffer(void* buffer, size_t len) = 0;
 
   // Same as read, but w/ strings
   // If len == -1 read to the end of input, else read len bytes. Returns
   // anyway the number of read bytes
-  inline int32 ReadString(std::string* s, int32 len = -1) {
+  inline ssize_t ReadString(std::string* s, ssize_t len = -1) {
     if ( len == -1 ) {
-      len = int32(Readable());
+      len = Readable();
     }
     std::string tmp;
     tmp.reserve(len);
-    const int32 cb = Read(&tmp[0], len);
+    const int32 cb = ReadBuffer(&tmp[0], len);
     s->assign(tmp.c_str(), cb);
     return cb;
   }
@@ -74,15 +74,15 @@ class InputStream {
     while ( true ) {
       MarkerSet();
       char tmp[512] = {0};
-      int32 r = Read(tmp, sizeof(tmp));
-      if ( r == 0 ) {
+      ssize_t r = ReadBuffer(tmp, sizeof(tmp));
+      if ( r <= 0 ) {
         MarkerClear();
         return false;
       }
       char* end = ::strchr(tmp, 0x0A);
       if ( end != NULL ) {
         MarkerRestore();
-        Skip(end-tmp+1);
+        Skip(end - tmp+1);
         while ( (*end == 0x0D || *end == 0x0A) && end > tmp ) {
           end--;
         }
@@ -99,16 +99,16 @@ class InputStream {
   // read pointer is left unchanged.
   // Returns the number of bytes read or 0 in not available or operation not
   // supported.
-  virtual int32 Peek(void* buffer, int32 len) = 0;
+  virtual ssize_t Peek(void* buffer, size_t len) = 0;
 
   // Passes over "len" bytes. (Advances the read head by the "len" number of
   // bytes).
   // Returns the number of bytes skipped. Can be less than "len" if less
   // bytes are available.
-  virtual int64 Skip(int64 len) = 0;
+  virtual int64_t Skip(int64_t len) = 0;
 
   // Returns how many bytes are readable in the stream until EOS
-  virtual int64 Readable() const = 0;
+  virtual uint64_t Readable() const = 0;
 
   // Returns (Readable() == 0) (Usually much faster)
   virtual bool IsEos() const = 0;

@@ -182,7 +182,7 @@ class DnsResolver {
       {
         whisper::synch::MutexLocker lock(&mutex_);
         cache_.Add(hostname, info);
-        for (int i = 0; i < waiting_queries_[hostname]->size(); ++i) {
+        for (size_t i = 0; i < waiting_queries_[hostname]->size(); ++i) {
             Query* q = waiting_queries_[hostname]->at(i);
             if (q->result_handler_ != NULL) {
                 query_map_.erase(q->result_handler_);

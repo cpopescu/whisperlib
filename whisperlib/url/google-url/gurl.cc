@@ -41,8 +41,6 @@
 #include "whisperlib/url/google-url/url_util.h"
 #include "whisperlib/url/google-url/url_canon_internal.h"
 
-using std::string;
-
 namespace {
 
 // External template that can handle initialization of either character type.
@@ -377,9 +375,9 @@ void URL::Swap(URL* other) {
   std::swap(parsed_, other->parsed_);
 }
 
-string URL::UrlUnescape(const char* spec, int len) {
+std::string URL::UrlUnescape(const char* spec, int len) {
   int ndx = 0;
-  string s;
+  std::string s;
   char value;
   url_canon::StdStringCanonOutput str_canon(&s);
   while ( ndx < len ) {
@@ -393,7 +391,7 @@ string URL::UrlUnescape(const char* spec, int len) {
     }
     ++ndx;
   }
-  return string(str_canon.data(), str_canon.length());
+  return std::string(str_canon.data(), str_canon.length());
 }
 
 
@@ -430,9 +428,9 @@ const unsigned char kCharLookup[0x100] = {
      ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE,  ESCAPE};
 
 
-string URL::UrlEscape(const char* spec, int len) {
+std::string URL::UrlEscape(const char* spec, int len) {
   int ndx = 0;
-  string s;
+  std::string s;
   url_canon::StdStringCanonOutput str_canon(&s);
   while ( ndx < len ) {
     if ( kCharLookup[uint8(spec[ndx])] == ESCAPE ) {
@@ -442,12 +440,12 @@ string URL::UrlEscape(const char* spec, int len) {
     }
     ++ndx;
   }
-  return string(str_canon.data(), str_canon.length());
+  return std::string(str_canon.data(), str_canon.length());
 }
 
 
 int URL::GetQueryParameters(
-  std::vector< std::pair<string, string> >* components,
+  std::vector< std::pair<std::string, std::string> >* components,
   bool unescape) const {
   url_parse::Component tmp_query(parsed_.query);
   url_parse::Component key, value;

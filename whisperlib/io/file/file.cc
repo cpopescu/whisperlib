@@ -47,8 +47,7 @@ using namespace std;
 #define __LSEEK lseek
 #endif
 
-#if defined(HAVE_FDATASYNC) && !defined(__APPLE__)
-#include <unistd.h>
+#ifdef HAVE_FDATASYNC
 #define __FDATASYNC(fd) fdatasync(fd)
 #else
   #ifdef F_FULLFSYNC
@@ -203,18 +202,18 @@ void File::Close() {
   position_ = 0;
 }
 
-int64 File::Size() const {
+uint64_t File::Size() const {
   CHECK(is_open());
   return size_;
 }
 
-int64 File::Position() const {
+uint64_t File::Position() const {
   CHECK(is_open());
   return position_;
 }
 
-int64 File::SetPosition(int64 distance,
-                        MoveMethod move_method) {
+int64_t File::SetPosition(int64_t distance,
+                          MoveMethod move_method) {
   CHECK(is_open());
   int whence = SEEK_SET;
   switch ( move_method ) {
@@ -225,14 +224,14 @@ int64 File::SetPosition(int64 distance,
     LOG_FATAL << filename_ << " Invalid MoveMethod : " << move_method;
   }
 
-  const int64 crt = ::__LSEEK(fd_, distance, whence);
-  if ( crt == -1 ) {
+  const int64_t crt = ::__LSEEK(fd_, distance, whence);
+  if ( crt < 0 ) {
     LOG_ERROR << filename_ << " lseek failed "
               << GetLastSystemErrorDescription();
     return -1;
   }
   // update cached position_
-  position_ = crt;
+  position_ = uint64_t(crt);
   return position_;
 }
 void File::Rewind() {
@@ -251,9 +250,9 @@ void File::Truncate(int64 pos) {
   UpdateSize();
 }
 
-int32 File::Read(void* buf, int32 len) {
+ssize_t File::ReadBuffer(void* buf, size_t len) {
   CHECK(is_open()) << filename_;
-  const int32 cb = ::read(fd_, buf, len);
+  const ssize_t cb = ::read(fd_, buf, len);
   if ( cb < 0 ) {
     LOG_ERROR << "::read() failed for file: [" << filename_
               << "], err: " << GetLastSystemErrorDescription();
@@ -267,17 +266,17 @@ int32 File::Read(void* buf, int32 len) {
   return cb;
 }
 
-int32 File::Read(io::MemoryStream* out, int32 len) {
+ssize_t File::Read(io::MemoryStream* out, size_t len) {
   char* buffer;
-  int32 cb = 0;
-  while ( cb < len ) {
-    int32 scratch;
+  ssize_t cb = 0;
+  while ( size_t(cb) < len ) {
+    size_t scratch;
     out->GetScratchSpace(&buffer, &scratch);
     if ( buffer == NULL ) {
         return -1;         // oom
     }
-    const int32 cb_to_read = min(scratch, len - cb);
-    const int32 cb_read = Read(buffer, cb_to_read);
+    const size_t cb_to_read = std::min(scratch, len - cb);
+    const ssize_t cb_read = ReadBuffer(buffer, cb_to_read);
     if ( cb_read < 0 ) {
         out->ConfirmScratch(0);
         return cb_read;    // hard error
@@ -291,13 +290,13 @@ int32 File::Read(io::MemoryStream* out, int32 len) {
   return cb;
 }
 
-void File::Skip(int32 len) {
+void File::Skip(int64_t len) {
     SetPosition(len, FILE_CUR);
 }
 
-int32 File::Write(const void* buf, int32 len) {
+ssize_t File::WriteBuffer(const void* buf, size_t len) {
   DCHECK(is_open()) << filename_;
-  const int32 cb = ::write(fd_, buf, len);
+  const ssize_t cb = ::write(fd_, buf, len);
   if ( cb < 0 ) {
     LOG_ERROR << "::write() failed for file: [" << filename_
               << "], err: " << GetLastSystemErrorDescription();
@@ -305,35 +304,35 @@ int32 File::Write(const void* buf, int32 len) {
     return cb;
   }
   position_ += cb;
-  size_ = max(size_, position_);
+  size_ = std::max(size_, position_);
   return cb;
 }
 
-int32 File::Write(const string& s) {
-  return Write(s.data(), s.size());
+ssize_t File::Write(const string& s) {
+  return WriteBuffer(s.data(), s.size());
 }
 
-int32 File::Write(io::MemoryStream* ms, int32 len) {
+ssize_t File::Write(io::MemoryStream* ms, ssize_t len) {
 #if defined(HAVE_SYS_UIO_H)
-  int32 scratch = 0;
-  int32 cb = 0;
+  size_t scratch = 0;
+  ssize_t cb = 0;
   while ( !ms->IsEmpty() && (len < 0 || cb < len) ) {
     ms->MarkerSet();
     struct ::iovec* iov = NULL;
     int iovcnt = 0;
     scratch = ms->ReadForWritev(&iov, &iovcnt,
                                 (len < 0) ? kReadForWritevSize :
-                                min(len - cb, kReadForWritevSize));
+                                std::min(len - cb, ssize_t(kReadForWritevSize)));
     if ( iovcnt > 0 ) {
       const ssize_t crt_cb = ::writev(fd_, iov, iovcnt);
       delete [] iov;
       if ( crt_cb < 0 ) {
         ms->MarkerRestore();
         UpdatePosition();  // don't know where the file pointer ended-up
-        size_ = max(size_, position_);
+        size_ = std::max(size_, position_);
         return crt_cb;
       }
-      if ( crt_cb < scratch ) {
+      if ( size_t(crt_cb) < scratch ) {
         // Written something but not all - we need to return and mark
         // the right amount in the buffer
         ms->MarkerRestore();
@@ -343,27 +342,27 @@ int32 File::Write(io::MemoryStream* ms, int32 len) {
         ms->MarkerClear();
       }
       cb += crt_cb;
-      if ( crt_cb < scratch ) {
+      if ( size_t(crt_cb) < scratch ) {
         break;
       }
     }
   }
   position_ += cb;
-  size_ = max(size_, position_);
+  size_ = std::max(size_, position_);
   return cb;
 #else
   // Much slower version w/o writeev
   CHECK(is_open()) << filename_;
-  if ( len == -1 ) {
+  if ( len < 0 ) {
     len = ms->Size();
   }
   const char* buf = NULL;
-  int32 size = 0;
-  int32 written = 0;
+  size_t size = 0;
+  ssize_t written = 0;
 
   while( len > 0 && ms->ReadNext(&buf, &size) ) {
-    const int32 cb_to_write = min(len, size);
-    const int32 cb_written = Write(buf, cb_to_write);
+    const size_t cb_to_write = std::min(len, size);
+    const ssize_t cb_written = WriteBuffer(buf, cb_to_write);
     if ( cb_written < 0 ) {
       return cb_written;  // hard error
     }
@@ -377,31 +376,6 @@ int32 File::Write(io::MemoryStream* ms, int32 len) {
 #endif
 }
 
-/*
-int32 File::Write(io::MemoryStream* ms, int32 len) {
-  CHECK(is_open()) << filename_;
-  if ( len == -1 ) {
-    len = ms->Size();
-  }
-  const char* buf = NULL;
-  int32 size = 0;
-  int32 written = 0;
-
-  while( len > 0 && ms->ReadNext(&buf, &size) ) {
-    const int32 cb_to_write = min(len, size);
-    const int32 cb_written = Write(buf, cb_to_write);
-    if ( cb_written < 0 ) {
-      return cb_written;  // hard error
-    }
-    written += cb_written;
-    if ( cb_written != cb_to_write ) {
-      return written;     // whatever..
-    }
-    len -= cb_written;
-  }
-  return written;
-}
-*/
 
 void File::Flush() {
   CHECK(is_open()) << filename_;
@@ -411,19 +385,21 @@ void File::Flush() {
 }
 
 
-int64 File::UpdateSize() {
-  const int64 crt = ::__LSEEK(fd_, 0, SEEK_CUR);
-  CHECK(crt != -1) << GetLastSystemErrorDescription();
-  size_ =  ::__LSEEK(fd_, 0, SEEK_END);
-  CHECK(size_ != -1) << GetLastSystemErrorDescription();
+uint64_t File::UpdateSize() {
+  const int64_t crt = ::__LSEEK(fd_, 0, SEEK_CUR);
+  CHECK_GE(crt, 0) << GetLastSystemErrorDescription();
+  const int64_t size =  ::__LSEEK(fd_, 0, SEEK_END);
+  CHECK_GE(size, 0) << GetLastSystemErrorDescription();
+  size_ = uint64_t(size);
   CHECK(::__LSEEK(fd_, crt, SEEK_SET) == crt)
       << " crt: " << crt << " - error: " << GetLastSystemErrorDescription();
   return size_;
 }
 
-int64 File::UpdatePosition() {
-  position_ = ::__LSEEK(fd_, 0, SEEK_CUR);
-  CHECK(position_ != -1) << GetLastSystemErrorDescription();
+uint64_t File::UpdatePosition() {
+  const int64_t position = ::__LSEEK(fd_, 0, SEEK_CUR);
+  CHECK_GE(position, 0) << GetLastSystemErrorDescription();
+  position_ = uint64_t(position);
   return position_;
 }
 }  // namespace io

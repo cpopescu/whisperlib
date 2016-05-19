@@ -51,23 +51,21 @@
 #include "whisperlib/io/logio/recordio.h"
 #include <google/protobuf/message_lite.h>
 
-using std::string;
-
 namespace whisper {
 namespace io {
 
-static const int32 kDefaultBlocksPerFile = 1 << 14;
+static const size_t kDefaultBlocksPerFile = 1 << 14;
 
 //////////////////////////////////////////////////////////////////////
 
 struct LogPos {
-  int32 file_num_;
-  int32 block_num_;
-  int32 record_num_;
+  int32_t file_num_;
+  int32_t block_num_;
+  int32_t record_num_;
   LogPos()
     : file_num_(-1), block_num_(0), record_num_(0) {
   }
-  LogPos(int32 file_num, int32 block_num, int32 record_num)
+  LogPos(int32_t file_num, int32_t block_num, int32_t record_num)
     : file_num_(file_num), block_num_(block_num), record_num_(record_num) {
   }
   LogPos(const LogPos& other)
@@ -146,22 +144,22 @@ struct LogPos {
     }
   }
 
-  string ToString() const {
+  std::string ToString() const {
     return strutil::StringPrintf(
       "LogPos{file#: %5d; block#: %5d; record#: %5d}",
       file_num_, block_num_, record_num_);
   }
-  string StrEncode() const {
+  std::string StrEncode() const {
     return strutil::StringPrintf(
         "LogPos{file: %d; block: %d; record: %d}",
         file_num_, block_num_, record_num_);
   }
-  bool StrDecode(const string& str) {
+  bool StrDecode(const std::string& str) {
     if ( str.size() <= 8 ) {
       LOG_ERROR << "Cannot decode, string too small: [" << str << "]";
       return false;
     }
-    std::vector< std::pair<string, string> > pairs;
+    std::vector< std::pair<std::string, std::string> > pairs;
     strutil::SplitPairs(str.substr(7, str.size() - 8), ";", ":", &pairs);
     if ( pairs.size() != 3 ) {
       LOG_ERROR << "Cannot decode str: [" << str << "]";
@@ -179,16 +177,16 @@ class LogReader;
 
 class LogWriter {
  public:
-  LogWriter(const string& log_dir,
-            const string& file_base,
-            int32 block_size = kDefaultRecordBlockSize,
-            int32 blocks_per_file = kDefaultBlocksPerFile,
+  LogWriter(const std::string& log_dir,
+            const std::string& file_base,
+            size_t block_size = kDefaultRecordBlockSize,
+            size_t blocks_per_file = kDefaultBlocksPerFile,
             bool temporary_incomplete_file = false,
             bool deflate = false);
   ~LogWriter();
 
-  const string& log_dir() const { return log_dir_; }
-  const string& file_base() const { return file_base_; }
+  const std::string& log_dir() const { return log_dir_; }
+  const std::string& file_base() const { return file_base_; }
 
   // true: success, the log_dir and file_base are marked as locked
   // false: failure, a lock file already exists
@@ -196,12 +194,12 @@ class LogWriter {
 
   LogReader* NewReader() const;
 
-  const string& file_name() const { return file_.filename(); }
+  const std::string& file_name() const { return file_.filename(); }
 
   bool WriteRecord(io::MemoryStream* in);
-  bool WriteRecord(const char* buffer, int32 size);
+  bool WriteRecord(const char* buffer, size_t size);
   bool WriteRecord(const google::protobuf::MessageLite* message) {
-      string output;
+      std::string output;
       if (!message->SerializeToString(&output)) {
           return false;
       }
@@ -229,7 +227,7 @@ class LogWriter {
   // If temp == true and the real file does not exist:
   //   => generates a temporary filename
   // else => returns the real file name
-  string ComposeFileName(bool temp) const;
+  std::string ComposeFileName(bool temp) const;
   // Puts the current buf_ into the log file
   bool WriteBuffer(bool force_flush);
   // Determines and opens the next log file
@@ -238,10 +236,10 @@ class LogWriter {
   void CloseLog();
 
  private:
-  const string log_dir_;         // log files are here..
-  const string file_base_;       // and begin w/ this name
-  const int32 block_size_;       // we create block of records of this size
-  const int32 blocks_per_file_;  // and we write these many blocks per file
+  const std::string log_dir_;    // log files are here..
+  const std::string file_base_;  // and begin w/ this name
+  const size_t block_size_;      // we create block of records of this size
+  const size_t blocks_per_file_; // and we write these many blocks per file
   const bool temporary_incomplete_file_;
                                  // incomplete files have a temporary name.
                                  // Once a file is complete it is moved in
@@ -251,7 +249,7 @@ class LogWriter {
 
   re::RE re_;                    // matches log files
 
-  int32 file_num_;               // the current file number
+  int32_t file_num_;             // the current file number
                                  //  (for the opened file)
   io::File file_;                // current file
   MemoryStream buf_;             // used to accumulate records
@@ -264,10 +262,10 @@ class LogWriter {
 
 class LogReader {
  public:
-  LogReader(const string& log_dir,
-            const string& file_base,
-            int32 block_size = kDefaultRecordBlockSize,
-            int32 blocks_per_file = kDefaultBlocksPerFile);
+  LogReader(const std::string& log_dir,
+            const std::string& file_base,
+            size_t block_size = kDefaultRecordBlockSize,
+            size_t blocks_per_file = kDefaultBlocksPerFile);
   ~LogReader();
 
   // out: If not NULL, filled with next record data.
@@ -276,10 +274,10 @@ class LogReader {
   // Corrupted records are automatically skipped.
   bool GetNextRecord(io::MemoryStream* out);
 
-  uint32 num_errors() const   { return num_errors_; }
+  size_t num_errors() const   { return num_errors_; }
 
   LogPos Tell() const {
-    int32 block_num = 0;
+    int32_t block_num = 0;
     if ( file_.is_open() && file_.Position() > 0 ) {
       DCHECK(file_.Position() % block_size_ == 0) << "Illegal file position: "
           << file_.Position() << ", block_size_: " << block_size_;
@@ -289,10 +287,10 @@ class LogReader {
   }
 
   LogPos TellAtBlock() const {
-    int32 block_num = 0;
+    int32_t block_num = 0;
     if ( file_.is_open() && file_.Position() > 0 ) {
       block_num = file_.Position() / block_size_;
-      if (block_num >= blocks_per_file_) {
+      if (block_num < 0 && size_t(block_num) >= blocks_per_file_) {
           return LogPos(file_num_ + 1, 0, 0);
       }
     }
@@ -313,12 +311,12 @@ class LogReader {
     pos->Decrement(blocks_per_file_);
   }
 
-  string ComposeFileName(int32 file_num) const;
+  std::string ComposeFileName(int32_t file_num) const;
 
  private:
   void CloseInternal(bool is_error);
   // close current file, open given file
-  bool OpenFile(int32 file_num);
+  bool OpenFile(int32_t file_num);
   // advance inside current opened file to given block/record
   bool AdvanceToPosInFile(const LogPos& log_pos);
   // read the next block at current file position.
@@ -327,23 +325,23 @@ class LogReader {
   bool ReadBlock();
 
  private:
-  const string log_dir_;         // log files are here..
-  const string file_base_;       // and begin w/ this name
-  re::RE       re_;              // matches log files
-  const int32 block_size_;       // we create block of records of this size
-  const int32 blocks_per_file_;  // and we write these many blocks per file
+  const std::string log_dir_;     // log files are here..
+  const std::string file_base_;   // and begin w/ this name
+  re::RE       re_;               // matches log files
+  const size_t block_size_;       // we create block of records of this size
+  const size_t blocks_per_file_;  // and we write these many blocks per file
 
   // current file
   io::File file_;
   // current position, of the next record to read. Block num is deduced
   // from file position.
-  int32 file_num_;
-  int32 record_num_;
+  int32_t file_num_;
+  int32_t record_num_;
 
   // splits records for us
   RecordReader reader_;
   // count record errors (corrupted records are automatically discarded)
-  uint32 num_errors_;
+  size_t num_errors_;
   // filled with 1 block at a time, consumed record by record
   io::MemoryStream buf_;
 
@@ -354,30 +352,32 @@ class LogReader {
 // Computational intensive: go through all the log counting the records.
 // NOTE: Call this function only at reader begin!
 //       The reader is rewinded after this function finishes counting records.
-int64 CountLogRecords(LogReader* reader);
+uint64_t CountLogRecords(LogReader* reader);
 
-void GetLogFiles(std::vector<string>* files,
-                 const string& log_dir, const string& file_base,
-                 int32 block_size = kDefaultRecordBlockSize);
+void GetLogFiles(std::vector<std::string>* files,
+                 const std::string& log_dir, const std::string& file_base,
+                 size_t block_size = kDefaultRecordBlockSize);
 
-size_t CountLogFiles(const string& log_dir, const string& file_base,
-                     int32 block_size = kDefaultRecordBlockSize);
+size_t CountLogFiles(const std::string& log_dir, const std::string& file_base,
+                     size_t block_size = kDefaultRecordBlockSize);
 
 // Clean log files before the given position (i.e. you can seek to the
 // given position, but probably not before .. )
 //
 // We return how many files we have deleted.
-size_t CleanLog(const string& log_dir, const string& file_base,
+size_t CleanLog(const std::string& log_dir, const std::string& file_base,
                 LogPos first_pos = LogPos(kMaxInt32, 0, 0),
-                int32 block_size = kDefaultRecordBlockSize);
+                size_t block_size = kDefaultRecordBlockSize);
 
 // Autodetect logio settings
-bool DetectLogSettings(const string& log_dir, string* out_file_base,
-    int32* out_block_size, int32* out_blocks_per_file);
+bool DetectLogSettings(const std::string& log_dir, std::string* out_file_base,
+                       size_t* out_block_size, size_t* out_blocks_per_file);
 
 // Test if a log file exists.
-bool LogExists(const string& dir, const string& file_base, int32 block_size, int32 file_num);
-int64 LogFileTime(const string& dir, const string& file_base, int32 block_size, int32 file_num);
+bool LogExists(const std::string& dir, const std::string& file_base,
+               size_t block_size, int32_t file_num);
+int64_t LogFileTime(const std::string& dir, const std::string& file_base,
+                    size_t block_size, int32_t file_num);
 
 }  // namespace io
 }  // namespace whisper

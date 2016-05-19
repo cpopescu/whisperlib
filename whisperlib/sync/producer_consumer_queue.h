@@ -41,8 +41,6 @@
 #include "whisperlib/base/timer.h"
 #include "whisperlib/sync/mutex.h"
 
-using std::vector;
-
 namespace whisper {
 namespace synch {
 
@@ -142,7 +140,7 @@ class ProducerConsumerQueue {
     CHECK_SYS_FUN(pthread_mutex_unlock(&mutex_), 0);
     return ret;
   }
-  void GetAll(vector<C>* out) {
+  void GetAll(std::vector<C>* out) {
     CHECK_SYS_FUN(pthread_mutex_lock(&mutex_), 0);
     while ( !data_.empty() ) {
       out->push_back(data_.front());

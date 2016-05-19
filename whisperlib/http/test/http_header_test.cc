@@ -113,7 +113,7 @@ const TestData test[] = {
 };
 
 void RunSimpleTests() {
-  for ( int i = 0; i < NUMBEROF(test); ++i ) {
+  for ( size_t i = 0; i < NUMBEROF(test); ++i ) {
     whisper::http::Header headers(test[i].is_strict);
     LOG_INFO << " ======================================== \n"
              << " TEST " << i;
@@ -124,14 +124,14 @@ void RunSimpleTests() {
     CHECK_EQ(headers.parse_error(), test[i].expected_error);
     LOG_INFO << "==================\n"
              << headers.ToString();
-    string s;
+    std::string s;
     if ( *test[i].test_field_content ) {
       CHECK(headers.FindField(
-              string(test[i].test_field_name), &s));
-      CHECK_EQ(s, string(test[i].test_field_content));
+              std::string(test[i].test_field_name), &s));
+      CHECK_EQ(s, std::string(test[i].test_field_content));
     } else {
       CHECK(!headers.FindField(
-              string(test[i].test_field_name), &s));
+              std::string(test[i].test_field_name), &s));
     }
   }
 }
@@ -194,15 +194,15 @@ int main(int argc, char* argv[]) {
   CHECK(htest.IsGzipAcceptableEncoding());
 
   CHECK(!htest.SetAuthorizationField("gigi_marga:", "zuzub0#$A"));
-  string user, passwd;
+  std::string user, passwd;
   CHECK(!htest.GetAuthorizationField(&user, &passwd));
   CHECK(htest.SetAuthorizationField("gigi_marga", "zuzub0#$A"));
   CHECK(htest.GetAuthorizationField(&user, &passwd));
-  CHECK_EQ(user, string("gigi_marga"));
-  CHECK_EQ(passwd, string("zuzub0#$A"));
+  CHECK_EQ(user, std::string("gigi_marga"));
+  CHECK_EQ(passwd, std::string("zuzub0#$A"));
 
-  string ss = whisper::http::Header::NormalizeFieldName(
-    string(" ABC DEF  \t "));
+  std::string ss = whisper::http::Header::NormalizeFieldName(
+    std::string(" ABC DEF  \t "));
   CHECK_EQ(ss, "Abc-Def");
   ss = whisper::http::Header::NormalizeFieldName("GiGi--MarG A  \t ");
   CHECK_EQ(ss, "Gigi--Marg-A");
@@ -251,7 +251,7 @@ int main(int argc, char* argv[]) {
       CHECK_EQ(headers.parse_error(), whisper::http::Header::READ_OK);
 
       whisper::io::MemoryStream ss;
-      string s;
+      std::string s;
       headers.AppendToStream(&ss);
       CHECK(ss.ReadString(&s));
       LOG_INFO << " ======================================== \n"

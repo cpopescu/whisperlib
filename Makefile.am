@@ -6,8 +6,8 @@ lib_LIBRARIES = whisperlib/libwhisperlib.a
 
 LDADD = whisperlib/libwhisperlib.a $(ICU_LIBS)
 # -L $(LIBPROTOBUF_LIB) -lprotobuf
-AM_CXXFLAGS=$(ICU_CXXFLAGS)
-AM_CFLAGS=$(ICU_CFLAGS)
+AM_CXXFLAGS=$(ICU_CXXFLAGS) -Wno-unused-parameter
+AM_CFLAGS=$(ICU_CFLAGS) -Wno-unused-parameter
 AM_CPPFLAGS=$(ICU_CPPFLAGS)
 
 if HAVE_ICU

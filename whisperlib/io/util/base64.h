@@ -42,8 +42,6 @@
 #include <vector>
 #include "whisperlib/base/types.h"
 
-using std::string;
-
 namespace whisper {
 namespace base64 {
 
@@ -68,7 +66,7 @@ static const char kEncoding[] =
     "0123456789+/";
 
 inline char EncodeValue(char value_in)  {
-  if ( value_in >= sizeof(kEncoding) )
+  if ( size_t(value_in) >= sizeof(kEncoding) )
     return '=';
   return kEncoding[(int)value_in];
 }
@@ -100,8 +98,8 @@ struct Encoder {
   }
 };
 
-string EncodeString(const string& s);
-string EncodeVector(const std::vector<uint8>& v);
+std::string EncodeString(const std::string& s);
+std::string EncodeVector(const std::vector<uint8>& v);
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -129,7 +127,7 @@ static const char kDecoding[] = {
 
 inline int DecodeValue(char value_in) {
   value_in -= 43;
-  if (value_in < 0 || value_in >= sizeof(kDecoding))
+  if (value_in < 0 || size_t(value_in) >= sizeof(kDecoding))
     return -1;
   return kDecoding[(int)value_in];
 }

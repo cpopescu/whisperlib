@@ -2,9 +2,35 @@
 //
 // (c) Copyright 2011, Urban Engines
 // All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above
+// copyright notice, this list of conditions and the following disclaimer
+// in the documentation and/or other materials provided with the
+// distribution.
+// * Neither the name of Urban Engines inc nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
 // Author: Catalin Popescu (cp@urbanengines.com)
 //
-
 #ifndef __WHISPERLIB_RPC_RPC_CONTROLLER_H__
 #define __WHISPERLIB_RPC_RPC_CONTROLLER_H__
 
@@ -101,13 +127,13 @@ class Transport {
   Protocol protocol() const                  { return protocol_;       }
   const net::HostPort& local_address() const { return local_address_;  }
   const net::HostPort& peer_address() const  { return peer_address_;   }
-  const string& user() const                 { return user_;           }
-  const string& passwd() const               { return passwd_;         }
-  string* mutable_user()                     { return &user_;          }
-  string* mutable_passwd()                   { return &passwd_;        }
+  const std::string& user() const                 { return user_;           }
+  const std::string& passwd() const               { return passwd_;         }
+  std::string* mutable_user()                     { return &user_;          }
+  std::string* mutable_passwd()                   { return &passwd_;        }
 
-  void set_user_passwd(const string& user,
-                       const string& passwd) { user_ = user;
+  void set_user_passwd(const std::string& user,
+                       const std::string& passwd) { user_ = user;
                                                passwd_ = passwd;       }
 
  protected:
@@ -115,8 +141,8 @@ class Transport {
   const Protocol protocol_;
   const net::HostPort local_address_;
   const net::HostPort peer_address_;
-  string user_;
-  string passwd_;
+  std::string user_;
+  std::string passwd_;
 };
 
 
@@ -142,7 +168,7 @@ public:
   virtual bool Failed() const;
 
   // If Failed() is true, returns a human-readable description of the error.
-  virtual string ErrorText() const;
+  virtual std::string ErrorText() const;
 
   // Advises the RPC system that the caller desires that the RPC call be
   // canceled.  The RPC system may cancel it immediately, may wait awhile and
@@ -163,13 +189,13 @@ public:
   // you need to return machine-readable information about failures, you
   // should incorporate it into your response protocol buffer and should
   // NOT call SetFailed().
-  virtual void SetFailed(const string& reason);
+  virtual void SetFailed(const std::string& reason);
 
   // In our implementation we use error codes for server specialized errors,
   // w/ failure reasons used for extra user detail.
   rpc::ErrorCode GetErrorCode();
 
-  const string& GetErrorReason();
+  const std::string& GetErrorReason();
 
   // Sets the error reason for an RPC (cannot be ERROR_NONE or ERROR_CANCELLED)
   void SetErrorCode(rpc::ErrorCode code);
@@ -211,8 +237,8 @@ public:
   // If the request is streaming / not streaming
   // For non streaming requests the done callback will be called once,
   // when the request is done.
-  // For streaming the done callback is supposed to be permanent, and will be called for each
-  // new response decoded from the pipe.
+  // For streaming the done callback is supposed to be permanent, and
+  // will be called for each new response decoded from the pipe.
   bool is_streaming() const { return is_streaming_; }
   void set_is_streaming(bool is_streaming) { is_streaming_ = is_streaming; }
 
@@ -221,11 +247,13 @@ public:
       is_finalized_ = true;
   }
 
-  // When streaming, new messages parsed from the server are appended to this vector.
-  // Note that a NULL message can be appended when a message was sent but some parsing
-  // error happened (like parsing). You can decide what to do in those cases.
-  // The bool is false when no message is in the stream. You are responsible (new owner)
-  // of any returned messages.
+  // When streaming, new messages parsed from the server are appended to
+  // this vector.
+  // Note that a NULL message can be appended when a message was sent but
+  // some parsing error happened (like parsing). You can decide what to do
+  // in those cases.
+  // The bool is false when no message is in the stream. You are
+  // responsible (new owner) of any returned messages.
   std::pair<google::protobuf::Message*, bool> PopStreamedMessage() {
     synch::MutexLocker l(&mutex_);
     std::pair<google::protobuf::Message*, bool> ret =
@@ -238,9 +266,10 @@ public:
     return ret;
   }
 
-  // Used by the framework to push a new message to the message stream. (on clients used
-  // by the rpc subsystem to push messages received from the server; on servers used by the
-  // server implementation to push more messages to be sent to the client).
+  // Used by the framework to push a new message to the message stream.
+  // (on clients used by the rpc subsystem to push messages received
+  // from the server; on servers used by the server implementation to
+  // push more messages to be sent to the client).
   // VERY IMPORTANT: on servers always
   void PushStreamedMessage(google::protobuf::Message* msg) {
     synch::MutexLocker l(&mutex_);
@@ -282,10 +311,10 @@ public:
     is_finalized_ = true;
   }
 
-  const string& custom_content_type() const {
+  const std::string& custom_content_type() const {
     return custom_content_type_;
   }
-  void set_custom_content_type(const string& custom_content_type) {
+  void set_custom_content_type(const std::string& custom_content_type) {
     custom_content_type_ = custom_content_type;
   }
 
@@ -296,7 +325,7 @@ private:
   Transport* transport_;
   google::protobuf::Closure* cancel_callback_;
   ErrorCode error_code_;
-  string error_reason_;
+  std::string error_reason_;
   int64 timeout_ms_;    // TODO(cp): actually implement this
   bool is_urgent_;
   bool is_streaming_;

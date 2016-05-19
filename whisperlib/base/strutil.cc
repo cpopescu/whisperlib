@@ -43,9 +43,9 @@
 namespace strutil {
 
 // Convert binary string to hex
-std::string ToHex(const unsigned char* cp, int len) {
+std::string ToHex(const unsigned char* cp, size_t len) {
   char buf[len * 2 + 1];
-  for (int i = 0; i < len; ++i) {
+  for (size_t i = 0; i < len; ++i) {
     sprintf(buf + i * 2, "%02x", cp[i]);
   }
   return std::string(buf, len * 2);
@@ -155,8 +155,11 @@ std::string StrFrontTrim(const std::string& str) {
 }
 
 std::string StrTrim(const std::string& str) {
-  int i = 0;
-  int j = str.size() - 1;
+  if (str.empty()) {
+    return std::string();
+  }
+  size_t i = 0;
+  size_t j = str.size() - 1;
   while ( i <= j && isspace(str[i]) ) {
     ++i;
   }
@@ -164,14 +167,17 @@ std::string StrTrim(const std::string& str) {
     --j;
   }
   if ( j < i )  {
-    return std::string("");
+    return std::string();
   }
   return str.substr(i, j - i + 1);
 }
 
 std::string StrTrimChars(const std::string& str, const char* chars_to_trim) {
-  int i = 0;
-  int j = str.size() - 1;
+  if (str.empty()) {
+    return std::string();
+  }
+  size_t i = 0;
+  size_t j = str.size() - 1;
   while ( i <= j && strchr(chars_to_trim, str[i]) != NULL ) {
     ++i;
   }
@@ -179,7 +185,7 @@ std::string StrTrimChars(const std::string& str, const char* chars_to_trim) {
     --j;
   }
   if ( j < i )  {
-    return std::string("");
+    return std::string();
   }
   return str.substr(i, j - i + 1);
 }
@@ -194,7 +200,7 @@ std::string StrTrimCompress(const std::string& str) {
 }
 
 void StrTrimCRLFInPlace(std::string& s) {
-  int e = 0;
+  size_t e = 0;
   while ( s.size() > e && (s[s.size()-1-e] == 0x0a ||
                            s[s.size()-1-e] == 0x0d) ) {
     e++;
@@ -207,13 +213,14 @@ std::string StrTrimCRLF(const std::string& str) {
   return s;
 }
 void StrTrimCommentInPlace(std::string& str, char comment_char) {
-    const int index = str.find(comment_char);
-    if (index == -1) { return; }
+  const size_t index = str.find(comment_char);
+  if (index != std::string::npos) {
     str.erase(index);
+  }
 }
 std::string StrTrimComment(const std::string& str, char comment_char) {
-    const int index = str.find(comment_char);
-    if (index == -1) { return str; }
+    const size_t index = str.find(comment_char);
+    if (index == std::string::npos) { return str; }
     return str.substr(0, index);
 }
 std::string StrReplaceAll(const std::string& str,
@@ -238,7 +245,7 @@ std::string NormalizeUrlPath(const std::string& path) {
     return "/";
   }
   std::string ret(strutil::NormalizePath(path, '/'));
-  int i = 0;
+  size_t i = 0;
   while ( i < ret.size() && ret[i] == '/' ) {
     ++i;
   }
@@ -413,7 +420,7 @@ std::string PrintableDataBufferInline(const void* vbuffer, size_t size) {
   const unsigned char* buffer = static_cast<const unsigned char*>(vbuffer);
   std::ostringstream oss;
   oss << size << " bytes {";
-  for ( int32 i = 0; i < size; i++ ) {
+  for ( size_t i = 0; i < size; i++ ) {
     if ( i != 0 ) {
       oss << " ";
     }
@@ -504,7 +511,7 @@ std::string RemoveOutermostBrackets(const std::string& s,
                                const char open_bracket,
                                const char close_bracket) {
   if (s.length() > 2) {
-    if (s[0] == open_bracket && s[s.length()-1] == close_bracket) {
+    if (s[0] == open_bracket && s[s.length() - 1] == close_bracket) {
       return s.substr(1, s.length()-2);
     }
   }
@@ -530,7 +537,7 @@ inline uint8 hexval(char c) {
 }
 }
 
-void SplitStringOnAny(const char* text, int size,
+void SplitStringOnAny(const char* text, size_t size,
                       const char* separators,
                       std::vector<std::string>* output,
                       bool skip_empty) {
@@ -571,7 +578,7 @@ std::string StrNEscape(const char* text, size_t size, char escape,
   }
   set_char_bit(escapes, escape);
   const char* t = text;
-  int i = 0;
+  size_t i = 0;
   std::string ret;
   while ( i++ < size ) {
     if ( is_set_bit(escapes, *t) || *t  < 32 || *t > 126 ) {
@@ -657,11 +664,11 @@ static const char kHexChars[] = "0123456789abcdef";
 
 std::string JsonStrEscape(const char* text, size_t size) {
   ::scoped_array<wchar_t> wtext(strutil::i18n::Utf8ToWchar(text, size));
-  const int wlen = wcslen(wtext.get());
+  const size_t wlen = wcslen(wtext.get());
   ::scoped_array<wchar_t> crt_token(new wchar_t[wlen + 1]);
   ::scoped_array<char> output(new char[wlen * 12 + 1]);
   size_t pos = 0;
-  for (int i = 0; i < wlen; ++i) {
+  for (size_t i = 0; i < wlen; ++i) {
     wchar_t c = wtext[i];
     if (IS_CHAR(c)) {
       output[pos++] = (char)c;
@@ -847,8 +854,8 @@ std::string StrMapFormat(const char* s,
                     char escape_char) {
   CHECK(*arg_begin != '\0');
   CHECK(*arg_end != '\0');
-  const int size_begin = strlen(arg_begin);
-  const int size_end = strlen(arg_end);
+  const size_t size_begin = strlen(arg_begin);
+  const size_t size_end = strlen(arg_end);
   StrFormatState state = IN_TEXT;
 
   std::string out;
@@ -940,7 +947,7 @@ std::string StrHumanBytes(size_t bytes) {
   return StringPrintf("%" PRIu64 " bytes", bytes);
 }
 
-std::string StrOrdinalNth(int x) {
+std::string StrOrdinalNth(size_t x) {
   if (x <= 0) { return std::to_string(x); }
     if (x == 11 or x == 12) { return std::to_string(x) + "th"; }
     switch (x % 10) {
@@ -950,7 +957,7 @@ std::string StrOrdinalNth(int x) {
     }
     return std::to_string(x) + "th";
 }
-std::string StrOrdinal(int v) {
+std::string StrOrdinal(size_t v) {
   static const std::vector<std::string> kOrdinal {
     "nth", "first", "second", "third", "fourth", "fifth", "sixth", "seventh",
     "eighth", "ninth", "tenth", "eleventh", "twelfth"
@@ -1350,7 +1357,7 @@ std::pair<std::string, std::string> Utf8SplitPairs(const std::string& s, wchar_t
   wint_t codepoint;
   while (p < end) {
     const char* next = Utf8ToCodePoint(p, end, &codepoint);
-    if (codepoint == split) {
+    if (codepoint == wint_t(split)) {
       return std::make_pair(s.substr(0, p - s.c_str()), s.substr(next - s.c_str()));
     }
     p = next;
@@ -1372,7 +1379,7 @@ void Utf8SplitOnWChars(const std::string& s, const wchar_t* splits,
       bool is_split = false;
       const wchar_t* psplits = splits;
       while (*psplits && !is_split) {
-        is_split = *psplits == codepoint;
+        is_split = wint_t(*psplits) == codepoint;
         ++psplits;
       }
       if (is_split) {

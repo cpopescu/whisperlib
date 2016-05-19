@@ -33,24 +33,25 @@
 #include "whisperlib/io/output_stream.h"
 #include "whisperlib/io/input_stream.h"
 
-int32 whisper::io::OutputStream::Write(io::InputStream& in, int32 len) {
-  int32 written = 0;
+ssize_t whisper::io::OutputStream::Write(io::InputStream& in, ssize_t len) {
+  ssize_t written = 0;
   uint8 tmp[1024];
-  while ( written < len ) {
-    const int32 to_read = std::min(len - written, static_cast<int32>(sizeof(tmp)));
+  while ( len < 0 || written < len ) {
+    const size_t to_read = len < 0 ? sizeof(tmp) :
+                                 std::min(size_t(len - written), sizeof(tmp));;
     // "in" -> tmp
-    const int32 r = in.Read(tmp, to_read);
+    const ssize_t r = in.ReadBuffer(tmp, to_read);
     if ( r < 0 ) {
       return r;
     }
     // tmp -> "this"
-    const int32 w = Write(tmp, r);
+    const ssize_t w = WriteBuffer(tmp, r);
     if ( w < 0 ) {
       return w;
     }
     written += w;
     // end of "in" reached or end of writable space in this stream
-    if ( r < to_read || w < r ) {
+    if ( size_t(r) < to_read || w < r ) {
       break;
     }
   }

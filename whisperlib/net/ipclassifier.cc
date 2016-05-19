@@ -48,7 +48,7 @@ void SplitClassifiers(C* c, const char* members) {
   std::vector<std::string> components;
   CHECK(strutil::SplitBracketedString(members, ',', '(', ')',  &components))
         << " Invalid classifier spec: [" << members << "]";
-  for ( int i = 0; i < components.size(); ++i ) {
+  for ( size_t i = 0; i < components.size(); ++i ) {
     c->Add(whisper::net::IpClassifier::CreateClassifier(components[i]));
   }
 }
@@ -176,7 +176,7 @@ IpFilterFileClassifier::IpFilterFileClassifier(const std::string& spec) {
   const std::string content(io::FileInputStream::ReadFileOrDie(spec.c_str()));
   std::vector<std::string> ips;
   strutil::SplitString(std::string(content), "\n", &ips);
-  for ( int i = 0; i < ips.size(); ++i ) {
+  for ( size_t i = 0; i < ips.size(); ++i ) {
     filter_.Add(strutil::StrTrim(ips[i]).c_str());
   }
 }
@@ -184,7 +184,7 @@ IpFilterFileClassifier::IpFilterFileClassifier(const std::string& spec) {
 IpFilterStringClassifier::IpFilterStringClassifier(const std::string& spec) {
   std::vector<std::string> ips;
   strutil::SplitString(spec, ",", &ips);
-  for ( int i = 0; i < ips.size(); ++i ) {
+  for ( size_t i = 0; i < ips.size(); ++i ) {
     filter_.Add(strutil::StrTrim(ips[i]).c_str());
   }
 }

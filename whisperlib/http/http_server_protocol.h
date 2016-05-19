@@ -84,8 +84,6 @@
 #include "whisperlib/url/url.h"
 #include "whisperlib/net/user_authenticator.h"
 
-using std::string;
-
 namespace whisper {
 namespace http {
 
@@ -103,24 +101,24 @@ struct ServerParams {
   };
 
   ServerParams();
-  ServerParams(const string& root_url,
+  ServerParams(const std::string& root_url,
                bool dlog_level_,
                bool strict_request_headers,
                bool allow_all_methods,
-               int32 max_header_size,
-               int32 max_body_size,
-               int32 max_chunk_size,
+               size_t max_header_size,
+               size_t max_body_size,
+               size_t max_chunk_size,
                int64 max_num_chunks,
                http::Header::ParseError worst_accepted_header_error,
-               int32 max_concurrent_connections,
-               int32 max_concurrent_requests,
-               int32 max_concurrent_requests_per_connection,
+               size_t max_concurrent_connections,
+               size_t max_concurrent_requests,
+               size_t max_concurrent_requests_per_connection,
                int32 request_read_timeout_ms,
                int32 keep_alive_timeout_sec,
                int32 reply_write_timeout_ms,
-               int32 max_reply_buffer_size,
+               size_t max_reply_buffer_size,
                FlowControlPolicy reply_full_buffer_policy,
-               const string& default_content_type,
+               const std::string& default_content_type,
                bool ignore_different_http_hosts);
 
   // Root for our serving path
@@ -138,11 +136,11 @@ struct ServerParams {
   bool allow_all_methods_;
 
   // How long the acceptable HTTP header can be ?
-  int32 max_header_size_;
+  size_t max_header_size_;
   // For non chunked body, how long this can be ?
-  int32 max_body_size_;
+  size_t max_body_size_;
   // For chunked body, how big one chunk can be ?
-  int32 max_chunk_size_;
+  size_t max_chunk_size_;
   // For chunked body, how many chuncks can we accept in a request / reply ?
   // (-1 => no limit)
   int64 max_num_chunks_;
@@ -152,11 +150,11 @@ struct ServerParams {
   http::Header::ParseError worst_accepted_header_error_;
 
   // How many concurrent connections can we have ?
-  int32 max_concurrent_connections_;
+  size_t max_concurrent_connections_;
   // How many concurrent requests can we accept ?
-  int32 max_concurrent_requests_;
+  size_t max_concurrent_requests_;
   // How many concurrent requests per each connection do we accept ?
-  int32 max_concurrent_requests_per_connection_;
+  size_t max_concurrent_requests_per_connection_;
 
   // How long to wait to receive a request ?
   int32 request_read_timeout_ms_;
@@ -165,11 +163,11 @@ struct ServerParams {
   // How long to wait for reads from the outbud to complete ?
   int32 reply_write_timeout_ms_;
   // How big can grow the reply buffer ?
-  int32 max_reply_buffer_size_;
+  size_t max_reply_buffer_size_;
   FlowControlPolicy reply_full_buffer_policy_;
 
   // Default content type for our answers
-  string default_content_type_;
+  std::string default_content_type_;
   // If true we ignore different http hosts received in the sourece urls..
   bool ignore_different_http_hosts_;
 };
@@ -266,23 +264,23 @@ class Server {
   // is_public: If true, all incoming clients are served.
   //            If false, only certain allowed_ips_ can access this path.
   // auto_del_callback: Should we take ownership of the 'callback'?
-  void RegisterProcessor(const string& path, ServerCallback* callback,
+  void RegisterProcessor(const std::string& path, ServerCallback* callback,
       bool is_public, bool auto_del_callback);
 
   // The reverse of RegisterProcessor.
-  void UnregisterProcessor(const string& path);
+  void UnregisterProcessor(const std::string& path);
 
   // Sets IP sets for given given path (if not public). We do not take
   // control of the pointer (which should be around for the whole
   // duration of Server's life.
   // If the given filter is NULL -> means all allowed :)
   // The path resolving is same as for processors
-  void RegisterAllowedIpAddresses(const string& path,
+  void RegisterAllowedIpAddresses(const std::string& path,
                                   const net::IpV4Filter* ips);
 
   // Registers that on the given path the server receives streams
   // of data from the client and we need to do multiple processing calls.
-  void RegisterClientStreaming(const string& path,
+  void RegisterClientStreaming(const std::string& path,
                                bool is_client_streaming);
 
   // Processes a given request - fully read from the client.
@@ -312,7 +310,7 @@ class Server {
   const ServerParams& protocol_params() const {
     return protocol_params_;
   }
-  int num_connections() const {
+  size_t num_connections() const {
     return protocols_.size();
   }
 
@@ -322,13 +320,13 @@ class Server {
   void DeleteClient(ServerProtocol* proto);
 
   net::Selector* selector() { return selector_; }
-  const string& name() const { return name_; }
+  const std::string& name() const { return name_; }
  private:
   void DefaultRequestProcessor(ServerRequest* req);
   void ErrorRequestProcessor(ServerRequest* req);
 
   // Name of the server - we return this in the "Server" field
-  const string name_;
+  const std::string name_;
   // Main network thread selector
   net::Selector* const selector_;
   // Main network factory (for creating tcp/ssl acceptors)
@@ -352,15 +350,15 @@ class Server {
       : callback_(callback), auto_del_callback_(auto_del_callback) {}
     ~Processor() { if ( auto_del_callback_ ) { delete callback_; } }
   };
-  typedef std::map<string, Processor*> ProcessorMap;
+  typedef std::map<std::string, Processor*> ProcessorMap;
   ProcessorMap processors_;
 
   // Signals streaming clients
-  typedef std::map<string, bool> IsStreamingClientMap;
+  typedef std::map<std::string, bool> IsStreamingClientMap;
   IsStreamingClientMap is_streaming_client_map_;
 
   // Allowed ips / per path - NULL -> All allowed
-  typedef std::map<string, const net::IpV4Filter*> AllowedIpsMap;
+  typedef std::map<std::string, const net::IpV4Filter*> AllowedIpsMap;
   AllowedIpsMap allowed_ips_;
 
   // This is called when we cannot find a processor for a given path
@@ -503,14 +501,14 @@ class ServerProtocol {
   }
   // Can be used to do flow control (beside the default parametes from
   // protocol_params_)
-  int32 outbuf_size() const {
+  size_t outbuf_size() const {
     return connection_ == NULL ? 0 : connection_->outbuf()->Size();
   }
-  int32 free_outbuf_size() const {
-    return connection_ == NULL ? 0 :
-        std::max(0, protocol_params().max_reply_buffer_size_ -
-                    protocol_params().max_header_size_ -
-                    outbuf_size());
+  size_t free_outbuf_size() const {
+    if (!connection_) return 0;
+    const size_t sz_used = protocol_params().max_header_size_ + outbuf_size();
+    if (sz_used >= protocol_params().max_reply_buffer_size_) return 0;
+    return protocol_params().max_reply_buffer_size_ - sz_used;
   }
 
   // Sets the underground TCP connection - call it once
@@ -580,8 +578,8 @@ class ServerProtocol {
   // Returns true if we should close the conn.
   bool PrepareResponse(ServerRequest* req, HttpReturnCode status);
 
-  const string& name() const { return name_; }
-  const bool dlog_level() const { return dlog_level_; }
+  const std::string& name() const { return name_; }
+  bool dlog_level() const { return dlog_level_; }
 
  private:
   // Prepares what status to return on a parsing error
@@ -597,7 +595,7 @@ class ServerProtocol {
 
  private:
   // not really sure what is this name
-  string name_;
+  std::string name_;
 
   const bool dlog_level_;
 
@@ -745,12 +743,12 @@ class ServerRequest {
   //  pending_output_bytes_ - the number of bytes still buffered by the
   //                          underlying connection
   // WARNING !!! this function is called on both: media & net threads
-  int32 pending_output_bytes() const { return outbuf_size_; }
+  size_t pending_output_bytes() const { return outbuf_size_; }
   // Don't output more then these many bytes in the request_->server_data()
   // as this will be more then the connection output buffer and
   // discarded / determine connection closing etc
   // WARNING !!! this function is called on both: media & net threads
-  int32 free_output_bytes() const { return free_outbuf_size_; }
+  size_t free_output_bytes() const { return free_outbuf_size_; }
   // update the local copy of outbuf_size
   void UpdateOutputBytes() {
     CHECK(protocol_->net_selector()->IsInSelectThread());
@@ -796,8 +794,7 @@ class ServerRequest {
   // in media selector, when outbuf available space is greater than
   // 'ready_pending_limit'.
   // NOTE: we take ownership of 'ready_callback', it must not be permanent.
-  void set_ready_callback(Closure* ready_callback, int32 ready_pending_limit) {
-    CHECK_GT(ready_pending_limit, 0);
+  void set_ready_callback(Closure* ready_callback, size_t ready_pending_limit) {
     CHECK(!ready_callback->is_permanent());
     delete ready_callback_;
     ready_callback_ = ready_callback;
@@ -882,7 +879,7 @@ class ServerRequest {
 
 
   // Returns a string representation for this request:
-  string ToString() const {
+  std::string ToString() const {
     return strutil::StringPrintf("HTTP[%s -> %s]",
                                  remote_address().ToString().c_str(),
                                  request_.url() != NULL
@@ -949,7 +946,7 @@ class ServerRequest {
   bool is_parsing_finished_;
   std::string client_request_id_;
   // When output pending bytes drops below this threshold, call read_callback_
-  int32 ready_pending_limit_;
+  size_t ready_pending_limit_;
   // Notification of outbuf space available. Must run on media selector.
   // Must be: non-permanent. Called just once! (Edge Triggered)
   Closure* ready_callback_;
@@ -967,8 +964,8 @@ class ServerRequest {
   // a proxy duplicate of the protocol_->connection_->net_connection->outbuf()
   //   ->Size(). Because this value is needed in media_thread for flow control,
   // while the whole protocol+connection runs on net_thread. Poor design.
-  int32 outbuf_size_;
-  int32 free_outbuf_size_;
+  size_t outbuf_size_;
+  size_t free_outbuf_size_;
 
   friend class Server;
   friend class ServerProtocol;

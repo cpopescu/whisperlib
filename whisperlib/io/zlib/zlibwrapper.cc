@@ -85,12 +85,12 @@ bool ZlibDeflateWrapper::Initialize() {
   return true;
 }
 
-bool ZlibDeflateWrapper::Deflate(const char* in, int in_size,
+bool ZlibDeflateWrapper::Deflate(const char* in, size_t in_size,
                                  io::MemoryStream* out) {
   if ( !initialized_ && !Initialize() ) {
     return false;
   }
-  int32 out_size = 0;
+  size_t out_size = 0;
   strm_.avail_in = in_size;
   strm_.next_in =
       reinterpret_cast<Bytef*>(const_cast<char*>(in));
@@ -118,13 +118,13 @@ bool ZlibDeflateWrapper::Deflate(const char* in, int in_size,
 
 bool ZlibDeflateWrapper::DeflateSize(io::MemoryStream* in,
                                      io::MemoryStream* out,
-                                     int32* size) {
+                                     size_t* size) {
   if ( !initialized_ && !Initialize() ) {
     return false;
   }
-  int32 out_size = 0;
+  size_t out_size = 0;
   while ( *size > 0 ) {
-    int32 crt_size = *size;
+    size_t crt_size = *size;
     const char* crt_buf = NULL;
     if ( !in->ReadNext(&crt_buf, &crt_size) ) {
       break;
@@ -183,7 +183,7 @@ void ZlibInflateWrapper::Clear() {
 
 int ZlibInflateWrapper::InflateSize(io::MemoryStream* in,
                                     io::MemoryStream* out,
-                                    int32* size) {
+                                    size_t* size) {
   int zlib_err = Z_OK;
   if ( !initialized_ ) {
     Clear();
@@ -195,7 +195,7 @@ int ZlibInflateWrapper::InflateSize(io::MemoryStream* in,
     initialized_ = true;
   }
   while ( size == NULL || *size > 0 ) {
-    int32 crt_size = size == NULL ? 0 : *size;
+    size_t crt_size = size == NULL ? 0 : *size;
     const char* crt_buf = NULL;
     in->MarkerSet();
     if ( !in->ReadNext(&crt_buf, &crt_size) ) {
@@ -205,7 +205,7 @@ int ZlibInflateWrapper::InflateSize(io::MemoryStream* in,
     strm_.avail_in = crt_size;
     strm_.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(crt_buf));
     do {
-      int32 out_size = 0;
+      size_t out_size = 0;
       char* pout = NULL;
       out->GetScratchSpace(&pout, &out_size);
       strm_.avail_out = out_size;
@@ -282,13 +282,13 @@ void ZlibGzipEncodeWrapper::BeginEncoding(io::MemoryStream* out) {
 
 void ZlibGzipEncodeWrapper::ContinueEncoding(io::MemoryStream* in,
                                              io::MemoryStream* out) {
-  int32 size = in->Size();
+  size_t size = in->Size();
   input_size_ += size;
-  int32 out_size = 0;
+  size_t out_size = 0;
   io::MemoryStream compressed;
 
   while ( size > 0 ) {
-    int32 crt_size = size;
+    size_t crt_size = size;
     const char* crt_buf = NULL;
     CHECK(in->ReadNext(&crt_buf, &crt_size));
 
@@ -319,7 +319,7 @@ void ZlibGzipEncodeWrapper::ContinueEncoding(io::MemoryStream* in,
 }
 
 void ZlibGzipEncodeWrapper::EndEncoding(io::MemoryStream* out) {
-  int32 out_size = 0;
+  size_t out_size = 0;
   io::MemoryStream compressed;
   // Flush the zlib stuff..
   int z_err;
@@ -408,7 +408,7 @@ int ZlibGzipDecodeWrapper::Decode(io::MemoryStream* in,
   }
   int zlib_err = Z_OK;
   while ( state_ == DECODING && zlib_err != Z_STREAM_END ) {
-    int32 crt_size = 0;
+    size_t crt_size = 0;
     const char* crt_buf = NULL;
     in->MarkerSet();
     if ( !in->ReadNext(&crt_buf, &crt_size) ) {
@@ -419,7 +419,7 @@ int ZlibGzipDecodeWrapper::Decode(io::MemoryStream* in,
     strm_.avail_in = crt_size;
     strm_.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(crt_buf));
     do {
-      int32 out_size = 0;
+      size_t out_size = 0;
       void* const pout = &strm_.next_out;
       out->GetScratchSpace(reinterpret_cast<char**>(pout), &out_size);
       const Bytef* out_buf = strm_.next_out;
@@ -457,7 +457,7 @@ int ZlibGzipDecodeWrapper::Decode(io::MemoryStream* in,
     state_ = FINALIZED;
     zlib_err = Z_STREAM_END;
     const int32 expected_crc = NumStreamer::ReadInt32(in, common::LILENDIAN);
-    const int32 expected_size = NumStreamer::ReadInt32(in, common::LILENDIAN);
+    const size_t expected_size = NumStreamer::ReadInt32(in, common::LILENDIAN);
     if ( expected_crc != running_crc_ && strict_trailer_checking_ ) {
       LOG_WARN << " Invalid CRC - got: 0x" << hex << running_crc_
                << " excpected: 0x" << hex << expected_crc << dec;
@@ -471,7 +471,7 @@ int ZlibGzipDecodeWrapper::Decode(io::MemoryStream* in,
   }
   return zlib_err;
 }
-static const int32 kMaxFileNameSize = 2048;
+static const size_t kMaxFileNameSize = 2048;
 static int32 kZipFileHeader = 0xdcc0ffee;
 static const char kPathSplit[] = {PATH_SEPARATOR, '\0' };
 
@@ -480,7 +480,7 @@ bool DeflateDir(Compressor* compressor,
                 const re::RE* regex,
                 const string& file_name,
                 bool append, bool recursive,
-                int32 chunk_size) {
+                size_t chunk_size) {
     CHECK_LE(chunk_size, kCompressMaxChunkSize);
     if (!append && io::IsReadableFile(file_name)) {
         if (!io::Rm(file_name)) {
@@ -532,7 +532,7 @@ bool DeflateDir(Compressor* compressor,
             return false;
         }
     }
-    for (int i = 0; i < in_files.size(); ++i) {
+    for (size_t i = 0; i < in_files.size(); ++i) {
         string arch_file_name = bn.empty() ? in_files[i]
             : strutil::JoinPaths(bn, in_files[i]);
         vector<string> pieces;
@@ -554,8 +554,8 @@ bool DeflateDir(Compressor* compressor,
         const int64 pos = out_file->Position();
         if (io::IONumStreamer::WriteInt32(&fout, int32(arch_file_name.size()),
                                           common::BIGENDIAN) != sizeof(int32) ||
-            fout.Write(arch_file_name.data(),
-                       arch_file_name.size()) != arch_file_name.size() ||
+            size_t(fout.WriteBuffer(arch_file_name.data(),
+                                    arch_file_name.size())) != arch_file_name.size() ||
             io::IONumStreamer::WriteInt64(&fout, sz,
                                           common::BIGENDIAN) != sizeof(int64)) {
             LOG_ERROR << " Error writing file header to " << file_name;
@@ -578,7 +578,7 @@ bool DeflateDir(Compressor* compressor,
                 error = true;
                 break;
             }
-            const int32 comp_sz = ms_compact.Size();
+            const size_t comp_sz = ms_compact.Size();
             if (io::IONumStreamer::WriteInt32(&fout, int32(read_sz),
                                               common::BIGENDIAN) != sizeof(int32) ||
                 io::IONumStreamer::WriteInt32(&fout, int32(comp_sz),
@@ -588,7 +588,7 @@ bool DeflateDir(Compressor* compressor,
             }
             LOG_INFO << " Adding chunk: " << in_files[i]
                      << " size: " << read_sz << " => " << comp_sz;
-            if (out_file->Write(&ms_compact) != comp_sz) {
+            if (size_t(out_file->Write(&ms_compact)) != comp_sz) {
                 LOG_ERROR << " Error writing " << comp_sz << " bytes to " << file_name;
                 return false;
             }
@@ -626,12 +626,12 @@ bool InflateToDir(Decompressor* decompressor,
     }
     char out_fn[kMaxFileNameSize + 1];
     while (in_file->Remaining() > 0) {
-        const int32 sz_name = io::IONumStreamer::ReadInt32(&fin, common::BIGENDIAN, &success);
+        const size_t sz_name = io::IONumStreamer::ReadInt32(&fin, common::BIGENDIAN, &success);
         if (!success || sz_name > kMaxFileNameSize) {
             LOG_ERROR << " Error reading file name size: " << sz_name;
             return false;
         }
-        const int32 cb_name = fin.Read(out_fn, sz_name);
+        const size_t cb_name = fin.ReadBuffer(out_fn, sz_name);
         if (cb_name != sz_name) {
             LOG_ERROR << " Cannot read internal file name.";
             return false;
@@ -665,20 +665,20 @@ bool InflateToDir(Decompressor* decompressor,
             continue;
         }
         while (sz > 0) {
-            const int32 read_sz = io::IONumStreamer::ReadInt32(
+            const size_t read_sz = io::IONumStreamer::ReadInt32(
                 &fin, common::BIGENDIAN, &success);
-            if (!success || read_sz < 0 || kCompressMaxChunkSize < read_sz) {
+            if (!success || int32_t(read_sz) < 0 || kCompressMaxChunkSize < read_sz) {
                 LOG_WARN << "Invalid chunk size read from the input.";
                 return false;
             }
-            const int32 comp_sz = io::IONumStreamer::ReadInt32(
+            const size_t comp_sz = io::IONumStreamer::ReadInt32(
                 &fin, common::BIGENDIAN, &success);
-            if (!success || comp_sz < 0 || kCompressMaxChunkSize * 1.2 < comp_sz) {
+            if (!success || int32_t(comp_sz) < 0 || kCompressMaxChunkSize * 1.2 < comp_sz) {
                 LOG_WARN << "Invalid compaction size read from the input.";
                 return false;
             }
             ms.Clear();
-            const int32 cb = in_file->Read(&ms, comp_sz);
+            const size_t cb = in_file->Read(&ms, comp_sz);
             if (cb != comp_sz) {
                 LOG_WARN << "Cannot read " << comp_sz << " expected bytes for "
                          << " file: " << fn;
@@ -695,7 +695,7 @@ bool InflateToDir(Decompressor* decompressor,
                          << read_sz << " vs. " << ms_decomp.Size();
                 return false;
             }
-            if (read_sz != out_file->Write(&ms_decomp)) {
+            if (read_sz != size_t(out_file->Write(&ms_decomp))) {
                 LOG_WARN << " Error writing : " << read_sz << " bytes to: " << out_file;
                 return false;
             }

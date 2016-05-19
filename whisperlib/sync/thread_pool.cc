@@ -45,8 +45,8 @@ namespace thread {
 
 ThreadPoolBase::ThreadPoolBase(size_t num_threads, bool low_priority,
                                Closure* completion_callback)
-  : num_threads_(num_threads),
-    wait_mutex_(true),
+  : wait_mutex_(true),
+    num_threads_(num_threads),
     started_(false),
     num_completed_(0),
     completion_callback_(completion_callback) {
@@ -266,7 +266,7 @@ ThreadPool::~ThreadPool() {
 namespace {
 // A batch of jobs, to be executed in parallel.
 struct Batch {
-  Batch(const vector<Closure*>& jobs, Closure* completion)
+  Batch(const std::vector<Closure*>& jobs, Closure* completion)
     : completion_callback_(completion),
       completion_event_(false, true) {
       // copy only valid jobs (ignore NULLs)
@@ -343,7 +343,8 @@ void RunBatchJob(Batch* batch) {
 }
 }
 
-void ThreadPool::RunBatch(const vector<Closure*>& jobs, Closure* completion) {
+void ThreadPool::RunBatch(const std::vector<Closure*>& jobs,
+                          Closure* completion) {
   Batch* batch = new Batch(jobs, completion);
   batch->set_executor(NewPermanentCallback(&RunBatchJob, batch));
   // WARN: the execution starts as soon each job is inserted into jobs_!

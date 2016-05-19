@@ -71,7 +71,7 @@ class AioManager {
                          // here
                          // *** IMPORTANT:  MUST be allocated at disk block
                          //     size alligned memory ***
-    int32 size_;         // size of buffer_
+    size_t size_;        // size of buffer_
                          // *** IMPORTANT:  MUST be a multiple of disk block
                          //     size alligned memory ***
     net::Selector* selector_;
@@ -81,7 +81,7 @@ class AioManager {
     int result_;         // result associated w/ the operation
                          // for read: the number of bytes read from the file
                          // for write: the number of bytes written to the file
-    Request(int fd, int64 offset, void* buffer, int32 size,
+    Request(int fd, int64 offset, void* buffer, size_t size,
             net::Selector* selector, Closure* closure)
       :  fd_(fd),
          offset_(offset),
@@ -125,16 +125,16 @@ class AioManager {
   //       32 blocks <= size
   //
   // TODO(cpopescu): !!! Parametrize !!!
-  static const int32 kBlockSize = 4096;     // most standard..
-  static const int32 kBlockSizeShift = 12;  // i.e. 2^12 = 4096
-  static const int32 kNumBlockTypes = 3;
+  static const size_t kBlockSize = 4096;     // most standard..
+  static const size_t kBlockSizeShift = 12;  // i.e. 2^12 = 4096
+  static const size_t kNumBlockTypes = 3;
 
-  int32 SizePool(size_t size) const {
+  size_t SizePool(size_t size) const {
     const size_t nblocks = size >> kBlockSizeShift;
     return ((nblocks >> 3) != 0 ) + ((nblocks >> 6) != 0);
   }
-  int32 OpPool(Op op) const {
-    return static_cast<int32>(op);
+  size_t OpPool(Op op) const {
+    return static_cast<size_t>(op);
   }
 
   const std::string name_;   // you can give a name to this guy..

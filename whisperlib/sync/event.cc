@@ -68,12 +68,12 @@ Mutex::~Mutex() {
 MutexPool::MutexPool(size_t num, bool is_reentrant)
     : mutex_(new Mutex*[num]),
       num_(num) {
-  for ( int i = 0; i < num_; ++i ) {
+  for ( size_t i = 0; i < num_; ++i ) {
     mutex_[i] = new Mutex(is_reentrant);
   }
 }
 MutexPool::~MutexPool() {
-  for ( int i = 0; i < num_; ++i ) {
+  for ( size_t i = 0; i < num_; ++i ) {
     delete mutex_[i];
   }
   delete [] mutex_;

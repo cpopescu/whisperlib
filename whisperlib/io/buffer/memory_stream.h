@@ -1,3 +1,4 @@
+// -*- c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil; coding: utf-8 -*-
 // Copyright (c) 2009, Whispersoft s.r.l.
 // All rights reserved.
 //
@@ -78,7 +79,7 @@ class MemoryStream {
   // NEVER - AppendRaw the same buffer to two MemoryStreams !! (instead
   // append to one temp buffer and use AppendStream /
   // AppendStreamNonDestructive)
-  void AppendRaw(const char* data, int32 size, Closure* disposer = NULL);
+  void AppendRaw(const char* data, size_t size, Closure* disposer = NULL);
 
   // Appends this block to our internal list (increments the reference
   // count)
@@ -89,11 +90,11 @@ class MemoryStream {
   // The returned buffer is valid until next read / append of any kind
   // to this buffer. You do not own the pointer.
   // Retruns false on end-of-buffer.
-  bool ReadNext(const char** buffer, int32* size);
+  bool ReadNext(const char** buffer, size_t* size);
 
   // Reads all the internal buffers for a writev operation
 #if defined(HAVE_SYS_UIO_H)
-  int32 ReadForWritev(struct ::iovec** iov, int* iovcnt, int32 max_size);
+  size_t ReadForWritev(struct ::iovec** iov, int* iovcnt, size_t max_size);
 #endif
 
   // Returns a piece of buffer already allocated and ready to be written to
@@ -101,8 +102,8 @@ class MemoryStream {
   // how much you used from returned size.
   // IMPORTANT NOTE: after a GetScratchSpace the next operation w/ this
   //                 stream must be ConfirmScratch !!!
-  void GetScratchSpace(char** buffer, int32* size);
-  void ConfirmScratch(int32 size);
+  void GetScratchSpace(char** buffer, size_t* size);
+  void ConfirmScratch(size_t size);
 
   // Returns true if the buffer is empty.
   bool IsEmpty() const {
@@ -110,7 +111,7 @@ class MemoryStream {
   }
 
   // Returns the total amount of data in the buffer
-  int32 Size() const {
+  size_t Size() const {
     return size_;
   }
 
@@ -125,12 +126,12 @@ class MemoryStream {
   //                               time, depending on conditions..
 
   // Appends a full buffer to this one -
-  void AppendStream(MemoryStream* buffer, int32 size = -1);
+  void AppendStream(MemoryStream* buffer, ssize_t size = -1);
 
   // Appends without destroying the buffer - appends just size bytes
   // (or the entire buffer if size == -1)
   void AppendStreamNonDestructive(const MemoryStream* buffer,
-                                  int32 size = -1);
+                                  ssize_t size = -1);
 
   // As above, but appends between the pointers of the same owner
   void AppendStreamNonDestructive(DataBlockPointer* begin,
@@ -144,14 +145,17 @@ class MemoryStream {
   // Reads "len" bytes of data into the given "buffer".
   // Returns the number of bytes read. Can be less than "len" if less bytes
   // are available.
-  int32 Read(void* buffer, int32 len) {
+  size_t Read(void* buffer, size_t len) {
+    return ReadInternal(buffer, len, true);
+  }
+  size_t ReadBuffer(void* buffer, size_t len) {
     return ReadInternal(buffer, len, true);
   }
 
   // Same as read, but w/ strings - this tends to be slower..
   // If len == -1 read to the end of input, else read len bytes.
   // Returns anyway the number of read bytes
-  int32 ReadString(std::string* s, int32 len = -1);
+  size_t ReadString(std::string* s, ssize_t len = -1);
 
   bool Equals(const io::MemoryStream& other) const;
 
@@ -165,7 +169,7 @@ class MemoryStream {
 #if 1 //  _DEBUG
     char* t = new char[Size()];
     std::string s;
-    const int32 size = Peek(t, Size());
+    const size_t size = Peek(t, Size());
     s.assign(t, size);
     delete [] t;
     return s;
@@ -231,19 +235,19 @@ class MemoryStream {
   }
 
   // Not actually reading len bytes into buffer :)
-  int32 Peek(void* buffer, int32 len) const {
+  size_t Peek(void* buffer, size_t len) const {
     DataBlockPointer reader(GetReadPointer());
     if ( reader.IsNull() ) {
       return 0;
     }
-    return static_cast<int32>(
+    return static_cast<size_t>(
         reader.ReadData(reinterpret_cast<char*>(buffer), len));
   }
 
   // Passes over "len" bytes. (Advances the read head by the "len" number of
   // bytes). Returns the number of bytes skipped. Can be less than "len"
   // if less bytes are available.
-  int32 Skip(int32 len);
+  size_t Skip(size_t len);
 
   // Clears the buffer
   void Clear();
@@ -251,14 +255,17 @@ class MemoryStream {
   // Append "len" bytes of data from the given "buffer" to the stream
   // Returns the number of bytes written. Can be less than len if the stream
   // has not enough space, or negative on error.
-  int32 Write(const void* buffer, int32 len);
+  size_t Write(const void* buffer, size_t len);
+  size_t WriteBuffer(const void* buffer, size_t len) {
+      return Write(buffer, len);
+  }
 
   // Convenience function for writing a NULL terminated string.
-  int32 Write(const char* text) {
+  size_t Write(const char* text) {
     return Write(text, strlen(text));
   }
   // Convenience function for writing a string
-  int32 Write(const std::string& s) {
+  size_t Write(const std::string& s) {
     return Write(s.data(), s.size());
   }
 
@@ -306,9 +313,9 @@ class MemoryStream {
   // DEBUG functions (terribly slow)
 
   // Utility debug function
-  std::string DumpContent(int32 max_size = -1) const;
-  std::string DumpContentHex(int32 max_size = -1) const;
-  std::string DumpContentInline(int32 max_size = -1) const;
+  std::string DumpContent(ssize_t max_size = -1) const;
+  std::string DumpContentHex(ssize_t max_size = -1) const;
+  std::string DumpContentInline(ssize_t max_size = -1) const;
 
   std::string DetailedContent() const;
 
@@ -324,7 +331,7 @@ class MemoryStream {
 
  protected:
   // Does the actual reading
-  int32 ReadInternal(void* buffer, int32 len, bool dispose);
+  size_t ReadInternal(void* buffer, size_t len, bool dispose);
 
   // when the pointer advances, we may dispose some of the underlying blocks
   void MaybeDisposeBlocks();
@@ -354,7 +361,7 @@ class MemoryStream {
   // We keep track of our internal size *all* the time - this is of
   // utmost importance in maintaining a fast response.
   // (At all times size_ == read_pointer_.Distance(write_pointer_);
-  int32 size_;
+  size_t size_;
 
  private:
   DISALLOW_EVIL_CONSTRUCTORS(MemoryStream);

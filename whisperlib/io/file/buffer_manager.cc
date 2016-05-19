@@ -75,7 +75,7 @@ void BufferManager::Buffer::MarkValidData(size_t size) {
   vector<Closure*> to_call(done_callbacks_.size());
   copy(done_callbacks_.begin(), done_callbacks_.end(), to_call.begin());
   mutex_.Unlock();
-  for (int i = 0; i < to_call.size(); ++i ) {
+  for (size_t i = 0; i < to_call.size(); ++i ) {
     to_call[i]->Run();
   }
 }

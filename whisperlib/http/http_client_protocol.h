@@ -49,10 +49,6 @@
 #include "whisperlib/net/address.h"
 #include "whisperlib/url/url.h"
 
-using std::pair;
-using std::string;
-using std::vector;
-
 namespace whisper {
 namespace http {
 
@@ -62,33 +58,33 @@ namespace http {
 //
 struct ClientParams {
   ClientParams();
-  ClientParams(const string& user_agent,
+  ClientParams(const std::string& user_agent,
                bool dlog_level,
-               int32 max_header_size,
+               size_t max_header_size,
                int64 max_body_size,
                int64 max_chunk_size,
                int64 max_num_chunks,
                bool  accept_no_content_length,
-               int32 max_concurrent_requests,
-               int32 max_waiting_requests,
+               size_t max_concurrent_requests,
+               size_t max_waiting_requests,
                int32 default_request_timeout_ms,
                int32 connect_timeout_ms,
                int32 write_timeout_ms,
                int32 read_timeout_ms,
-               int32 max_output_buffer_size,
+               size_t max_output_buffer_size,
                int32 keep_alive_sec);
 
   // HTTP version to use
   http::HttpVersion version_;
 
   // We send this as user agent for all requests
-  string user_agent_;
+  std::string user_agent_;
 
   // Log in detail ?
   bool dlog_level_;
 
   // How long the acceptable HTTP header can be ?
-  int32 max_header_size_;
+  size_t max_header_size_;
   // For non chunked body, how long this can be ?
   int64 max_body_size_;
   // For chunked body, how big one chunk can be ?
@@ -100,9 +96,9 @@ struct ClientParams {
   bool accept_no_content_length_;
 
   // How many concurrent requests can we send ?
-  int32 max_concurrent_requests_;
+  size_t max_concurrent_requests_;
   // How many requests can be in the waiting queue ?
-  int32 max_waiting_requests_;
+  size_t max_waiting_requests_;
   // Timeout for a request (begin to end - unless is a streaming server answer)
   // We use this if request->request_timeout_ms_ is 0
   int32 default_request_timeout_ms_;
@@ -114,7 +110,7 @@ struct ClientParams {
   // wait for the next bytes
   int32 read_timeout_ms_;
   // How much client buffering we hold when streaming to servers
-  int32 max_output_buffer_size_;
+  size_t max_output_buffer_size_;
 
   // Do we want to keep alive the connection ?
   int32 keep_alive_sec_;
@@ -195,7 +191,7 @@ class BaseClientProtocol {
   // How much data can be written in the output buffer of
   // a request (request()->client_data()) to satisfy the
   // flow control of the application.
-  int32 available_output_size() const {
+  ssize_t available_output_size() const {
     return available_output_size_;
   }
   // Returns if the connection is (still) alive
@@ -218,11 +214,11 @@ class BaseClientProtocol {
   static const int64 kReadTimeout    = 3;
   static const int64 kRequestTimeout = 4;
 
-  const string name_;
+  const std::string name_;
   const ClientParams* params_;
   const net::HostPort server_;
 
-  int32 available_output_size_;
+  ssize_t available_output_size_;
   ClientError conn_error_;
 
   BaseClientConnection* connection_;
@@ -456,8 +452,8 @@ class ClientProtocol : public BaseClientProtocol  {
   // request and call once the done callback when the request is done.
   void SendRequest(ClientRequest* request, Closure* done_callback);
 
-  int32 num_active_requests() const { return active_requests_.size(); }
-  int32 num_waiting_requests() const { return waiting_requests_.size(); }
+  size_t num_active_requests() const { return active_requests_.size(); }
+  size_t num_waiting_requests() const { return waiting_requests_.size(); }
 
   // INTERNAL FUNCTIONS:
 
@@ -483,7 +479,7 @@ class ClientProtocol : public BaseClientProtocol  {
     ResolveAllRequestsWithError();
   }
 
-  string StatusString() const;
+  std::string StatusString() const;
 
  private:
   enum ProcessMoreDataResult {
@@ -538,26 +534,29 @@ class ClientRequest  {
   // Constructs a request w/ a *good* escaped URI path/query
   // (e.g. "/a%20b?x=%25-%3D" not "/a b?x=%-="
   ClientRequest(HttpMethod http_method,
-                const string& escaped_query_path);
+                const std::string& escaped_query_path);
   // Constructs a request w/ an unescaped URI path / query.
   // (e.g. unescaped_path = "/a b", unescaped_query_comp = [("x", "%-=")]
   //  will result in a request URI of "/a%20b?x=%25-%3D"
   // If query component is null - no query component is given
   ClientRequest(HttpMethod http_method,
-                const string& unescaped_path,
-                const vector< pair<string, string> >* unescaped_query_comp);
+                const std::string& unescaped_path,
+                const std::vector< std::pair<std::string,
+                                   std::string> >* unescaped_query_comp);
   // Same as abive, but you can also specify a fragment (the piece after #)
   ClientRequest(HttpMethod http_method,
-                const string& unescaped_path,
-                const vector< pair<string, string> >* unescaped_query_comp,
-                const string& fragment);
+                const std::string& unescaped_path,
+                const std::vector< std::pair<std::string,
+                                   std::string> >* unescaped_query_comp,
+                const std::string& fragment);
 
   // Given a set of unescaped query components returns the escaped well formed
   // query.
   // (e.g. unescaped_query_comp = [("x", "%-=")] => "x=%25-%3D"
   // Use this to set the body of a POST with form parameters !
-  static string EscapeQueryParameters(
-      const vector< pair<string, string> >& unescaped_query_comp);
+  static std::string EscapeQueryParameters(
+      const std::vector< std::pair<std::string,
+                                   std::string> >& unescaped_query_comp);
 
   http::Request* request() { return &request_; }
   http::ClientError error() const { return error_; }
@@ -577,7 +576,7 @@ class ClientRequest  {
   void set_request_id(int64 request_id) { request_id_ = request_id; }
   void set_is_pure_dumping(bool val) { is_pure_dumping_ = val; }
 
-  string name() const {
+  std::string name() const {
     return strutil::StrTrim(
         request_.client_header()->ComposeFirstLine()) +
         strutil::StringPrintf(" req_id: %lld", (long long int) request_id_);

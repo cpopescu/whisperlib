@@ -80,7 +80,7 @@ protected:
 
 private:
   const size_t num_threads_;
-  vector<Thread*> threads_;
+  std::vector<Thread*> threads_;
   bool started_;
   mutable synch::Mutex completion_mutex_;
   size_t num_completed_;
@@ -113,7 +113,7 @@ public:
   // completion: [optional] If NULL, this call blocks until all jobs completed.
   //             If non-NULL, you will be notified on the supplied callback
   //             when all jobs completed.
-  void RunBatch(const vector<Closure*>& jobs, Closure* completion);
+  void RunBatch(const std::vector<Closure*>& jobs, Closure* completion);
 
   // Terminates the threads waiting for all of their work to be done! The ThreadPool becomes
   // useless afterwards.
@@ -127,7 +127,7 @@ private:
   synch::ProducerConsumerQueue<Closure*> jobs_;
 
   // the count of jobs processed by each thread
-  vector<size_t> count_completed_;
+  std::vector<size_t> count_completed_;
 
   DISALLOW_EVIL_CONSTRUCTORS(ThreadPool);
 };
@@ -205,7 +205,7 @@ private:
   /** Sleep interval for underlying lock free producer consumer queue */
   const size_t sleep_usec_;
 
-  vector< synch::LockFreeProducerConsumerQueue< Callback1<size_t> >*> jobs_;
+  std::vector< synch::LockFreeProducerConsumerQueue< Callback1<size_t> >*> jobs_;
 
   DISALLOW_EVIL_CONSTRUCTORS(LockFreeMultiQueueThreadPool);
 };
@@ -236,7 +236,7 @@ protected:
 
 private:
   synch::ProducerConsumerQueue< Callback1<size_t>* > jobs_;
-  vector<size_t> count_completed_;
+  std::vector<size_t> count_completed_;
 
   DISALLOW_EVIL_CONSTRUCTORS(LockedThreadPool);
 };
@@ -267,7 +267,7 @@ protected:
 
 private:
 
-  vector< synch::ProducerConsumerQueue<Closure*>* > jobs_;
+  std::vector< synch::ProducerConsumerQueue<Closure*>* > jobs_;
 
   DISALLOW_EVIL_CONSTRUCTORS(MultiQueueThreadPool);
 };

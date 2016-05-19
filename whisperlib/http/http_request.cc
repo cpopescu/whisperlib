@@ -43,8 +43,8 @@ namespace http {
 ////////////////////////////////////////////////////////////////////////////////
 
 Request::Request(bool strict_headers,
-                 int32 client_block_size,
-                 int32 server_block_size)
+                 size_t client_block_size,
+                 size_t server_block_size)
   : client_data_(client_block_size),
     client_header_(strict_headers),
     server_data_(server_block_size),
@@ -109,8 +109,8 @@ void Request::AppendClientRequest(io::MemoryStream* out, int64 max_chunk_size) {
     client_header_.ClearField(kHeaderAcceptEncoding);
   }
 
-  const int32 out_size = out->Size();
-  const int32 client_data_size = client_data_.Size();
+  const size_t out_size = out->Size();
+  const size_t client_data_size = client_data_.Size();
   if ( client_header_.IsChunkedTransfer() ) {
     in_chunk_encoding_ = true;
     CHECK_GE(client_header_.http_version(), VERSION_1_1);
@@ -200,8 +200,8 @@ void Request::AppendServerReply(io::MemoryStream* out,
     compress_option_ = COMPRESS_NONE;
   }
 
-  const int32 out_size = out->Size();
-  const int32 server_data_size = server_data_.Size();
+  const size_t out_size = out->Size();
+  const size_t server_data_size = server_data_.Size();
   if ( streaming ) {
     if (do_chunks && client_header_.http_version() >= VERSION_1_1) {
       server_header_.SetChunkedTransfer(true);
@@ -259,8 +259,8 @@ namespace {
 static void BufferAppendChunk(io::MemoryStream* in,
                               io::MemoryStream* out,
                               bool add_decorations,
-                              int32 max_size) {
-  int32 size = min(max_size, in->Size());
+                              size_t max_size) {
+  size_t size = std::min(max_size, in->Size());
   if ( add_decorations ) {
     string first_line = strutil::StringPrintf("0%x\r\n",
                                               static_cast<int>(size));
@@ -309,7 +309,7 @@ bool Request::AppendChunkHelper(const http::Header* /*src_header*/,
         gzip_state_begin_ = true;
       }
     } else {
-      int32 size = src_data->Size();
+      size_t size = src_data->Size();
       if ( !is_empty ) size++;   // basically do not flush the state ..
       deflate_zwrapper_->DeflateSize(src_data, &tmp, &size);
       CHECK(size == 1 || (size == 0 && is_empty))
@@ -369,7 +369,7 @@ bool Request::AppendChunkHelper(const http::Header* /*src_header*/,
 
 RequestParser::RequestParser(
   const char* name,
-  int32 max_header_size,
+  size_t max_header_size,
   int64 max_body_size,
   int64 max_chunk_size,
   int64 max_num_chunks,
@@ -663,8 +663,8 @@ int32 RequestParser::ParsePayloadInternal(io::MemoryStream* in,
         set_parse_state(STATE_BODY_READING);
       } else {
         errno = 0;  // essential as strtol would not set a 0 errno
-        const int32 content_length = strtol(content_length_str.c_str(),
-                                            NULL, 10);
+        const long int content_length = strtol(content_length_str.c_str(),
+                                               NULL, 10);
         if ( errno || content_length < 0 ) {
           LOG_HTTP << " Content-Length found: [" << content_length_str << "].";
           // ERROR - Badly specified content length
@@ -741,11 +741,11 @@ int32 RequestParser::ParseBodyInternal(io::MemoryStream* in,
     if ( gzip_zwrapper_ == NULL ) {
       gzip_zwrapper_ = new io::ZlibGzipDecodeWrapper();
     }
-    int32 consumed_size = 0;
+    size_t consumed_size = 0;
     do {
       partial_data_.MarkerSet();
       io::MemoryStream tmp;
-      const int32 initial_size = partial_data_.Size();
+      const size_t initial_size = partial_data_.Size();
       const int zerr = gzip_zwrapper_->Decode(&partial_data_, &tmp);
       consumed_size = initial_size - partial_data_.Size();
       // TODO(cosming) TODO: this is a test, remove
@@ -878,7 +878,7 @@ int32 RequestParser::ParseChunksInternal(io::MemoryStream* in,
       line.resize(line.size() - 2);
       // We ignore the chunk extension (if any)
       errno = 0;  // essential as strtol would not set a 0 errno
-      const int32 chunk_length = strtol(line.c_str(), NULL, 16);
+      const long int chunk_length = strtol(line.c_str(), NULL, 16);
       if ( errno || chunk_length < 0 ) {
         LOG_HTTP_ERR << " Invalid chunk len specification : " << line;
         // ERROR - Badly specified chunk lenght
@@ -1008,11 +1008,11 @@ int32 RequestParser::ParseChunksInternal(io::MemoryStream* in,
         if ( gzip_zwrapper_ == NULL ) {
           gzip_zwrapper_ = new io::ZlibGzipDecodeWrapper();
         }
-        int32 consumed_size = 0;
+        size_t consumed_size = 0;
         do {
           partial_data_.MarkerSet();
           io::MemoryStream tmp;
-          const int32 initial_size = partial_data_.Size();
+          const size_t initial_size = partial_data_.Size();
           const int zerr = gzip_zwrapper_->Decode(&partial_data_, &tmp);
           consumed_size = initial_size - partial_data_.Size();
           if ( zerr == Z_STREAM_END ) {
@@ -1140,7 +1140,7 @@ static const char kIdentity[] = "identity";
 static const char kChunked[] = "chunked";
 
 bool RequestParser::IsKnownContentEncoding(const http::Header* header) {
-  int len;
+  size_t len;
   const char* s = header->FindField(kHeaderContentEncoding, &len);
   if ( !s ) return true;
   string s_trim = strutil::StrTrim(string(s, len));
@@ -1155,7 +1155,7 @@ bool RequestParser::IsKnownContentEncoding(const http::Header* header) {
 }
 
 bool RequestParser::IsKnownTransferEncoding(const http::Header* header) {
-  int len;
+  size_t len;
   const char* s = header->FindField(kHeaderTransferEncoding, &len);
   if ( !s ) return true;
   string s_trim = strutil::StrTrim(string(s, len));

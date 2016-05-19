@@ -167,7 +167,7 @@ bool IpV4Filter::Add(const IpAddress& ip, int32 bits) {
     ++it;
     filter_.erase(crt);
   }
-  int32 first_found_ip = first_it->first;
+  uint32_t first_found_ip = first_it->first;
   if ( !skip_insert_first ) {
     if ( first_it->first == first_ip &&
          ((first_it->second & MARK_END) == MARK_END) ) {
@@ -198,12 +198,12 @@ bool IpV4Filter::Matches(const IpAddress& ip) const {
   }
   FilterMap::const_iterator first_it = filter_.lower_bound(ip.ipv4());
   if ( first_it != filter_.end() &&
-       first_it->first > ip.ipv4() ) {
+       first_it->first > uint32_t(ip.ipv4()) ) {
     --first_it;
   }
   return ( first_it != filter_.end() &&
-           first_it->first <= ip.ipv4() &&
-           (first_it->second == MARK_BEGIN || first_it->first == ip.ipv4()) );
+           first_it->first <= uint32_t(ip.ipv4()) &&
+           (first_it->second == MARK_BEGIN || first_it->first == uint32_t(ip.ipv4())) );
 }
 } // namespace net
 } // namespace whisper

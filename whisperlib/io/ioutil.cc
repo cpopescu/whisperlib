@@ -227,7 +227,7 @@ bool RmFilesUnder(const string& path, const re::RE* pattern, bool rm_dirs) {
     if (io::DirList(path, options, pattern, &files)) {
         LOG_INFO << "From: " << path << " removing: " << files.size()
                  << " files: " << strutil::ToString(files);
-        for (int i = 0; i < files.size(); ++i) {
+        for (size_t i = 0; i < files.size(); ++i) {
             const string f(strutil::JoinPaths(path, files[i]));
             if (rm_dirs && io::IsDir(f)) {
                 dirs.push_back(f);
@@ -406,7 +406,7 @@ bool DirList(const string& dir,
     return false;
   }
   size_t size = dirent_buf_size(dirp);
-  if ( size == -1 ) {
+  if ( size == size_t(-1) ) {
     ::closedir(dirp);
     LOG_ERROR << "error dirent_buf_size for dir: [" << dir << "]";
     return false;
@@ -534,7 +534,6 @@ bool ReadFileLines(const string& filepath,
 
 bool Copy(const string& source, const string& dest, mode_t mode) {
     char buf[BUFSIZ];
-    size_t size;
     const int source_fd = open(source.c_str(), O_RDONLY, 0);
     if (source_fd < 0) {
         LOG_ERROR << "Cannot open source file for copying: " << source;
@@ -547,6 +546,7 @@ bool Copy(const string& source, const string& dest, mode_t mode) {
         return false;
     }
     bool failed = false;
+    int size;
     while (!failed && (size = read(source_fd, buf, BUFSIZ)) > 0) {
         if (size != write(dest_fd, buf, size)) {
             LOG_ERROR << " Copying " << source << " -> " << dest << " - Error writing buffer.";

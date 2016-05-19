@@ -40,13 +40,10 @@
 #include <string>
 #include <vector>
 #include "whisperlib/base/types.h"
-#include "whisperlib/base/strutil.h"
 
 #ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
-
-using std::string;
 
 namespace whisper {
 namespace re { class RE; }
@@ -54,19 +51,19 @@ namespace re { class RE; }
 namespace io {
 
 bool IsDir(const char* name);
-bool IsDir(const string& name);
+bool IsDir(const std::string& name);
 bool IsReadableFile(const char* name);
-bool IsReadableFile(const string& name);
-bool IsSymlink(const string& path);
+bool IsReadableFile(const std::string& name);
+bool IsSymlink(const std::string& path);
 bool Exists(const char* path);
-bool Exists(const string& path);
+bool Exists(const std::string& path);
 int64 GetFileSize(const char* name);
-int64 GetFileSize(const string& name);
+int64 GetFileSize(const std::string& name);
 // Returns file timestamp in seconds!
 int64 GetFileMtime(const char* name);
-int64 GetFileMtime(const string& name);
+int64 GetFileMtime(const std::string& name);
 bool SetFileMtime(const char* name, int64 t);
-bool SetFileMtime(const string& name, int64 t);
+bool SetFileMtime(const std::string& name, int64 t);
 
 // List a directory, possibly looking into subdirectories, filter by regex.
 // Symlinks are not followed, and completely ignored.
@@ -83,16 +80,16 @@ enum DirListAttributes {
   // look into subdirectories
   LIST_RECURSIVE = 0x80,
 };
-bool DirList(const string& dir, uint32 list_attr,
+bool DirList(const std::string& dir, uint32 list_attr,
              const re::RE* regex,
-             std::vector<string>* out);
+             std::vector<std::string>* out);
 
 
 bool CreateRecursiveDirs(
   const char* dirname,
   mode_t mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
 bool CreateRecursiveDirs(
-  const string& dirname,
+  const std::string& dirname,
   mode_t mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
 
 
@@ -100,13 +97,15 @@ bool CreateRecursiveDirs(
 // We return C() when not found, and we update path to reflect the path
 // that triggerd the found object
 template<class C>
-    C FindPathBased(const std::map<string, C>* data, string& path, char separator = PATH_SEPARATOR) {
+    C FindPathBased(const std::map<std::string, C>* data,
+                    std::string& path, char separator = PATH_SEPARATOR) {
   if ( data->empty() ) {
     return C();
   }
-  string to_search(path);
+  std::string to_search(path);
   while ( !to_search.empty() ) {
-    const typename std::map<string, C>::const_iterator it = data->find(to_search);
+    const typename std::map<std::string, C>::const_iterator
+        it = data->find(to_search);
     if ( it != data->end() ) {
       path = to_search;
       return it->second;
@@ -115,14 +114,15 @@ template<class C>
       to_search.resize(to_search.size() - 1);
     } else {
       const size_t pos_slash = to_search.rfind(separator);
-      if ( pos_slash != string::npos ) {
+      if ( pos_slash != std::string::npos ) {
         to_search.resize(pos_slash + 1);
       } else {
         to_search.resize(0);
       }
     }
   }
-  const typename std::map<string, C>::const_iterator it = data->find(to_search);
+  const typename std::map<std::string, C>::const_iterator it
+      = data->find(to_search);
   if ( it != data->end() ) {
     path = to_search;
     return it->second;
@@ -132,17 +132,18 @@ template<class C>
 
 // Same as above, but adds all matching paths
 template<class C>
-int FindAllPathBased(const std::map<string, C>* data,
-                     const string& path,
-                     std::map<string, C>* matches,
+int FindAllPathBased(const std::map<std::string, C>* data,
+                     const std::string& path,
+                     std::map<std::string, C>* matches,
                      char separator = PATH_SEPARATOR) {
   if ( data->empty() ) {
     return 0;
   }
-  string to_search(path);
+  std::string to_search(path);
   int num_found = 0;
   while ( !to_search.empty() ) {
-    const typename std::map<string, C>::const_iterator it = data->find(to_search);
+    const typename std::map<std::string, C>::const_iterator it =
+        data->find(to_search);
     if ( it != data->end() ) {
       ++num_found;
       matches->insert(make_pair(to_search, it->second));
@@ -151,14 +152,15 @@ int FindAllPathBased(const std::map<string, C>* data,
       to_search.resize(to_search.size() - 1);
     } else {
       const size_t pos_slash = to_search.rfind(separator);
-      if ( pos_slash != string::npos ) {
+      if ( pos_slash != std::string::npos ) {
         to_search.resize(pos_slash + 1);
       } else {
         to_search.resize(0);
       }
     }
   }
-  const typename std::map<string, C>::const_iterator it = data->find(to_search);
+  const typename std::map<std::string, C>::const_iterator it =
+      data->find(to_search);
   if ( it != data->end() ) {
     ++num_found;
     matches->insert(make_pair(to_search, it->second));
@@ -169,14 +171,15 @@ int FindAllPathBased(const std::map<string, C>* data,
 
 // A tool to easy remove files.
 // Returns success state. Failure reason can be found in GetLastSystemError().
-bool Rm(const string& path);
+bool Rm(const std::string& path);
 
 // Easy remove empty directory.
 // Fails if the target directory is not empty.
-bool Rmdir(const string& path);
+bool Rmdir(const std::string& path);
 
 // Removes all files under the given directory (NOTE: just the files if rm_dirs is false)
-bool RmFilesUnder(const string& path, const re::RE* pattern = NULL, bool rm_dirs = false);
+bool RmFilesUnder(const std::string& path,
+                  const re::RE* pattern = NULL, bool rm_dirs = false);
 
 // Move file or directory to destination directory.
 // If a directory with the same name already exists, the source directory
@@ -186,23 +189,23 @@ bool RmFilesUnder(const string& path, const re::RE* pattern = NULL, bool rm_dirs
 //      dir = "/home/my_folder"
 //      Will move file "abc.avi" to "/home/my_folder/abc.avi"
 //      and "/tmp/abc.avi" no longer exists.
-bool Mv(const string& path, const string& dir, bool overwrite);
+bool Mv(const std::string& path, const std::string& dir, bool overwrite);
 
 // Renames files
-bool Rename(const string& old_path,
-            const string& new_path,
+bool Rename(const std::string& old_path,
+            const std::string& new_path,
             bool overwrite);
 
 // Creates a directory on disk.
 // recursive: if true => creates all directories on path "dir"
 //            if false => creates only "dir"; it's parent must exist.
-bool Mkdir(const string& dir,
+bool Mkdir(const std::string& dir,
            bool recursive = false,
            mode_t mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
 
 // Prepends the current working directory to the provided path, if
 // necessary, to obtain a fully qualified path
-string MakeAbsolutePath(const char* path);
+std::string MakeAbsolutePath(const char* path);
 
 // Returns the last of a set of numbered files placed in the specified
 // directory. The number of the file can be strtoul from the last
@@ -211,22 +214,22 @@ string MakeAbsolutePath(const char* path);
 //   -2 : error : cannot open directory, or file does not end in number
 //   -1 : error : no file found
 //  >=0 : success
-int32 GetLastNumberedFile(const string& dir, re::RE* re, int32 file_num_size);
+int32 GetLastNumberedFile(const std::string& dir, re::RE* re, int32 file_num_size);
 
 // Reads the given file line by line and returns the read lines.
 // comment_char: if not 0 this character marks the start of a line comment (which is ignored)
 // trim_spaces: remove spaces on each line
 // trim_empty_lines: do not return empty lines
 // Returns success status.
-bool ReadFileLines(const string& filepath,
+bool ReadFileLines(const std::string& filepath,
                    char comment_char,
                    bool trim_spaces,
                    bool trim_empty_lines,
-                   std::vector<string>* out);
+                   std::vector<std::string>* out);
 
 // Copies the file to the destination.
-bool Copy(const string& source,
-          const string& dest,
+bool Copy(const std::string& source,
+          const std::string& dest,
           mode_t mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
 
 }  // namespace io

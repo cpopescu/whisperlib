@@ -45,8 +45,8 @@ template<class C>
 class ref_counted {
 public:
   explicit ref_counted(C* data)
-    : data_(data),
-      ref_count_(0),
+    : ref_count_(0),
+      data_(data),
       release_cb_(NULL) {
   }
 

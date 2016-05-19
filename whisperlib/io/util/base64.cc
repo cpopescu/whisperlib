@@ -40,30 +40,28 @@
 #include <string>
 #include "whisperlib/io/util/base64.h"
 
-using std::string;
-
 namespace whisper {
 namespace base64 {
 
-string EncodeString(const string& s) {
+std::string EncodeString(const std::string& s) {
   const int32 buflen = 2 * s.size() + 4;
   char* encbuf = new char[buflen];
   base64::Encoder encoder;
   const int32 len = encoder.Encode(s.c_str(), s.size(), encbuf, buflen);
   const int32 len2 = encoder.EncodeEnd(encbuf + len);
   *(encbuf + len + len2) = '\0';
-  const string ret(encbuf, len + len2);
+  const std::string ret(encbuf, len + len2);
   delete [] encbuf;
   return ret;
 }
-string EncodeVector(const std::vector<uint8>& v) {
+std::string EncodeVector(const std::vector<uint8>& v) {
   const int32 buflen = 2 * v.size() + 4;
   char* encbuf = new char[buflen];
   base64::Encoder encoder;
   const int32 len = encoder.Encode((const char*)&(v[0]), v.size(), encbuf, buflen);
   const int32 len2 = encoder.EncodeEnd(encbuf + len);
   *(encbuf + len + len2) = '\0';
-  const string ret(encbuf, len + len2);
+  const std::string ret(encbuf, len + len2);
   delete [] encbuf;
   return ret;
 }

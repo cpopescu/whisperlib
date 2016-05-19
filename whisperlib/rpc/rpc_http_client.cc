@@ -118,7 +118,7 @@ void HttpClient::StartClose() {
   mutex_.Unlock();
 
   vector<http::ClientStreamReceiverProtocol*> streams_to_stop;
-  for (int i = 0; i < to_cancel.size(); ++i) {
+  for (size_t i = 0; i < to_cancel.size(); ++i) {
     if (!CancelRequestVerified(to_cancel[i])) {
       to_wait_cancel_.insert(to_cancel[i]);
       if (streams[i]) {
@@ -126,7 +126,7 @@ void HttpClient::StartClose() {
       }
     }
   }
-  for (int i = 0; i < streams_to_stop.size(); ++i) {
+  for (size_t i = 0; i < streams_to_stop.size(); ++i) {
     if (streams_to_stop[i]->connection()) {
       streams_to_stop[i]->connection()->ForceClose();
     }
@@ -192,7 +192,7 @@ void HttpClient::CallMethod(const google::protobuf::MethodDescriptor* method,
   req->set_request_id(xid);
 
   // write necessary parameters - headers
-  for (int i = 0; i != request_headers_.size(); ++i) {
+  for (size_t i = 0; i != request_headers_.size(); ++i) {
     req->request()->client_header()->AddField(request_headers_[i].first,
                                               request_headers_[i].second, true);
   }
@@ -350,7 +350,7 @@ HttpClient::QueryStruct::QueryStruct(http::ClientRequest* req,
   }
   stats_->set_request_type_name(request->GetDescriptor()->full_name());
   stats_->set_request_size(request->ByteSize());
-  if (stats_->request_size() < limit_print) {
+  if (size_t(stats_->request_size()) < limit_print) {
     stats_->set_request_txt(request->ShortDebugString());
   }
   stats_->set_response_type_name(response->GetDescriptor()->full_name());
@@ -375,7 +375,7 @@ pb::RequestStats* HttpClient::QueryStruct::GrabStats(size_t limit_print) {
 
   if (controller_->Failed()) {
     stats_->set_error_txt(controller_->ErrorText());
-  } else if (stats_->response_size() < limit_print) {
+  } else if (size_t(stats_->response_size()) < limit_print) {
     stats_->set_response_txt(response_->ShortDebugString());
   }
   pb::RequestStats* stats = stats_; stats_ = NULL;
@@ -429,27 +429,27 @@ void HttpClient::MaybeReadNextMessages(HttpClient::QueryStruct* qs) {
   bool read_next = true;
   while (read_next) {
     if (qs->next_message_size_ <= 0) {
-      if (in->Size() >= sizeof(int32)) {
+      if (in->Size() >= sizeof(int32_t)) {
         qs->next_message_size_ =
           io::BaseNumStreamer<io::MemoryStream, io::MemoryStream>::ReadInt32(
             in, common::BIGENDIAN);
       } else {
         read_next = false;
       }
-    } else if (in->Size() >= qs->next_message_size_) {
+    } else if (in->Size() >= size_t(qs->next_message_size_)) {
       google::protobuf::Message* crt_message = qs->response_->New();
       if (crt_message == NULL) {
         LOG_WARN << "Error allocating new message of type: "
                   << qs->response_->GetTypeName();
       } else {
-        const int32 init_size = in->Size();
+        const size_t init_size = in->Size();
         in->MarkerSet();
         if (!io::ParseProto(crt_message, in, qs->next_message_size_)) {
           delete crt_message; crt_message = NULL;
           LOG_WARN << "Parsing Response Error: req["
                     << ToString(qs) << "] size:"
                     << qs->next_message_size_;
-        } else if (init_size - in->Size() != qs->next_message_size_) {
+        } else if (init_size - in->Size() != size_t(qs->next_message_size_)) {
           LOG_WARN << "Size parsed does not match declared size: "
                     << init_size - in->Size()
                     << " vs. " << qs->next_message_size_;

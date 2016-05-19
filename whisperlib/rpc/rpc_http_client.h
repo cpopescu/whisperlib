@@ -52,8 +52,6 @@
 #include "whisperlib/base/hash.h"
 #include WHISPER_HASH_SET_HEADER
 
-using std::string;
-
 namespace whisper {
 namespace http {
 class FailSafeClient;
@@ -89,15 +87,16 @@ class HttpClient : public google::protobuf::RpcChannel {
  public:
   // Constructor w/ no extra parameters
   HttpClient(http::FailSafeClient* failsafe_client,
-             const string& http_request_path);
+             const std::string& http_request_path);
 
   // Constructor that allows the user to set authorization cookies or user / pass
   // parameters.
   HttpClient(http::FailSafeClient* failsafe_client,
-             const string& http_request_path,
-             const std::vector< std::pair<string, string> >& request_headers,
-             const string& auth_user,
-             const string& auth_pass);
+             const std::string& http_request_path,
+             const std::vector< std::pair<std::string,
+                                std::string> >& request_headers,
+             const std::string& auth_user,
+             const std::string& auth_pass);
   // Don't call the destructor directly, instead call StartClose that will
   // eventually delete the client
   virtual ~HttpClient();
@@ -106,7 +105,7 @@ class HttpClient : public google::protobuf::RpcChannel {
   void StartClose();
 
   // Returns a debug string for this client
-  string ToString() const;
+  std::string ToString() const;
 
   // Main interface function - calls the proper method.
   // The controller *must* be of rpc::Controller type
@@ -124,13 +123,13 @@ class HttpClient : public google::protobuf::RpcChannel {
   const http::FailSafeClient* failsafe_client() const {
     return failsafe_client_;
   }
-  const string& http_request_path() const {
+  const std::string& http_request_path() const {
     return http_request_path_;
   }
-  const string& auth_user() const {
+  const std::string& auth_user() const {
     return auth_user_;
   }
-  const string& auth_pass() const {
+  const std::string& auth_pass() const {
     return auth_pass_;
   }
 
@@ -190,7 +189,7 @@ private:
   };
 
   // Debug string for a query
-  string ToString(const QueryStruct* qs) const;
+  std::string ToString(const QueryStruct* qs) const;
 
   // Actually starts the RPC from the select thread
   void StartRequest(QueryStruct* qs);
@@ -215,11 +214,11 @@ private:
 
   net::Selector* const selector_;
   http::FailSafeClient* const failsafe_client_;
-  const string server_name_;  // for debug purposes
-  const string http_request_path_;
-  const std::vector< std::pair<string, string> > request_headers_;
-  const string auth_user_;
-  const string auth_pass_;
+  const std::string server_name_;  // for debug purposes
+  const std::string http_request_path_;
+  const std::vector< std::pair<std::string, std::string> > request_headers_;
+  const std::string auth_user_;
+  const std::string auth_pass_;
 
   // Protects internal data:
   mutable synch::Spin mutex_;

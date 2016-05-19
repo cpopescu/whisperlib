@@ -47,7 +47,7 @@ namespace net {
 
 class UserAuthenticator {
  public:
-  explicit UserAuthenticator(const string& realm)
+  explicit UserAuthenticator(const std::string& realm)
       : realm_(realm) {
   }
   virtual ~UserAuthenticator() {
@@ -66,21 +66,22 @@ class UserAuthenticator {
       CONSIDER(BadPassword);
       CONSIDER(MissingCredentials);
     }
+    return "=UNKNOWN=";
   }
   typedef Callback1<Answer> AnswerCallback;
   // The main authentication function - synchronous version
-  virtual Answer Authenticate(const string& user,
-                              const string& passwd) const = 0;
+  virtual Answer Authenticate(const std::string& user,
+                              const std::string& passwd) const = 0;
 
   // The main authentication function - asynchronous version
-  virtual void Authenticate(const string& user,
-                            const string& passwd,
+  virtual void Authenticate(const std::string& user,
+                            const std::string& passwd,
                             AnswerCallback* answer_callback) const = 0;
-  const string& realm() const {
+  const std::string& realm() const {
     return realm_;
   }
  private:
-  const string realm_;
+  const std::string realm_;
 
   DISALLOW_EVIL_CONSTRUCTORS(UserAuthenticator);
 };
@@ -91,15 +92,16 @@ class UserAuthenticator {
 // probably fine..
 class SimpleUserAuthenticator : public UserAuthenticator {
  public:
-  explicit SimpleUserAuthenticator(const string& realm)
+  explicit SimpleUserAuthenticator(const std::string& realm)
       : UserAuthenticator(realm) {
   }
   virtual ~SimpleUserAuthenticator() {
   }
 
-  virtual Answer Authenticate(const string& user,
-                              const string& passwd) const {
-    hash_map<string, string>::const_iterator it = user_passwords_.find(user);
+  virtual Answer Authenticate(const std::string& user,
+                              const std::string& passwd) const {
+    hash_map<std::string, std::string>::const_iterator it =
+        user_passwords_.find(user);
     if ( it == user_passwords_.end() ) {
       return BadUser;
     }
@@ -108,24 +110,24 @@ class SimpleUserAuthenticator : public UserAuthenticator {
     }
     return Authenticated;
   }
-  virtual void Authenticate(const string& user,
-                            const string& passwd,
+  virtual void Authenticate(const std::string& user,
+                            const std::string& passwd,
                             Callback1<Answer>* result_callback) const {
     result_callback->Run(Authenticate(user, passwd));
   }
 
-  void set_user_password(const string& user,
-                         const string& passwd) {
+  void set_user_password(const std::string& user,
+                         const std::string& passwd) {
     user_passwords_[user] = passwd;
   }
-  void remove_user(const string& user) {
+  void remove_user(const std::string& user) {
     user_passwords_.erase(user);
   }
-  const hash_map<string, string>& user_passwords() const {
+  const hash_map<std::string, std::string>& user_passwords() const {
     return user_passwords_;
   }
  private:
-  hash_map<string, string> user_passwords_;
+  hash_map<std::string, std::string> user_passwords_;
 
   DISALLOW_EVIL_CONSTRUCTORS(SimpleUserAuthenticator);
 };

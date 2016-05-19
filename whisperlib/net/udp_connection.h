@@ -116,7 +116,7 @@ class UdpConnection : private Selectable {
   //  LOG_INFO << conn.PrefixInfo() << "foo";
   // yields a log line like:
   //  "UDP [0.0.0.0:5665 (fd: 7)] foo"
-  string PrefixInfo() const;
+  std::string PrefixInfo() const;
 
  private:
   // enable non-blocking operations, and possibly other options..

@@ -43,9 +43,6 @@
 #include "whisperlib/base/hash.h"
 #include WHISPER_HASH_MAP_HEADER
 
-using std::string;
-using std::vector;
-
 namespace whisper {
 namespace http {
 //
@@ -67,19 +64,19 @@ class FailSafeClient {
   FailSafeClient(
       net::Selector* selector,
       const ClientParams* client_params,
-      const vector<net::HostPort>& servers,
+      const std::vector<net::HostPort>& servers,
       ResultClosure<BaseClientConnection*>* connection_factory,
       bool auto_delete_connection_factory,
       int num_retries,
       int32 request_timeout_ms,
       int32 reopen_connection_interval_ms,
-      const string& force_host_header);
+      const std::string& force_host_header);
   ~FailSafeClient();
 
   const ClientParams* client_params() const {
     return client_params_;
   }
-  const vector<net::HostPort>& servers() const {
+  const std::vector<net::HostPort>& servers() const {
     return servers_;
   }
   std::string server_names() const {
@@ -98,7 +95,7 @@ class FailSafeClient {
   int64 reopen_connection_interval_ms() const {
     return reopen_connection_interval_ms_;
   }
-  const string& force_host_header() const {
+  const std::string& force_host_header() const {
     return force_host_header_;
   }
   net::Selector* selector() const {
@@ -143,7 +140,7 @@ class FailSafeClient {
 
 private:
   void WriteStatusLog() const;
-  void StatusString(string* s) const;
+  void StatusString(std::string* s) const;
 
   struct PendingStruct {
     int64 start_time_;
@@ -162,7 +159,7 @@ private:
           canceled_(false),
           urgent_(urgent) {
     }
-    string ToString(int64 crt_time) const;
+    std::string ToString(int64 crt_time) const;
   };
 
   void RequeuePendingAlarm();
@@ -176,23 +173,23 @@ private:
 
   net::Selector* const selector_;
   const ClientParams* client_params_;
-  vector<net::HostPort> servers_;
+  std::vector<net::HostPort> servers_;
   ResultClosure<BaseClientConnection*>* connection_factory_;
   bool auto_delete_connection_factory_;
   const int num_retries_;
   const int64 request_timeout_ms_;
   const int64 reopen_connection_interval_ms_;
-  const string force_host_header_;
+  const std::string force_host_header_;
 
-  vector<ClientProtocol*> clients_;
-  vector<int64> death_time_;
+  std::vector<ClientProtocol*> clients_;
+  std::vector<int64> death_time_;
 
   typedef std::deque<PendingStruct*> PendingQueue;
   PendingQueue* pending_requests_;
   typedef hash_map<ClientRequest*, PendingStruct*> PendingMap;
   PendingMap* pending_map_;
 
-  std::deque< std::pair<int64, string> > completion_events_;
+  std::deque< std::pair<int64, std::string> > completion_events_;
 
   bool closing_;
   Closure* requeue_pending_callback_;

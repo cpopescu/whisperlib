@@ -103,7 +103,7 @@ class BaseNumStreamer {
                                            bool* success) {
     COMPILE_ASSERT(sizeof(N) <= kMaxSize, size_too_big_for_ReadNumber);
     N result;
-    const int32 i = is->Read(&result, sizeof(N));
+    const size_t i = is->ReadBuffer(&result, sizeof(N));
     if (success) *success = (sizeof(N) == i);
     else CHECK_EQ(sizeof(N), i);
     if ( common::kByteOrder != order ) {
@@ -116,7 +116,7 @@ class BaseNumStreamer {
                                            bool* success) {
     COMPILE_ASSERT(sizeof(N) <= kMaxSize, size_too_big_for_ReadNumber);
     N result;
-    const int32 i = is->Peek(&result, sizeof(N));
+    const size_t i = is->Peek(&result, sizeof(N));
     if (success) *success = sizeof(N) == i;
     else CHECK_EQ(sizeof(N), i);
     if ( common::kByteOrder != order ) {
@@ -236,52 +236,52 @@ class BaseNumStreamer {
   //
   // Output streaming -- by default we use the stream default endianess
   //
-  template<typename N> static int32 WriteNumber(W* os, N data,
+  template<typename N> static size_t WriteNumber(W* os, N data,
                                                 common::ByteOrder order) {
     // COMPILE_CHECK(sizeof(data) <= kMaxSize);
     if ( common::kByteOrder != order ) {
       SwapBytes(&data);
     }
-    return os->Write(&data, sizeof(data));
+    return os->WriteBuffer(&data, sizeof(data));
   }
 
   // Functions for writing various number types to the stream.
-  static int32 WriteByte(W* os, uint8 byte) {
+  static size_t WriteByte(W* os, uint8 byte) {
     return WriteNumber(os, byte, common::kByteOrder);
   }
-  static int32 WriteInt16(W* os, int16 data,
+  static size_t WriteInt16(W* os, int16 data,
                           common::ByteOrder order) {
     return WriteNumber<int16>(os, data, order);
   }
-  static int32 WriteUInt16(W* os, uint16 data,
+  static size_t WriteUInt16(W* os, uint16 data,
                            common::ByteOrder order) {
     return WriteNumber<uint16>(os, data, order);
   }
-  static int32 WriteUInt24(W* os, int32 data,
+  static size_t WriteUInt24(W* os, int32 data,
                            common::ByteOrder order) {
     return WriteNumber<uint24>(os, uint24(data), order);
   }
-  static int32 WriteInt32(W* os, int32 data,
+  static size_t WriteInt32(W* os, int32 data,
                           common::ByteOrder order) {
     return WriteNumber<int32>(os, data, order);
   }
-  static int32 WriteUInt32(W* os, uint32 data,
+  static size_t WriteUInt32(W* os, uint32 data,
                            common::ByteOrder order) {
     return WriteNumber<uint32>(os, data, order);
   }
-  static int32 WriteInt64(W* os, int64 data,
+  static size_t WriteInt64(W* os, int64 data,
                           common::ByteOrder order) {
     return WriteNumber<int64>(os, data, order);
   }
-  static int32 WriteUInt64(W* os, uint64 data,
+  static size_t WriteUInt64(W* os, uint64 data,
                            common::ByteOrder order) {
     return WriteNumber<uint64>(os, data, order);
   }
-  static int32 WriteFloat(W* os, float data,
+  static size_t WriteFloat(W* os, float data,
                           common::ByteOrder order) {
     return WriteNumber<float>(os, data, order);
   }
-  static int32 WriteDouble(W* os, double data,
+  static size_t WriteDouble(W* os, double data,
                            common::ByteOrder order) {
     return WriteNumber<double>(os, data, order);
   }
@@ -297,9 +297,9 @@ public:
   virtual ~BitArray();
 
   // Use an external data buffer.
-  void Wrap(const void* data, uint32 size);
+  void Wrap(const void* data, size_t size);
   // Make an internal copy of the data buffer.
-  void Put(const void* data, uint32 size);
+  void Put(const void* data, size_t size);
 
   // Read next 'bit_count' bits, and assemble them as a T number.
   // e.g. If current data_ contains: "01010000.."
@@ -307,7 +307,7 @@ public:
   // e.g. If current data_ contains: "0101000110.."
   //      and bit_count = 10, and T = uint16 => returns: 0x0146
   template <typename T>
-  T Peek(uint32 bit_count) {
+  T Peek(size_t bit_count) {
     T t = 0;
 
     CHECK( bit_count <= sizeof(T) * 8 )
@@ -316,7 +316,7 @@ public:
     CHECK( bit_count <= Size() ) << "Not enough data, bit_count: " << bit_count
                                  << ", available bits: " << Size();
 
-    uint32 bit_index = sizeof(T) * 8 - bit_count;
+    size_t bit_index = sizeof(T) * 8 - bit_count;
     bit_index = (bit_index / 8) * 8 + (7 - (bit_index % 8));
 
     BitCopy(data_ + head_, head_bit_, &t, bit_index, bit_count);
@@ -328,35 +328,35 @@ public:
     return t;
   }
   template <typename T>
-  T Read(uint32 bit_count) {
+  T Read(size_t bit_count) {
     T t = Peek<T>(bit_count);
     Skip(bit_count);
     return t;
   }
 
-  void Skip(uint32 bit_count);
+  void Skip(size_t bit_count);
 
   // returns the number of available bits
-  uint32 Size();
+  size_t Size();
 
   // src_bit_index: 7 - is the first bit in '*src' (MSB)
   //                0 - is the last bit in '*src'  (LSB)
   // If you want to copy src right from the begining, use src_bit_index: 7.
-  static void BitCopy(const void* void_src, uint32 src_bit_index,
-                      void* void_dst, uint32 dst_bit_index,
-                      uint32 bit_count);
+  static void BitCopy(const void* void_src, size_t src_bit_index,
+                      void* void_dst, size_t dst_bit_index,
+                      size_t bit_count);
 
 private:
   const uint8* data_;
-  uint32 data_size_;
+  size_t data_size_;
 
   // true if we own the "data_" buffer
   bool data_owned_;
 
   // current byte index inside "data_"
-  uint32 head_;
+  size_t head_;
   // bit index inside current byte (i.e. inside data_[head_])
-  uint32 head_bit_; // [7..0] . 7 is MSB, 0 is LSB
+  size_t head_bit_; // [7..0] . 7 is MSB, 0 is LSB
 };
 }  // namespace io
 }  // namespace whisper

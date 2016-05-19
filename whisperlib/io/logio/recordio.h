@@ -53,8 +53,8 @@
 namespace whisper {
 namespace io {
 
-static const int32 kDefaultRecordBlockSize = 65536;
-static const int32 kMaximumRecordBlockSize = 0xFFFFFF; // 16MB
+static const size_t kDefaultRecordBlockSize = 65536;
+static const size_t kMaximumRecordBlockSize = 0xFFFFFF; // 16MB
 
 class RecordWriter {
  public:
@@ -64,7 +64,7 @@ class RecordWriter {
     IS_FIRST  = 4,
   };
 
-  RecordWriter(int32 block_size = kDefaultRecordBlockSize,
+  RecordWriter(size_t block_size = kDefaultRecordBlockSize,
                bool deflate = false,
                float dumpable_percent = 0.9f);
   ~RecordWriter();
@@ -78,16 +78,16 @@ class RecordWriter {
   bool AppendRecord(io::MemoryStream* in, io::MemoryStream* out) {
     return AppendRecord(in, out, false);
   }
-  bool AppendRecord(const char* buffer, int32 size, io::MemoryStream* out);
+  bool AppendRecord(const char* buffer, size_t size, io::MemoryStream* out);
 
   // This returns the current content (accumulated so far) as a one block
   // to be written to the disk.
   void FinalizeContent(io::MemoryStream* out);
 
   // number of records currently accumulated in 'content_'.
-  int32 PendingRecordCount() const { return content_record_count_; }
+  size_t PendingRecordCount() const { return content_record_count_; }
 
-  int32 leftover() const {
+  size_t leftover() const {
     return content_.Size();
   }
   void Clear() {
@@ -97,21 +97,21 @@ class RecordWriter {
   bool AppendRecord(io::MemoryStream* in, io::MemoryStream* out,
                     bool is_zipped);
   // We trail each block with the content size and crc..
-  static const int32 kBlockTrailerEnd = 3 * sizeof(int32);
+  static const size_t kBlockTrailerEnd = 3 * sizeof(int32);
   // Each record is prepended with a header (type 1 + size 3)
-  static const int32 kRecordHeaderSize = 4;
+  static const size_t kRecordHeaderSize = 4;
   // some zeroes used for padding
   static const char* padding_;
 
-  const int32 block_size_;     // we write record blocks of this size
-  const int32 dumpable_size_;  // we can finish a record if we have more
+  const size_t block_size_;     // we write record blocks of this size
+  const size_t dumpable_size_;  // we can finish a record if we have more
                                // than this in the buffer or the next
                                // records overflows
   io::MemoryStream content_;   // accumulated content so far..
   ZlibDeflateWrapper* zlib_;   // for compressing content
   io::MemoryStream zlib_content_;
                                // buffer of compressed content
-  int32 content_record_count_; // number or records currently in 'content_'
+  size_t content_record_count_; // number or records currently in 'content_'
 
   int32 prev_block_crc_;
 
@@ -120,7 +120,7 @@ class RecordWriter {
 
 class RecordReader {
  public:
-  explicit RecordReader(int32 block_size = kDefaultRecordBlockSize);
+  explicit RecordReader(size_t block_size = kDefaultRecordBlockSize);
   ~RecordReader();
 
   // Reads the content of the next record from the provided memory stream
@@ -134,7 +134,7 @@ class RecordReader {
   static const char* ReadResultName(ReadResult result);
   // out: if NULL, the record is read but dropped.
   ReadResult ReadRecord(io::MemoryStream* in, io::MemoryStream* out,
-                        int* num_skipped, int max_num_skipped);
+                        size_t* num_skipped, size_t max_num_skipped);
 
   void Clear() {
     temp_.Clear();
@@ -145,9 +145,9 @@ class RecordReader {
   void SkipRecord();
   RecordReader::ReadResult ReadNextBlock(io::MemoryStream* in);
 
-  static const int32 kBlockTrailerEnd = 3 * sizeof(int32);
+  static const size_t kBlockTrailerEnd = 3 * sizeof(int32);
 
-  const int32 block_size_;    // we read records of this size
+  const size_t block_size_;   // we read records of this size
   io::MemoryStream temp_;     // a temp buffer
   io::MemoryStream content_;  // raw data extracted from blocks (it contains
                               // just records)

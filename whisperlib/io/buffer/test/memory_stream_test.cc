@@ -55,9 +55,9 @@ static unsigned int rand_seed;
 void TestPipeStyle(int64 initial_ints,     // we write initially these many ints
                    int64 num_ints,         // then we r/w these ints
                    int64 final_ints,       // we read finally these many ints
-                   int32 min_write_size,   // in pieces of size
+                   size_t min_write_size,   // in pieces of size
                                            // between these limits
-                   int32 max_write_size) {
+                   size_t max_write_size) {
   CHECK_GT(max_write_size, min_write_size);
   int32* buffer = new int32[max_write_size];
   int32 last_num_read = 0;
@@ -67,25 +67,25 @@ void TestPipeStyle(int64 initial_ints,     // we write initially these many ints
   int64 expected_size = 0;
   const int64 total_ints = num_ints + initial_ints + final_ints;
   while ( cb < total_ints ) {
-    const int32 crt_ints = (min_write_size +
-                            random() % (max_write_size - min_write_size));
+    const size_t crt_ints = (min_write_size +
+                             random() % (max_write_size - min_write_size));
     const int32 op = random() % 2;
     if ( (op || cb < initial_ints) && cb < num_ints + initial_ints ) {
       // write operation
-      for ( int i = 0; i < crt_ints; ++i ) {
+      for ( size_t i = 0; i < crt_ints; ++i ) {
         buffer[i] = last_num_write;
         last_num_write++;
       }
       VLOG(10) << "Writing " << crt_ints
                << " from: " << buffer[0] << " to " << buffer[crt_ints-1];
-      const int32 cbwrite = stream.Write(buffer, crt_ints * sizeof(*buffer));
+      const size_t cbwrite = stream.Write(buffer, crt_ints * sizeof(*buffer));
       CHECK_EQ(cbwrite, crt_ints * sizeof(*buffer));
       expected_size += crt_ints * sizeof(*buffer);
     } else {
       // read operation
       CHECK_EQ(stream.Size(), expected_size);
-      const int32 cbread = stream.Read(buffer, crt_ints * sizeof(*buffer));
-      const int32 ints_read = cbread / sizeof(*buffer);
+      const size_t cbread = stream.Read(buffer, crt_ints * sizeof(*buffer));
+      const size_t ints_read = cbread / sizeof(*buffer);
       VLOG(10) << "Read " << crt_ints << " got " << cbread
                << " (" << ints_read << ") "
                << " from: " << buffer[0] << " to " << buffer[ints_read-1];
@@ -93,7 +93,7 @@ void TestPipeStyle(int64 initial_ints,     // we write initially these many ints
                            expected_size));
       expected_size -= cbread;
       CHECK_EQ(stream.Size(), expected_size);
-      for ( int i = 0; i < ints_read; ++i ) {
+      for ( size_t i = 0; i < ints_read; ++i ) {
         CHECK_EQ(int(last_num_read), int(buffer[i]));
         last_num_read++;
       }
@@ -105,17 +105,17 @@ void TestPipeStyle(int64 initial_ints,     // we write initially these many ints
 
 //////////////////////////////////////////////////////////////////////
 
-int32 GenerateRecord(whisper::io::MemoryStream* buf,
-                     int32* out_buf,
-                     int32 left_ints,
-                     int32 max_add_record_size) {
-  const int32 rec_size = min(
+size_t GenerateRecord(whisper::io::MemoryStream* buf,
+                      int32* out_buf,
+                      size_t left_ints,
+                      size_t max_add_record_size) {
+  const size_t rec_size = min(
       left_ints,
-      static_cast<int32>(rand_r(&rand_seed) %
+      static_cast<size_t>(rand_r(&rand_seed) %
                          (max_add_record_size / sizeof(int32))));
   VLOG(10) << " Generating a record of " << rec_size << " int32.";
   int32* p = out_buf;
-  for ( int32 i = 0; i < rec_size; ++i ) {
+  for ( size_t i = 0; i < rec_size; ++i ) {
     *p++ = rand_r(&rand_seed);
   }
   buf->Write(out_buf, rec_size * sizeof(*p));
@@ -124,17 +124,17 @@ int32 GenerateRecord(whisper::io::MemoryStream* buf,
 
 void CheckRecords(whisper::io::MemoryStream* buf,
                   int32* check_buf,
-                  int32 left_ints,
-                  int32 max_read_record_size) {
+                  size_t left_ints,
+                  size_t max_read_record_size) {
   buf->MarkerSet();
   int32* p = check_buf;
   while ( left_ints > 0 ) {
-    const int32 rec_size = min(
+    const size_t rec_size = std::min(
         left_ints,
-        static_cast<int32>(rand_r(&rand_seed) % (max_read_record_size /
-                                     sizeof(*check_buf))));
+        static_cast<size_t>(rand_r(&rand_seed) % (max_read_record_size /
+                                                  sizeof(*check_buf))));
     VLOG(10) << " Checking a record of " << rec_size << " int32.";
-    const int32 size = rec_size * sizeof(*check_buf);
+    const size_t size = rec_size * sizeof(*check_buf);
     string s;
     buf->ReadString(&s, size);
     CHECK_EQ(s.size(), size);
@@ -146,26 +146,26 @@ void CheckRecords(whisper::io::MemoryStream* buf,
 }
 
 void TestRandomAppends(bool mix_operations,
-                       int32 block_size1,
-                       int32 block_size2,
-                       int32 total_size,
-                       int32 max_add_record_size,
-                       int32 max_append_record_size,
-                       int32 max_read_record_size) {
-  int32 num_ints = total_size / sizeof(int32);
+                       size_t block_size1,
+                       size_t block_size2,
+                       size_t total_size,
+                       size_t max_add_record_size,
+                       size_t max_append_record_size,
+                       size_t max_read_record_size) {
+  size_t num_ints = total_size / sizeof(int32);
   int32* out_buf = new int32[num_ints];
   int32* p = out_buf;
   whisper::io::MemoryStream buf1(block_size1);
   whisper::io::MemoryStream buf2(block_size2);
 
   LOG_INFO << "Generating buffers... ";
-  int32 size = 0;
-  int32 expected_size  = 0;
+  size_t size = 0;
+  size_t expected_size  = 0;
   while ( num_ints > size ) {
     if ( mix_operations && ((rand_r(&rand_seed) % 5) == 0) ) {
       while ( buf1.Size() > 0 ) {
-        const int32 rec_size = min(buf1.Size(),
-                                   rand_r(&rand_seed) % max_append_record_size);
+        const size_t rec_size = std::min(buf1.Size(),
+                                         rand_r(&rand_seed) % max_append_record_size);
         expected_size += rec_size;
         buf2.AppendStream(&buf1, rec_size);
         CHECK(buf2.Size() == expected_size)
@@ -173,8 +173,8 @@ void TestRandomAppends(bool mix_operations,
             << " Got: " << buf2.DetailedContent();
       }
     } else {
-      const int32 written = GenerateRecord(&buf1, p, num_ints - size,
-                                           max_add_record_size);
+      const size_t written = GenerateRecord(&buf1, p, num_ints - size,
+                                            max_add_record_size);
       p += written;
       size += written;
     }
@@ -188,11 +188,12 @@ void TestRandomAppends(bool mix_operations,
   LOG_INFO << "Appending... ";
   buf1.MarkerSet();
   while ( buf1.Size() > 0 ) {
-    const int32 rec_size = min(buf1.Size(),
-                               rand_r(&rand_seed) % max_append_record_size);
+    const size_t rec_size = std::min(buf1.Size(),
+                                     size_t(rand_r(&rand_seed) % max_append_record_size));
     expected_size += rec_size;
     buf2.AppendStream(&buf1, rec_size);
-    CHECK(buf2.Size() == expected_size)
+    CHECK_EQ(buf2.Size(), expected_size)
+        << " rec_size: " << rec_size
         << " expected_size: " << expected_size
         << " Got: " << buf2.DetailedContent();
   }

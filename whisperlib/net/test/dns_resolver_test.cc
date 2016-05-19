@@ -53,7 +53,7 @@ DEFINE_bool(just_server,
 uint32 g_pending = 0;
 whisper::net::Selector* g_selector = NULL;
 
-void HandleDnsResult(string hostname, bool expected_success,
+void HandleDnsResult(std::string hostname, bool expected_success,
     scoped_ref<whisper::net::DnsHostInfo> info) {
   CHECK_NOT_NULL(info.get());
   CHECK(expected_success == info.get()->is_valid())
@@ -74,7 +74,7 @@ void HandleDnsResult(string hostname, bool expected_success,
   }
 }
 
-void TestDnsQuery(const string& hostname, bool expected_success) {
+void TestDnsQuery(const std::string& hostname, bool expected_success) {
   g_pending++;
   whisper::net::DnsResolve(
       g_selector, hostname,

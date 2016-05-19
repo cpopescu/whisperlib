@@ -121,10 +121,10 @@ int main(int argc, char* argv[]) {
   whisper::io::MemoryStream in;
   int32 rec_id = 0;
   while ( !out.IsEmpty() ) {
-    int32 to_pull = std::min(rand_r(&g_rand_seed) % 2048, out.Size());
+    size_t to_pull = std::min(size_t(rand_r(&g_rand_seed) % 2048), out.Size());
     in.AppendStream(&out, to_pull);
     while ( true ) {
-      int num_skipped = 0;
+      size_t num_skipped = 0;
       whisper::io::MemoryStream crt;
       whisper::io::RecordReader::ReadResult err = rd.ReadRecord(&in, &crt, &num_skipped, 0);
       if ( err == whisper::io::RecordReader::READ_NO_DATA ) {

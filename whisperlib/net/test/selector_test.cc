@@ -141,7 +141,7 @@ class EchoServerConnection {
     // but as we are the clients, we do
     CHECK_NE(expected_size_, 0);
     if ( expected_size_ == -1 ) {
-      if ( net_connection_->inbuf()->Size() >= sizeof(expected_size_) ) {
+      if ( net_connection_->inbuf()->Size() >= sizeof(int32_t) ) {
         expected_size_ = whisper::io::NumStreamer::ReadInt32(net_connection_->inbuf(),
                                                     whisper::common::kByteOrder);
       } else {
@@ -331,14 +331,14 @@ class EchoClientConnection {
   }
   bool ConnectionReadHandler() {
     const char* buf;
-    int32 size;
-    int32 total_size = 0;
+    size_t size;
+    size_t total_size = 0;
     while ( net_connection_->inbuf()->ReadNext(&buf, &size) ) {
       total_size += size;
       char* cmp_buf = new char[size];
       CHECK_GE(expected_data_.Size(), size);
       CHECK_EQ(expected_data_.Read(cmp_buf, size), size);
-      for ( int32 i = 0; i < size; i++ ) {
+      for ( size_t i = 0; i < size; i++ ) {
         CHECK_EQ((int32)buf[i], (int32)cmp_buf[i]);
       }
       delete []cmp_buf;
@@ -389,12 +389,12 @@ class EchoClientConnection {
                    net_connection_->outbuf(),
                    static_cast<int32>(piece_size_ * num_pieces_),
                    whisper::common::kByteOrder),
-               sizeof(pieces_sent_));
-      CHECK_EQ(net_connection_->outbuf()->Size(), sizeof(pieces_sent_));
+               sizeof(int32_t));
+      CHECK_EQ(net_connection_->outbuf()->Size(), sizeof(int32_t));
     }
     char* buffer = new char[piece_size_];
     char* p = buffer;
-    for ( int32 i = 0; i < piece_size_; i++ ) {
+    for ( size_t i = 0; i < piece_size_; i++ ) {
       *p++ = static_cast<char>(random() % 256);
     }
     whisper::io::MemoryStream s;
@@ -425,16 +425,16 @@ class EchoClientConnection {
   whisper::net::Selector* selector_;
   whisper::net::NetFactory* net_factory_;
   whisper::net::NetConnection* net_connection_;
-  const int32 piece_size_;
-  const int32 num_pieces_;
+  const size_t piece_size_;
+  const size_t num_pieces_;
   const int64 time_between_pieces_;
-  int32 pieces_sent_;
+  size_t pieces_sent_;
   int has_timeout_;
   whisper::io::MemoryStream expected_data_;
   whisper::net::Timeouter timeouter_;
 };
 
-void StartEchoConnection(int32 num_to_start,
+void StartEchoConnection(size_t num_to_start,
                          whisper::net::Selector* selector,
                          whisper::net::NetFactory* net_factory,
                          whisper::net::PROTOCOL net_protocol) {
@@ -443,10 +443,10 @@ void StartEchoConnection(int32 num_to_start,
   int64 time_between_pieces = (should_timeout
                                ? 5000 + (random() % 5000)
                                : 100 + (random() % 2000));
-  const int32 piece_size = (FLAGS_min_piece_size +
+  const size_t piece_size = (FLAGS_min_piece_size +
                             random() % (FLAGS_max_piece_size -
                                         FLAGS_min_piece_size));
-  const int32 num_pieces = (FLAGS_min_num_pieces +
+  const size_t num_pieces = (FLAGS_min_num_pieces +
                             random() % (FLAGS_max_num_pieces -
                                         FLAGS_min_num_pieces));
   LOG_INFO << "==========> Starting a new echo client: "
@@ -504,7 +504,7 @@ int main(int argc, char* argv[]) {
   if ( !FLAGS_just_server ) {
     selector.RunInSelectLoop(
         whisper::NewCallback(&StartEchoConnection,
-                             FLAGS_num_connections,
+                             size_t(FLAGS_num_connections),
                              &selector,
                              &net_factory,
                              net_protocol));

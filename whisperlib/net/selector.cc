@@ -100,7 +100,7 @@ Selector::Selector()
 #else
   CHECK(!pipe(signal_pipe_)) <<  "pipe() failed:  "
                              << GetLastSystemErrorDescription();
-  for ( int i = 0; i < NUMBEROF(signal_pipe_); ++i ) {
+  for ( size_t i = 0; i < NUMBEROF(signal_pipe_); ++i ) {
     const int flags = fcntl(signal_pipe_[i], F_GETFL, 0);
     CHECK(flags >= 0) << " fcntl fail: " << GetLastSystemErrorDescription();
     CHECK(fcntl(signal_pipe_[i], F_SETFL, flags | O_NONBLOCK) >= 0)
@@ -170,7 +170,7 @@ void Selector::Loop() {
     const int64 processing_begin =
         FLAGS_debug_check_long_callbacks_ms > 0 ? timer::TicksMsec() : 0;
 #endif
-    for ( int i = 0; i < events.size(); ++i ) {
+    for ( size_t i = 0; i < events.size(); ++i ) {
       const SelectorEventData& event = events[i];
       Selectable* const s = reinterpret_cast<Selectable *>(event.data_);
       if ( s == NULL ) {

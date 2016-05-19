@@ -42,10 +42,10 @@ FDInputStream::FDInputStream(FileDescriptor* fd)
 FDInputStream::~FDInputStream() {
   delete fd_;
 }
-int32 FDInputStream::Read(void* buffer, int32 len) {
+ssize_t FDInputStream::Read(void* buffer, size_t len) {
   return fd_->Read(buffer, len);
 }
-int64 FDInputStream::Skip(int64 len) {
+int64_t FDInputStream::Skip(int64_t len) {
   return fd_->Skip(len);
 }
 bool FDInputStream::IsEos() const {

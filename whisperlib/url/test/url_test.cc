@@ -34,9 +34,6 @@
 #include "whisperlib/base/log.h"
 #include "whisperlib/base/system.h"
 
-using namespace std;
-using namespace whisper;
-
 void LogUrl(const char* surl) {
   URL url(surl);
   vector< pair<string, string> > qp;

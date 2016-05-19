@@ -50,18 +50,18 @@ class FileInputStream : public InputStream {
   static bool TryReadFile(const char* filename, std::string* content);
   static bool TryReadFile(const std::string& filename, std::string* content);
 
-  int32 Read(io::MemoryStream* ms, int32 len);
+  ssize_t Read(io::MemoryStream* ms, size_t len);
 
   // Input Stream interface
-  virtual int32 Read(void* buffer, int32 len);
-  virtual int32 Peek(void* buffer, int32 len) {
+  virtual ssize_t ReadBuffer(void* buffer, size_t len);
+  virtual ssize_t Peek(void* buffer, size_t len) {
     MarkerSet();
-    const int32 ret = Read(buffer, len);
+    const ssize_t ret = ReadBuffer(buffer, len);
     MarkerRestore();
     return ret;
   }
-  virtual int64 Skip(int64 len);
-  virtual int64 Readable() const;
+  virtual int64_t Skip(int64_t len);
+  virtual uint64_t Readable() const;
   virtual bool IsEos() const;
 
   void MarkerSet();

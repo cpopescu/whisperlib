@@ -91,10 +91,10 @@ class HttpServer {
   // We don't own any of the provided objects..
   HttpServer(http::Server* server,
              net::UserAuthenticator* authenticator,
-             const string& path,
+             const std::string& path,
              bool is_public,
              int max_concurrent_requests,
-             const string& ip_class_restriction);
+             const std::string& ip_class_restriction);
   ~HttpServer();
 
   // Registers a service with this server (will be provided
@@ -105,10 +105,12 @@ class HttpServer {
   // Registers a service with this name (will be provided
   // under /..path../..sub_path../
   // NOTE: sub_path should contain a final slash (if you wish !)
-  bool RegisterService(const string& sub_path, google::protobuf::Service* service);
-  bool UnregisterService(const string& sub_path, google::protobuf::Service* service);
+  bool RegisterService(const std::string& sub_path,
+                       google::protobuf::Service* service);
+  bool UnregisterService(const std::string& sub_path,
+                         google::protobuf::Service* service);
 
-  const string& path() const {
+  const std::string& path() const {
     return path_;
   }
 
@@ -252,7 +254,7 @@ protected:
   net::IpClassifier* const accepted_clients_;
 
   // On which path we serve ?
-  const string path_;
+  const std::string path_;
 
   // We do not accept more then these concurrent requests
   int max_concurrent_requests_;
@@ -272,7 +274,7 @@ protected:
   std::deque<pb::RequestStats*> completed_requests_;
 
   // What services we provide ..
-  typedef std::map<string, google::protobuf::Service*> ServicesMap;
+  typedef std::map<std::string, google::protobuf::Service*> ServicesMap;
   ServicesMap services_;
 
   http::Server* http_server_;

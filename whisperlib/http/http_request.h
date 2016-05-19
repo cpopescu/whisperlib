@@ -59,8 +59,8 @@ namespace http {
 class Request {
  public:
   Request(bool strict_headers = true,
-          int32 client_block_size = io::DataBlock::kDefaultBufferSize,
-          int32 server_block_size = io::DataBlock::kDefaultBufferSize);
+          size_t client_block_size = io::DataBlock::kDefaultBufferSize,
+          size_t server_block_size = io::DataBlock::kDefaultBufferSize);
   ~Request();
 
   // Normal accessors
@@ -235,7 +235,7 @@ class RequestParser {
  public:
   RequestParser(
       const char* name,
-      int32 max_header_size       = 16384,
+      size_t max_header_size      = 16384,
       int64 max_body_size         = 4 << 20,
       int64 max_chunk_size        = 1 << 20,
       int64 max_num_chunks        = -1,
@@ -325,7 +325,7 @@ class RequestParser {
     REQUEST_FINISHED = 64,     // The whole request is fully finished
     CONTINUE = 128,            // informs the caller to call us again soon
   };
-  static string ReadStateName(int32 read_state);
+  static std::string ReadStateName(int32 read_state);
 
   // VERY IMPORTANT: once started the parsing of a request / reply - continue
   // it with subsequent calls
@@ -377,10 +377,10 @@ class RequestParser {
   void set_dlog_level(bool dlog_level) {
     dlog_level_ = dlog_level;
   }
-  const string& name() const {
+  const std::string& name() const {
     return name_;
   }
-  void set_name(const string& s) {
+  void set_name(const std::string& s) {
     name_ = s;
   }
 
@@ -428,7 +428,7 @@ class RequestParser {
                          io::MemoryStream* out);
 
   // Protocol limits:
-  const int32 max_header_size_;
+  const size_t max_header_size_;
   int64 max_body_size_;
   const int64 max_chunk_size_;
   int64 max_num_chunks_;
@@ -438,7 +438,7 @@ class RequestParser {
   const http::Header::ParseError worst_accepted_header_error_;
 
   // A name for this parser (good to distinguish at log time)
-  string name_;
+  std::string name_;
   // Shall this parser log more ?
   bool dlog_level_;
 

@@ -42,8 +42,6 @@
 #include "whisperlib/base/log.h"
 #include "whisperlib/base/strutil.h"
 
-using std::string;
-
 struct in_addr;
 
 namespace whisper {
@@ -81,9 +79,9 @@ class IpAddress {
   }
   // parsing constructor
   // Use IsInvalid() to check for error.
-  explicit IpAddress(const string& s) {
+  explicit IpAddress(const std::string& s) {
     bool error = false;
-    if ( s.size() >= 3 && s.find(':') != string::npos ) {
+    if ( s.size() >= 3 && s.find(':') != std::string::npos ) {
       is_ipv4_ = false;
       // NOTE: inet_pton delivers address in network byte order
 #ifdef HAVE_INET_PTON
@@ -171,7 +169,7 @@ class IpAddress {
   void Addr(sockaddr_storage* addr) const;
 
   // Same as above, but returns a string;
-  string ToString() const;
+  std::string ToString() const;
 
  private:
   bool is_ipv4_;
@@ -199,9 +197,9 @@ class HostPort {
   //       "10.205.9.85" -> HOST="", IP=10.205.9.85, PORT=0
   //       "google.com" -> HOST="google.com", IP=0, PORT=0
   //       "google.ro:80" -> HOST="google.ro", IP=0, PORT=80
-  HostPort(const string& hostport)
+  HostPort(const std::string& hostport)
       : host_(), ip_(), port_(kInvalidPort) {
-    std::pair<string, string> a = strutil::SplitLast(hostport, ":");
+    std::pair<std::string, std::string> a = strutil::SplitLast(hostport, ":");
     ip_ = IpAddress(a.first);
     if ( ip_.IsInvalid() ) {
       host_ = a.first;
@@ -210,7 +208,7 @@ class HostPort {
     port_ = (port <= 0 || port > kMaxUInt16) ? kInvalidPort : port;
   }
   // separate host / port
-  HostPort(const string& host, uint16 port)
+  HostPort(const std::string& host, uint16 port)
       : host_(), ip_(host), port_(port) {
     if ( ip_.IsInvalid() ) {
       host_ = host;
@@ -230,7 +228,7 @@ class HostPort {
     return *this;
   }
 
-  const string& host() const { return host_; }
+  const std::string& host() const { return host_; }
 
   // Accessors / setters
   const IpAddress& ip_object() const { return ip_; }
@@ -251,10 +249,10 @@ class HostPort {
   // Returns in addr the ip address in network byte order. Returns true on ipv6
   bool SockAddr(struct sockaddr_storage* addr) const;
 
-  string ToString() const;
+  std::string ToString() const;
 
  private:
-  string host_;
+  std::string host_;
   IpAddress ip_; // sometimes obtained by DNS lookup of 'host_'
   uint16 port_;
 };

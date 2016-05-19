@@ -106,7 +106,7 @@ static void StringAppendVT(
 namespace {
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wtautological-compare"
+// #pragma GCC diagnostic ignored "-Wtautological-compare"
 
 template <typename STR, typename INT, typename UINT, bool NEG>
 struct IntToStringT {

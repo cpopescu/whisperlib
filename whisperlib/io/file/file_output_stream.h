@@ -47,8 +47,8 @@ class FileOutputStream : public OutputStream {
   static void WriteFileOrDie(const char* filename, const std::string& content);
   static bool TryWriteFile(const char* filename, const std::string& content);
 
-  virtual int32 Write(const void* buf, int32 len);
-  virtual int64 Writable() const;
+  virtual ssize_t WriteBuffer(const void* buf, size_t len);
+  virtual uint64_t Writable() const;
 
   void Flush() const { file_->Flush(); }
 

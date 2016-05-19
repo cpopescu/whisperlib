@@ -36,6 +36,8 @@
 namespace whisper {
 namespace io {
 
+static const uint64_t kMaxFileInputStreamReadSize = 128 << 20;
+
 std::string FileInputStream::ReadFileOrDie(const char* filename) {
   std::string s;
   CHECK(TryReadFile(filename, &s));
@@ -50,12 +52,12 @@ bool FileInputStream::TryReadFile(const char* filename, std::string* content) {
     return false;
   }
   io::FileInputStream fis(infile);
-  int64 size = fis.Readable();
-  if ( size > kMaxInt32 ) {
+  uint64_t size = fis.Readable();
+  if ( size > kMaxFileInputStreamReadSize ) {
     return false;
   }
   std::string s;
-  return size == fis.ReadString(content, static_cast<int32>(size));
+  return ssize_t(size) == fis.ReadString(content, size_t(size));
 }
 bool FileInputStream::TryReadFile(const std::string& filename, std::string* content) {
   return TryReadFile(filename.c_str(), content);
@@ -69,20 +71,23 @@ FileInputStream::~FileInputStream() {
   delete file_;
 }
 
-int32 FileInputStream::Read(io::MemoryStream* ms, int32 len) {
+ssize_t FileInputStream::Read(io::MemoryStream* ms, size_t len) {
   return file_->Read(ms, len);
 }
 
-int32 FileInputStream::Read(void* buffer, int32 len) {
-  return file_->Read(buffer, len);
+ssize_t FileInputStream::ReadBuffer(void* buffer, size_t len) {
+  return file_->ReadBuffer(buffer, len);
 }
 
-int64 FileInputStream::Skip(int64 len) {
+int64_t FileInputStream::Skip(int64_t len) {
   return file_->SetPosition(len, File::FILE_CUR);
 }
 
-int64 FileInputStream::Readable() const {
-  return file_->Size() - file_->Position();
+uint64_t FileInputStream::Readable() const {
+  const uint64_t size = file_->Size();
+  const uint64_t pos = file_->Position();
+  if (pos > size) return 0;
+  return size - pos;
 }
 
 bool FileInputStream::IsEos() const {

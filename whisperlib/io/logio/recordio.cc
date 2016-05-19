@@ -40,7 +40,7 @@ int32 ComputeCRC(whisper::io::MemoryStream* buf) {
   int32 crc = static_cast<int32>(crc32(0L, Z_NULL, 0));
   buf->MarkerSet();
   while ( !buf->IsEmpty() ) {
-    int32 crt_size = buf->Size();
+    size_t crt_size = buf->Size();
     const char* crt_buf = NULL;
     CHECK(buf->ReadNext(&crt_buf, &crt_size));
     crc = crc32(crc, reinterpret_cast<const Bytef*>(crt_buf), crt_size);
@@ -48,7 +48,7 @@ int32 ComputeCRC(whisper::io::MemoryStream* buf) {
   buf->MarkerRestore();
   return crc;
 }
-char* NewZeroes(int32 size) {
+char* NewZeroes(size_t size) {
   char* p = new char[size];
   memset(p, 0, size);
   return p;
@@ -64,11 +64,11 @@ namespace io {
 
 const char* RecordWriter::padding_ = NewZeroes(kMaximumRecordBlockSize);
 
-RecordWriter::RecordWriter(int32 block_size,
+RecordWriter::RecordWriter(size_t block_size,
                            bool deflate,
                            float dumpable_percent)
     : block_size_(block_size),
-      dumpable_size_(static_cast<int32>(
+      dumpable_size_(static_cast<size_t>(
           dumpable_percent * (block_size_ - kBlockTrailerEnd))),
       content_(block_size_),
       zlib_(deflate ? new ZlibDeflateWrapper() : NULL),
@@ -95,13 +95,14 @@ bool RecordWriter::AppendRecord(io::MemoryStream* in,
     return AppendRecord(&zlib_content_, out, true);
   }
   bool is_first = true;
-  uint32 written_block_count = 0;
+  size_t written_block_count = 0;
   while ( !in->IsEmpty() ) {
-    const int32 available = block_size_ - kBlockTrailerEnd - kRecordHeaderSize
+    DCHECK_GT(block_size_, kBlockTrailerEnd  + kRecordHeaderSize + content_.Size())
+        << ", block_size_: " << block_size_
+        << ", content_.Size(): " << content_.Size();
+
+    const size_t available = block_size_ - kBlockTrailerEnd - kRecordHeaderSize
                             - content_.Size();
-    CHECK(available > 0) << ", available: " << available
-                         << ", block_size_: " << block_size_
-                         << ", content_.Size(): " << content_.Size();
     // If there's enough space, write the whole record in current block
     if ( in->Size() <= available ) {
       io::NumStreamer::WriteByte(&content_, is_first ? IS_FIRST : 0);
@@ -128,7 +129,7 @@ bool RecordWriter::AppendRecord(io::MemoryStream* in,
   return written_block_count >= 1;
 }
 
-bool RecordWriter::AppendRecord(const char* buffer, int32 size,
+bool RecordWriter::AppendRecord(const char* buffer, size_t size,
                                 io::MemoryStream* out) {
   if ( zlib_ ) {
     DCHECK(zlib_content_.IsEmpty());
@@ -137,17 +138,17 @@ bool RecordWriter::AppendRecord(const char* buffer, int32 size,
     return AppendRecord(&zlib_content_, out, true);
   }
   const char* p = buffer;
-  int32 p_size = size;
+  size_t p_size = size;
   bool is_first = true;
-  uint32 written_block_count = 0;
+  size_t written_block_count = 0;
   // start with DO, because p_size may be 0 which is an empty value: ""
   // which is perfectly legal.
   do {
-    const int32 available = block_size_ - kBlockTrailerEnd - kRecordHeaderSize
+    DCHECK_GT(block_size_, kBlockTrailerEnd  + kRecordHeaderSize + content_.Size())
+        << ", block_size_: " << block_size_
+        << ", content_.Size(): " << content_.Size();
+    const size_t available = block_size_ - kBlockTrailerEnd - kRecordHeaderSize
                             - content_.Size();
-    CHECK(available > 0) << ", available: " << available
-                         << ", block_size_: " << block_size_
-                         << ", content_.Size(): " << content_.Size();
     // If there's enough space, write the whole record in current block
     if ( p_size <= available ) {
       LOG_REC << "Add full record in one block. record_size: " << p_size
@@ -185,13 +186,12 @@ bool RecordWriter::AppendRecord(const char* buffer, int32 size,
 
 void RecordWriter::FinalizeContent(io::MemoryStream* out) {
   if ( content_.IsEmpty() ) return;
-  const int32 content_size = content_.Size();
-  const int32 padding_size = block_size_ - content_size - kBlockTrailerEnd;
+  const size_t content_size = content_.Size();
+  CHECK_GE(block_size_, content_size + kBlockTrailerEnd) << ", content: " << content_.Size()
+                                                         << ", block_size_: " << block_size_;
+  const size_t padding_size = block_size_ - content_size - kBlockTrailerEnd;
   LOG_REC << "Finalize block. content: " << content_size
           << ", padding: " << padding_size;
-  CHECK(padding_size >= 0) << ", content: " << content_.Size()
-                           << ", padding_size: " << padding_size
-                           << ", block_size_: " << block_size_;
   content_.Write(padding_, padding_size);
   io::NumStreamer::WriteInt32(&content_, content_size,
                               common::BIGENDIAN);
@@ -213,7 +213,7 @@ void RecordWriter::FinalizeContent(io::MemoryStream* out) {
 
 //////////////////////////////////////////////////////////////////////
 
-RecordReader::RecordReader(int32 block_size)
+RecordReader::RecordReader(size_t block_size)
   : block_size_(block_size),
     temp_(block_size_),
     content_(block_size_),
@@ -244,7 +244,7 @@ RecordReader::ReadResult RecordReader::ReadNextBlock(io::MemoryStream* in) {
 
   io::MemoryStream temp;
   temp.AppendStream(in, block_size_ - kBlockTrailerEnd);
-  const int32 content_size = io::NumStreamer::ReadInt32(in, common::BIGENDIAN);
+  const size_t content_size = io::NumStreamer::ReadInt32(in, common::BIGENDIAN);
   const int32 prev_crc = io::NumStreamer::ReadInt32(in, common::BIGENDIAN);
   const int32 crc = io::NumStreamer::ReadInt32(in, common::BIGENDIAN);
   io::NumStreamer::WriteInt32(&temp, content_size, common::BIGENDIAN);
@@ -281,15 +281,15 @@ RecordReader::ReadResult RecordReader::ReadNextBlock(io::MemoryStream* in) {
 void RecordReader::SkipRecord() {
   CHECK_GE(content_.Size(), sizeof(int32));
   uint8 flags = io::NumStreamer::ReadByte(&content_);
-  int32 crt_len = io::NumStreamer::ReadUInt24(&content_, common::BIGENDIAN);
+  size_t crt_len = io::NumStreamer::ReadUInt24(&content_, common::BIGENDIAN);
   content_.Skip(crt_len);
   skip_record_ = (flags & RecordWriter::HAS_CONT) != 0;
 }
 
 RecordReader::ReadResult RecordReader::ReadRecord(io::MemoryStream* in,
                                                   io::MemoryStream* out,
-                                                  int* num_skipped,
-                                                  int max_num_skip) {
+                                                  size_t* num_skipped,
+                                                  size_t max_num_skip) {
   CHECK_NOT_NULL(in);
   while ( true ) {
     if ( content_.IsEmpty() ) {
@@ -319,7 +319,7 @@ RecordReader::ReadResult RecordReader::ReadRecord(io::MemoryStream* in,
 
     CHECK_GE(content_.Size(), sizeof(int32));
     uint8 flags = io::NumStreamer::ReadByte(&content_);
-    int32 len = io::NumStreamer::ReadUInt24(&content_, common::BIGENDIAN);
+    size_t len = io::NumStreamer::ReadUInt24(&content_, common::BIGENDIAN);
     if ( (flags & RecordWriter::IS_FIRST) != 0 &&
          !record_content_.IsEmpty() ) {
       ++(*num_skipped);

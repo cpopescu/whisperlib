@@ -70,7 +70,7 @@ FailSafeClient::FailSafeClient(
   CHECK(connection_factory_->is_permanent());
   CHECK(!servers_.empty());
   // Since this an HTTP client, default to port 80 when no port specified
-  for (uint32 i = 0; i < servers_.size(); ++i) {
+  for (size_t i = 0; i < servers_.size(); ++i) {
       if (servers_[i].port() == 0) {
           servers_[i].set_port(80);
       }
@@ -109,7 +109,7 @@ FailSafeClient::~FailSafeClient() {
 void FailSafeClient::ForceCloseAll() {
   bool was_closing = closing_;
   closing_ = true;
-  for ( int i = 0; i < clients_.size(); ++i ) {
+  for ( size_t i = 0; i < clients_.size(); ++i ) {
     if ( clients_[i] != NULL ) {
       clients_[i]->ResolveAllRequestsWithError();
       delete clients_[i];
@@ -205,7 +205,7 @@ void FailSafeClient::CompleteWithError(PendingStruct* ps,
   ps->req_->set_error(error);
   const int64 now = selector_->now();
   completion_events_.push_back(make_pair(now, ps->ToString(now) + " => ERROR"));
-  while (completion_events_.size() > FLAGS_http_failsafe_max_log_size) {
+  while (completion_events_.size() > size_t(FLAGS_http_failsafe_max_log_size)) {
       completion_events_.pop_front();
   }
   Closure* completion_closure = ps->completion_closure_;
@@ -228,11 +228,11 @@ bool FailSafeClient::InternalStartRequest(PendingStruct* ps) {
     return true;
   }
   int min_id = -1;
-  int min_load = 0;
+  size_t min_load = 0;
   while (min_id < 0) {
-    for ( int i = 0; i < clients_.size(); ++i ) {
+    for ( size_t i = 0; i < clients_.size(); ++i ) {
       if ( clients_[i] != NULL && clients_[i]->IsAlive() ) {
-        const int32 load = (clients_[i]->num_active_requests() +
+        const size_t load = (clients_[i]->num_active_requests() +
                             clients_[i]->num_waiting_requests());
         if ( load < min_load || min_id < 0 ) {
           min_load = load;
@@ -294,9 +294,9 @@ bool FailSafeClient::InternalStartRequest(PendingStruct* ps) {
       make_pair(now, ps->ToString(now) +
                 strutil::StringPrintf(" => START [%d]", min_id)));
 
-  bool host_added = false;
+  // bool host_added = false;
   if ( !force_host_header_.empty() ) {
-    host_added = true;
+    // host_added = true;
     ps->req_->request()->client_header()->AddField(
         "Host", force_host_header_.c_str(), true, true);
   }
@@ -347,7 +347,7 @@ void FailSafeClient::CompletionCallback(PendingStruct* ps, int client_id) {
            ps->req_->request()->server_header()->status_code())));
     InternalStartRequest(ps);
   }
-  while (completion_events_.size() > FLAGS_http_failsafe_max_log_size) {
+  while (completion_events_.size() > size_t(FLAGS_http_failsafe_max_log_size)) {
       completion_events_.pop_front();
   }
 }
@@ -382,7 +382,7 @@ void FailSafeClient::ClearClient(ClientProtocol* client) {
 void FailSafeClient::DeleteCanceledPendingStruct(PendingStruct* ps) {
   LOG_INFO << " Deleting canceled pending struct: " << ps;
   // const int64 now = selector_->now();
-  while (completion_events_.size() > FLAGS_http_failsafe_max_log_size) {
+  while (completion_events_.size() > size_t(FLAGS_http_failsafe_max_log_size)) {
       completion_events_.pop_front();
   }
 
@@ -398,7 +398,7 @@ void FailSafeClient::StatusString(string* s) const {
     const int64 now = selector_->now();
     *s += "\n     Past events:";
     *s += "\n============================================================";
-    for (int i = 0; i < completion_events_.size(); ++i) {
+    for (size_t i = 0; i < completion_events_.size(); ++i) {
         *s += strutil::StringPrintf("\n%.3f ms ago: => ",
                                     (now - completion_events_[i].first) * 1e-3);
         *s += completion_events_[i].second;
@@ -406,13 +406,13 @@ void FailSafeClient::StatusString(string* s) const {
     *s += "\n";
     *s += "\n    Pending requests:";
     *s += "\n============================================================";
-    for (int i = 0; i < pending_requests_->size(); ++i) {
+    for (size_t i = 0; i < pending_requests_->size(); ++i) {
         *s += (*pending_requests_)[i]->ToString(now);
     }
     *s += "\n";
     *s += "\n    Connection status:";
     *s += "\n============================================================";
-    for (int i = 0; i < clients_.size(); ++i) {
+    for (size_t i = 0; i < clients_.size(); ++i) {
         if (clients_[i] == NULL) {
             *s += strutil::StringPrintf("\n  >>> Connection %d --> CLOSED", i);
         } else {
@@ -451,7 +451,7 @@ void FailSafeClient::Reset() {
                                           "=== Reset requested ==="));
 
    vector<ClientProtocol*> clients;
-   for (int i = 0; i < clients_.size(); ++i) {
+   for (size_t i = 0; i < clients_.size(); ++i) {
        if (clients_[i] != NULL) {
            clients.push_back(clients_[i]);
        }
@@ -459,7 +459,7 @@ void FailSafeClient::Reset() {
    clients_.clear();
    death_time_.clear();
 
-   for (int i = 0; i < clients.size(); ++i) {
+   for (size_t i = 0; i < clients.size(); ++i) {
        clients[i]->ResolveAllRequestsWithProvidedError(CONN_CLIENT_CLOSE);
        delete clients[i];
    }

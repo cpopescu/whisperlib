@@ -114,25 +114,30 @@ class File {
   const std::string& filename() const {
     return filename_;
   }
-  const int fd() const {
+  int fd() const {
     return fd_;
   }
 
   // Returns current file size. The file must be opened.
   // (Uses local cached variable: size_)
-  int64 Size() const;
+  uint64_t Size() const;
 
   //  Get file pointer position relative to file begin.
   //  (Uses local cached variable: position_)
-  int64 Position() const;
+  uint64_t Position() const;
 
   // Remaining bytes to read in file.
-  int64 Remaining() const { return Size() - Position(); }
+  uint64_t Remaining() const {
+      const uint64_t size = Size();
+      const uint64_t pos = Position();
+      if (size < pos) return 0;
+      return size - pos;
+  }
 
   // Set file pointer position to the given absolute offset (relative
   // to file begin)
-  //  Returns the new position
-  int64 SetPosition(int64 distance, MoveMethod move_method = FILE_SET);
+  //  Returns the new position. Negative on error.
+  int64_t SetPosition(int64_t distance, MoveMethod move_method = FILE_SET);
 
   // Set file pointer to file begin.
   void Rewind();
@@ -140,29 +145,29 @@ class File {
   // Truncate the file to the given size (expands or shortens the file).
   // The file pointer is left at the end of file.
   // If pos==-1 => truncates at current position.
-  void Truncate(int64 pos = -1);
+  void Truncate(int64_t pos = -1);
 
   // Reads "len" bytes of data from current file pointer position to
   // the given "buf".
   //  [IN/OUT] buf: buffer that receives the read data.
   //  [IN]  len: the number of bytes to read.
   // Returns the number of bytes read. Negative on error.
-  int32 Read(void* buf, int32 len);
+  ssize_t ReadBuffer(void* buf, size_t len);
   // Same read, but to memory stream.
-  int32 Read(io::MemoryStream* out, int32 len);
-  // Skip bytes.
-  void Skip(int32 len);
+  ssize_t Read(io::MemoryStream* out, size_t len);
+  // Skip bytes from current position.
+  void Skip(int64_t len);
 
   // Writes "len" bytes of data from "buf" to file at current file
   // pointer position.
   //   buf: buffer that contains the data to be written.
   //   len: number of bytes to write.
   // Returns the number of bytes written. Negative on error
-  int32 Write(const void* buf, int32 len);
+  ssize_t WriteBuffer(const void* buf, size_t len);
   // Same write, but from string.
-  int32 Write(const std::string& s);
+  ssize_t Write(const std::string& s);
   // Same write, but from memory stream. If len==-1 then all ms data is written.
-  int32 Write(io::MemoryStream* ms, int32 len = -1);
+  ssize_t Write(io::MemoryStream* ms, ssize_t len = -1);
 
   // Forces a disk flush
   void Flush();
@@ -171,16 +176,16 @@ class File {
   std::string filename_;   // name of the opened file
   int fd_;            // file descriptor of the opened file
 
-  int64 size_;        // file size
-  int64 position_;    // current file pointer position
+  uint64_t size_;        // file size
+  uint64_t position_;    // current file pointer position
 
   //  Retrieve file size from system and set value in size_
   // returns: success status
-  int64 UpdateSize();
+  uint64_t UpdateSize();
 
   // Retrieve file pointer from system and set value in position_
   // returns: success status
-  int64 UpdatePosition();
+  uint64_t UpdatePosition();
 
   DISALLOW_EVIL_CONSTRUCTORS(File);
 };

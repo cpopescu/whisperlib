@@ -40,8 +40,6 @@
 #include "whisperlib/base/types.h"
 #include "whisperlib/net/selector_event_data.h"
 
-using std::vector;
-
 //////////////////////////////////////////////////////////////////////
 //
 // EPOLL version
@@ -105,7 +103,7 @@ class SelectorBase {
   //  -- the user data associted with the fd that was triggered
   //  -- the event that happended (an or of Selector desires)
   bool LoopStep(int32 timeout_in_ms,
-                vector<SelectorEventData>*  events);
+                std::vector<SelectorEventData>*  events);
 
  private:
   const int max_events_per_step_;
@@ -146,7 +144,7 @@ class SelectorBase {
   typedef hash_map< int, std::pair<size_t, void*> > DataMap;
   DataMap fd_data_;
   // indices that we need to compact at the end of the step
-  vector<size_t> indices_to_compact_;
+  std::vector<size_t> indices_to_compact_;
 #endif
 
   //////////////////////////////////////////////////////////////////////

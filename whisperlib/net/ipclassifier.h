@@ -98,7 +98,7 @@ class IpClassifier {
   virtual bool IsInClass(const IpAddress& ip) const = 0;
 
   // Factory method:
-  static IpClassifier* CreateClassifier(const string& spec);
+  static IpClassifier* CreateClassifier(const std::string& spec);
  private:
   DISALLOW_EVIL_CONSTRUCTORS(IpClassifier);
 };
@@ -120,14 +120,14 @@ class IpNoneClassifier : public IpClassifier {
 class IpOrClassifier : public IpClassifier {
  public:
   IpOrClassifier() : IpClassifier() {}
-  IpOrClassifier(const string& members);
+  IpOrClassifier(const std::string& members);
   virtual ~IpOrClassifier() {
-    for ( int i = 0; i < members_.size(); ++i ) {
+    for ( size_t i = 0; i < members_.size(); ++i ) {
       delete members_[i];
     }
   }
   virtual bool IsInClass(const IpAddress& ip) const {
-    for ( int i = 0; i < members_.size(); ++i ) {
+    for ( size_t i = 0; i < members_.size(); ++i ) {
       if ( members_[i]->IsInClass(ip) )
         return true;
     }
@@ -146,12 +146,12 @@ class IpAndClassifier : public IpClassifier  {
   IpAndClassifier() : IpClassifier() {}
   IpAndClassifier(const std::string& members);
   virtual ~IpAndClassifier() {
-    for ( int i = 0; i < members_.size(); ++i ) {
+    for ( size_t i = 0; i < members_.size(); ++i ) {
       delete members_[i];
     }
   }
   virtual bool IsInClass(const IpAddress& ip) const {
-    for ( int i = 0; i < members_.size(); ++i ) {
+    for ( size_t i = 0; i < members_.size(); ++i ) {
       if ( !members_[i]->IsInClass(ip) )
         return false;
     }

@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
     whisper::net::IpAddress ip1("::1");
     CHECK(!ip1.IsInvalid());
     CHECK(!ip1.is_ipv4());
-    CHECK_EQ(ip1.ToString(), string("::1"));
+    CHECK_EQ(ip1.ToString(), std::string("::1"));
   }
   {
     whisper::net::IpAddress ip1(0x01020304);
@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
     CHECK(!ip1.IsInvalid());
     CHECK(!ip2.IsInvalid());
     CHECK_EQ(ip1.ipv4(), ip2.ipv4());
-    CHECK_EQ(ip1.ToString(), string("1.2.3.4"));
+    CHECK_EQ(ip1.ToString(), std::string("1.2.3.4"));
     sockaddr_storage addr;
     ip1.Addr(&addr);
     CHECK_EQ((reinterpret_cast<const sockaddr_in&>(addr)).sin_addr.s_addr,
@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
     CHECK(hp1.ip_object().is_ipv4());
     CHECK_EQ(hp1.ip_object().ipv4(), 0xfcfdfeff);
     CHECK_EQ(hp1.port(), 0xffff);
-    CHECK_EQ(hp1.ToString(), string("252.253.254.255:65535"));
+    CHECK_EQ(hp1.ToString(), std::string("252.253.254.255:65535"));
     sockaddr_storage addr;
     hp1.SockAddr(&addr);
     CHECK_EQ((reinterpret_cast<const sockaddr_in&>(addr)).sin_addr.s_addr,

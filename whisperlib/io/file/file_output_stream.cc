@@ -48,7 +48,7 @@ void FileOutputStream::WriteFileOrDie(const char* filename,
                                       const std::string& content) {
   io::File* const outfile = io::File::CreateFileOrDie(filename);
   io::FileOutputStream fis(outfile);
-  fis.Write(content.data(), content.size());
+  fis.WriteBuffer(content.data(), content.size());
 }
 bool FileOutputStream::TryWriteFile(const char* filename,
                                     const std::string& content) {
@@ -56,29 +56,15 @@ bool FileOutputStream::TryWriteFile(const char* filename,
   if ( outfile == NULL )
     return false;
   io::FileOutputStream fis(outfile);
-  return content.size() == fis.Write(content.data(), content.size());
+  return content.size() == size_t(fis.WriteBuffer(content.data(), content.size()));
 }
 
-int32 FileOutputStream::Write(const void* buf, int32 len) {
-  int32 written = 0;
-  const char* p = reinterpret_cast<const char*>(buf);
-  while ( len > 0 ) {
-    const int32 cb = file_->Write(p, len);
-    if ( cb < 0 ) {
-      return cb;
-    }
-    if ( cb == 0 ) {
-      return written;
-    }
-    written += cb;
-    p += cb;
-    len -= cb;
-  }
-  return written;
+ssize_t FileOutputStream::WriteBuffer(const void* buf, size_t len) {
+  return file_->WriteBuffer(buf, len);
 }
 
-int64 FileOutputStream::Writable() const {
-  return -1;   // no limit
+uint64_t FileOutputStream::Writable() const {
+  return uint64_t(-1LL);   // no limit
 }
 }  // namespace io
 }  // namespace whisper

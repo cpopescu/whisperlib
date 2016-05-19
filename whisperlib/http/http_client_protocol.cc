@@ -69,18 +69,18 @@ ClientParams::ClientParams()
 
 ClientParams::ClientParams(const string& user_agent,
                            bool dlog_level,
-                           int32 max_header_size,
+                           size_t max_header_size,
                            int64 max_body_size,
                            int64 max_chunk_size,
                            int64 max_num_chunks,
                            bool accept_no_content_length,
-                           int32 max_concurrent_requests,
-                           int32 max_waiting_requests,
+                           size_t max_concurrent_requests,
+                           size_t max_waiting_requests,
                            int32 default_request_timeout_ms,
                            int32 connect_timeout_ms,
                            int32 write_timeout_ms,
                            int32 read_timeout_ms,
-                           int32 max_output_buffer_size,
+                           size_t max_output_buffer_size,
                            int32 keep_alive_sec)
     : version_(VERSION_1_1),
       user_agent_(user_agent),
@@ -169,7 +169,7 @@ ClientRequest::ClientRequest(
 string ClientRequest::EscapeQueryParameters(
     const vector< pair<string, string> >& unescaped_query_comp) {
   string s;
-  for ( int i = 0; i < unescaped_query_comp.size(); ++i ) {
+  for ( size_t i = 0; i < unescaped_query_comp.size(); ++i ) {
     if ( i > 0 ) s += "&";
     s += (URL::UrlEscape(unescaped_query_comp[i].first) + "=" +
           URL::UrlEscape(unescaped_query_comp[i].second));
@@ -362,8 +362,8 @@ bool BaseClientProtocol::NotifyConnectionRead() {
   if ( params_->read_timeout_ms_ > 0 ) {
     timeouter_.SetTimeout(kReadTimeout, params_->read_timeout_ms_);
   }
-  const int32 in_size = connection_->inbuf()->Size();
-  const int32 server_data_size = current_request_->request()->server_data()->Size();
+  const size_t in_size = connection_->inbuf()->Size();
+  const size_t server_data_size = current_request_->request()->server_data()->Size();
   do {
     parser_read_state_ = parser_.ParseServerReply(
         connection_->inbuf(), current_request_->request());
@@ -495,14 +495,14 @@ void ClientStreamingProtocol::NotifyConnectionWrite() {
   }
   DCHECK(current_request_ != NULL);
   BaseClientProtocol::NotifyConnectionWrite();
-  if ( available_output_size_ > params_->max_output_buffer_size_ / 2 &&
+  if ( available_output_size_ > ssize_t(params_->max_output_buffer_size_ / 2) &&
        streaming_callback_ != NULL ) {
     source_stopped_ = !streaming_callback_->Run(available_output_size_);
   }
   if ( available_output_size_ > 0 &&
        !current_request_->request()->client_data()->IsEmpty() ) {
     if ( current_request_->is_pure_dumping() ) {
-      if ( available_output_size_ <=
+      if ( size_t(available_output_size_) <=
            current_request_->request()->client_data()->Size() ) {
         connection_->outbuf()->AppendStream(
             current_request_->request()->client_data());
@@ -885,7 +885,7 @@ void ClientProtocol::ResolveAllRequestsWithError() {
   waiting_requests_.clear();
   active_requests_.clear();
   callback_map_.clear();
-  for ( int i = 0; i < to_resolve.size(); ++i ) {
+  for ( size_t i = 0; i < to_resolve.size(); ++i ) {
     to_resolve[i]->Run();
   }
 }
@@ -923,7 +923,7 @@ void ClientProtocol::WriteRequestsToServer() {
 string ClientProtocol::StatusString() const {
     string s;
     s += "\n\n ========>  Waiting requests: ";
-    for (int i = 0; i < waiting_requests_.size(); ++i) {
+    for (size_t i = 0; i < waiting_requests_.size(); ++i) {
         s += "\n";
         s += waiting_requests_[i]->name();
     }

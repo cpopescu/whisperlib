@@ -65,7 +65,7 @@ class Disposer {
         return true;
     }
     virtual void MultiDispose(const std::vector<T*>& p, size_t start = 0) {
-        for (int i = start; i < p.size(); ++i) {
+        for (size_t i = start; i < p.size(); ++i) {
             Dispose(p[i]);
         }
     }

@@ -94,12 +94,12 @@ class Selectable {
 
  protected:
   // Read/Write basics
-  int32 Write(const char* buf, int32 size);
-  int32 Read(char* buf, int32 size);
+  ssize_t Write(const char* buf, size_t size);
+  ssize_t Read(char* buf, size_t size);
 
   // Read/Write interface for MemoryStream-s for copy-less stuff
-  int32 Write(io::MemoryStream* ms, int32 size = -1);
-  int32 Read(io::MemoryStream* ms, int32 size = -1);
+  ssize_t Write(io::MemoryStream* ms, ssize_t size = -1);
+  ssize_t Read(io::MemoryStream* ms, ssize_t size = -1);
 
   // the selector that controls this object
   Selector* selector_;

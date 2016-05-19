@@ -49,15 +49,15 @@ class FDInputStream : public InputStream {
   virtual ~FDInputStream();
 
   // Input Stream interface
-  virtual int32 Read(void* buffer, int32 len);
-  virtual int32 Peek(void* /*buffer*/, int32 /*len*/) {
-    return 0;  // unsupported
+  virtual ssize_t Read(void* buffer, size_t len);
+  virtual ssize_t Peek(void* /*buffer*/, size_t /*len*/) {
+    return -1;  // unsupported
   }
-  virtual int64 Skip(int64 len);
+  virtual int64_t Skip(int64_t len);
 
   // You never know how much data is there ..
-  virtual int64 Readable() const {
-    return -1;
+  virtual uint64_t Readable() const {
+    return uint64_t(-1LL);
   }
   virtual bool IsEos() const;
 

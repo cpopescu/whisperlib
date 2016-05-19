@@ -41,13 +41,28 @@
 #include "whisperlib/base/core_errno.h"
 #include "whisperlib/base/gflags.h"
 
+
+#if defined(HAVE_SYS_UIO_H)
+#define __USE_WRITEV__
+#endif
+
+#ifdef  __USE_WRITEV__
+
+//////////////////////////////////////////////////////////////////////
+
+DEFINE_int32(default_read_for_writev_size, 16384,
+             "You can tune this in order to get some "
+             "better network performance");
+
+#endif
+
 using namespace std;
 
 namespace whisper {
 namespace net {
 
-int32 Selectable::Write(const char* buf, int32 size) {
-  const int32 cb = ::write(GetFd(), buf, size);
+ssize_t Selectable::Write(const char* buf, size_t size) {
+  const ssize_t cb = ::write(GetFd(), buf, size);
   if ( cb <= 0 ) {
     if ( errno == EAGAIN || errno == EWOULDBLOCK ) {
       // Not really an error for non-blocking sockets
@@ -68,25 +83,15 @@ int32 Selectable::Write(const char* buf, int32 size) {
 //    writev (by some large margin..)
 //
 
-#if defined(HAVE_SYS_UIO_H)
-#define __USE_WRITEV__
-#endif
+//////////////////////////////////////////////////////////////////////
 
 #ifdef  __USE_WRITEV__
 
-//////////////////////////////////////////////////////////////////////
-
-DEFINE_int32(default_read_for_writev_size, 16384,
-             "You can tune this in order to get some "
-             "better network performance");
-
-//////////////////////////////////////////////////////////////////////
-
-int32 Selectable::Write(io::MemoryStream* ms, int32 size) {
-  int32 scratch = 0;
-  int32 cb = 0;
+ssize_t Selectable::Write(io::MemoryStream* ms, ssize_t size) {
+  size_t scratch = 0;
+  ssize_t cb = 0;
 #ifdef _DEBUG
-  int64 initial_size = ms->Size();
+  size_t initial_size = ms->Size();
 #endif
   const int fd = GetFd();
 
@@ -95,8 +100,8 @@ int32 Selectable::Write(io::MemoryStream* ms, int32 size) {
     struct ::iovec* iov = NULL;
     int iovcnt = 0;
     scratch = ms->ReadForWritev(&iov, &iovcnt,
-        (size < 0) ? FLAGS_default_read_for_writev_size :
-          min(size-cb, FLAGS_default_read_for_writev_size));
+                                (size < 0) ? FLAGS_default_read_for_writev_size :
+                                std::min(size - cb, ssize_t(FLAGS_default_read_for_writev_size)));
     if ( iovcnt > 0 ) {
       const ssize_t crt_cb = ::writev(fd, iov, iovcnt);
       const int err = errno;
@@ -112,7 +117,7 @@ int32 Selectable::Write(io::MemoryStream* ms, int32 size) {
         }
         return -1;
       }
-      if ( crt_cb < scratch ) {
+      if ( size_t(crt_cb) < scratch ) {
         // Written something but not all - we need to return and mark
         // the right amount in the buffer
         ms->MarkerRestore();
@@ -122,7 +127,7 @@ int32 Selectable::Write(io::MemoryStream* ms, int32 size) {
         ms->MarkerClear();
       }
       cb += crt_cb;
-      if ( crt_cb < scratch || err != 0 ) {
+      if ( size_t(crt_cb) < scratch || err != 0 ) {
         break;   // EAGAIN || EWOULDBLOCK
       }
     } else {
@@ -137,28 +142,29 @@ int32 Selectable::Write(io::MemoryStream* ms, int32 size) {
 
 //////////////////////////////////////////////////////////////////////
 
-# else
+#else
 
-int32 Selectable::Write(io::MemoryStream* ms, int32 len) {
+ssize_t Selectable::Write(io::MemoryStream* ms, ssize_t len) {
   const char* buf;
-  int size = 0;
-  int32 cb = 0;
+  size_t size = 0;
+  ssize_t cb = 0;
   while ( !ms->IsEmpty() && (len < 0 || cb < len)) {
     ms->MarkerSet();
     size = 0;
     CHECK(ms->ReadNext(&buf, &size))
         << " bugs: unempty MemoryStream is unreadable."
         << " ms " << ms->Size();
-    CHECK_GE(size, 0);
+    DCHECK_GE(size, 0);
     if ( size ) {
-      const int32 sent = Write(buf, size);
+      const ssize_t sent = Write(buf, size);
       const int err = errno;
       if ( sent <= 0 ) {
         // Some error - nothing sent - restore the marker and bail out.
         // (Error treated in underlying Write)
         ms->MarkerRestore();
         return cb;
-      } else if ( sent < size ) {
+      }
+      if ( size_t(sent) < size ) {
         // Written something but not all - we need to return and mark
         // the right ammount in the buffer
         ms->MarkerRestore();
@@ -168,7 +174,7 @@ int32 Selectable::Write(io::MemoryStream* ms, int32 len) {
         ms->MarkerClear();
       }
       cb += sent;
-      if ( sent < size && err != 0 ) {
+      if ( size_t(sent) < size && err != 0 ) {
         break;   // EAGAIN || EWOULDBLOCK
       }
     }
@@ -181,8 +187,8 @@ int32 Selectable::Write(io::MemoryStream* ms, int32 len) {
 
 //////////////////////////////////////////////////////////////////////
 
-int32 Selectable::Read(char* buf, int32 size) {
-  const int32 cb = ::read(GetFd(), buf, size);
+ssize_t Selectable::Read(char* buf, size_t size) {
+  const ssize_t cb = ::read(GetFd(), buf, size);
   if ( cb <= 0 ) {
     if ( errno == EAGAIN || errno == EWOULDBLOCK ) {
       // Not really an error for non-blocking sockets
@@ -193,13 +199,13 @@ int32 Selectable::Read(char* buf, int32 size) {
   return cb;
 }
 
-int32 Selectable::Read(io::MemoryStream* ms, int32 size) {
+ssize_t Selectable::Read(io::MemoryStream* ms, ssize_t size) {
   char* buffer;
-  int32 cb = 0;
+  ssize_t cb = 0;
   while ( (size < 0) || (cb < size) ) {
-    int32 scratch;
+    size_t scratch;
     ms->GetScratchSpace(&buffer, &scratch);
-    const int32 received = Read(buffer, scratch);
+    const ssize_t received = Read(buffer, scratch);
     if ( received <= 0 ) {
       ms->ConfirmScratch(0);
       return cb;

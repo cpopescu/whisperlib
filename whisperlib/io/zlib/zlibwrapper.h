@@ -74,19 +74,18 @@ class ZlibDeflateWrapper : public Compressor {
   // compression trailer in out and end the compression process.
   // You can call multiple times Compress, as data becomes available in 'in'
   // Return false *iff* we got some Zlib errors.
-  bool DeflateSize(io::MemoryStream* in, io::MemoryStream* out,
-                   int32* size);
+  bool DeflateSize(io::MemoryStream* in, io::MemoryStream* out, size_t* size);
 
   // Compresses the entire content of in and appends it to out.
   // Returns true on success and false on some error.
   bool Deflate(io::MemoryStream* in, io::MemoryStream* out) {
     Clear();   // just in case..
-    int32 size = in->Size();
+    size_t size = in->Size();
     return DeflateSize(in, out, &size);
   }
   // Compresses the entire buffer of in and appends it to out.
   // Returns true on success and false on some error.
-  bool Deflate(const char* in, int in_size, io::MemoryStream* out);
+  bool Deflate(const char* in, size_t in_size, io::MemoryStream* out);
 
   virtual bool Compress(io::MemoryStream* in, io::MemoryStream* out) {
       return Deflate(in, out);
@@ -113,7 +112,7 @@ class ZlibInflateWrapper : public Decompressor {
   // Return Zlib error (see bellow)
   int Inflate(io::MemoryStream* in, io::MemoryStream* out) {
     Clear();      // just in case..
-    int32 size = in->Size();
+    size_t size = in->Size();
     return InflateSize(in, out, &size);
   }
   // Decompresses *at most* *size bytes from in and writes the result to out.
@@ -129,7 +128,7 @@ class ZlibInflateWrapper : public Decompressor {
   //      was decompressed ok
   //   -- anything else - some sort of error..
   int InflateSize(io::MemoryStream* in, io::MemoryStream* out,
-                  int32* size = NULL);
+                  size_t* size = NULL);
 
   bool Decompress(io::MemoryStream* in, io::MemoryStream* out) {
       const int err = Inflate(in, out);
@@ -168,7 +167,7 @@ class ZlibGzipEncodeWrapper : public Compressor {
   const int compress_level_;
   z_stream strm_;
   int32 crc_;
-  int32 input_size_;
+  size_t input_size_;
 
   DISALLOW_EVIL_CONSTRUCTORS(ZlibGzipEncodeWrapper);
 };
@@ -211,13 +210,13 @@ class ZlibGzipDecodeWrapper : public Decompressor {
   z_stream strm_;
   int last_zlib_err_;
   bool header_passed_;
-  uint32 running_crc_;
-  uint32 running_size_;
+  int32 running_crc_;
+  size_t running_size_;
 
   DISALLOW_EVIL_CONSTRUCTORS(ZlibGzipDecodeWrapper);
 };
 
-static const int32 kCompressMaxChunkSize = 4 << 20;
+static const size_t kCompressMaxChunkSize = 4 << 20;
 
 /**
  * Compresses the files under a directory.
@@ -239,7 +238,7 @@ bool DeflateDir(Compressor* compressor,
                 const re::RE* regex,
                 const std::string& file_name,
                 bool append, bool recursive,
-                int32 chunk_size = kCompressMaxChunkSize);
+                size_t chunk_size = kCompressMaxChunkSize);
 
 /** Decompresses an archive created w/ DeflateDir.
  * @param decompressor - knows to decompress buffers compressed by its pairing

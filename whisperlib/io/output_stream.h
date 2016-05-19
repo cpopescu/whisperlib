@@ -50,7 +50,7 @@ class OutputStream {
   // Append "len" bytes of data from the given "buffer" to the stream
   // Returns the number of bytes written. Can be less than len if the stream
   // has not enough space, or negative on error.
-  virtual int32 Write(const void* buffer, int32 len) = 0;
+  virtual ssize_t WriteBuffer(const void* buffer, size_t len) = 0;
 
   // Append "len" bytes of data from the given input stream "in" to the stream.
   // The default implementation uses a simple copy through a temporary
@@ -59,22 +59,22 @@ class OutputStream {
   // Returns the number of bytes written. Can be less than len if "in" contains
   // fewer bytes or the stream has not enough space.
   // Returns negative on error.
-  virtual int32 Write(io::InputStream& in, int32 len = kMaxInt32);
+  virtual ssize_t Write(io::InputStream& in, ssize_t len = -1);
 
   // Returns the space available for write. If the stream is unlimited return -1
-  virtual int64 Writable() const = 0;
+  virtual uint64_t Writable() const = 0;
 
   // Convenience function for writing a NULL terminated string.
-  int32 Write(const char* text) {
-    return Write(text, strlen(text));
+  ssize_t Write(const char* text) {
+    return WriteBuffer(text, strlen(text));
   }
 
   // Convenience function for a string
-  int32 WriteString(const std::string& s) {
-    return Write(s.data(), s.size());
+  ssize_t WriteString(const std::string& s) {
+    return WriteBuffer(s.data(), s.size());
   }
-  int32 Write(const std::string& s) {
-    return Write(s.data(), s.size());
+  ssize_t Write(const std::string& s) {
+    return WriteBuffer(s.data(), s.size());
   }
  private:
   DISALLOW_EVIL_CONSTRUCTORS(OutputStream);

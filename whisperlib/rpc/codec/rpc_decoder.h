@@ -106,7 +106,7 @@ class Decoder {
 
       // decode elements
       bool has_more = false;
-      for ( int i = 0; i < count; i++ ) {
+      for ( size_t i = 0; i < count; i++ ) {
         DECODE_VERIFY(DecodeArrayContinue(has_more));
         CHECK(has_more);
         DECODE_VERIFY(Decode(out.at(i)));
@@ -135,7 +135,7 @@ class Decoder {
     // copy elements from temporary list to output array
     //
     out.resize(tmp.size());
-    uint32 i = 0;
+    size_t i = 0;
     for ( typename std::list<T>::iterator it = tmp.begin();
           it != tmp.end(); ++it, ++i ) {
       out[i] = *it;

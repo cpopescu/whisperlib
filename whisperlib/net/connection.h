@@ -100,7 +100,7 @@ struct NetAcceptorParams {
       : next_client_thread_(0),
         client_threads_(params.client_threads_) {
   }
-  void set_client_threads(const vector<SelectorThread*>* client_threads) {
+  void set_client_threads(const std::vector<SelectorThread*>* client_threads) {
     CHECK(client_threads_ == NULL);
     client_threads_ = client_threads;
   }
@@ -117,8 +117,8 @@ struct NetAcceptorParams {
     return chosen;
   }
  private:
-  int next_client_thread_;
-  const vector<SelectorThread*>* client_threads_;
+  size_t next_client_thread_;
+  const std::vector<SelectorThread*>* client_threads_;
 };
 
 ////////////////////////////////////////////////////////////////////////////
@@ -168,7 +168,7 @@ class NetAcceptor {
   //  LOG_INFO << acceptor.PrefixInfo() << "foo";
   // yields a log line like:
   //  "LISTENING : [0.0.0.0:5665 (fd: 7)] foo"
-  virtual string PrefixInfo() const = 0;
+  virtual std::string PrefixInfo() const = 0;
 
   const HostPort& local_address() const {
     return local_address_;
@@ -311,7 +311,7 @@ class NetConnection {
   //  LOG_INFO << connection.PrefixInfo() << "foo";
   // yields a log line like:
   //  "CONNECTED : [12.34.56.78:5665 -> 87.65.43.21:6556 (fd: 7)] foo"
-  virtual string PrefixInfo() const = 0;
+  virtual std::string PrefixInfo() const = 0;
 
 
   typedef Closure ConnectHandler;
@@ -359,7 +359,7 @@ class NetConnection {
     outbuf()->AppendStream(ms);
     RequestWriteEvents(true);
   }
-  void Write(const string& str) {
+  void Write(const std::string& str) {
     Write(str.c_str(), str.size());
   }
   void Write(const char * sz_str) {
@@ -476,7 +476,7 @@ class TcpAcceptor : public NetAcceptor, private Selectable {
  public:
   virtual bool Listen(const HostPort& local_addr);
   virtual void Close(); // for both NetAcceptor and Selectable interfaces
-  virtual string PrefixInfo() const;
+  virtual std::string PrefixInfo() const;
 
   //////////////////////////////////////////////////////////////////////
   //
@@ -549,7 +549,7 @@ class TcpConnection : public NetConnection, private Selectable {
   virtual void RequestWriteEvents(bool enable);
   virtual const HostPort& local_address() const;
   virtual const HostPort& remote_address() const;
-  virtual string PrefixInfo() const;
+  virtual std::string PrefixInfo() const;
   //////////////////////////////////////////////////////////////////////
 
   //////////////////////////////////////////////////////////////////////
@@ -711,7 +711,7 @@ class SslAcceptor : public NetAcceptor {
   //
   virtual bool Listen(const whisper::net::HostPort& local_addr);
   virtual void Close();
-  virtual string PrefixInfo() const;
+  virtual std::string PrefixInfo() const;
 
  private:
   // Initialize SSL members
@@ -757,7 +757,7 @@ class SslConnection : public NetConnection {
   virtual void RequestWriteEvents(bool enable);
   virtual const HostPort& local_address() const;
   virtual const HostPort& remote_address() const;
-  virtual string PrefixInfo() const;
+  virtual std::string PrefixInfo() const;
   //////////////////////////////////////////////////////////////////////
 
   //////////////////////////////////////////////////////////////////////
@@ -799,10 +799,10 @@ class SslConnection : public NetConnection {
 
   // Returns a new X509 structure, or NULL on failure.
   // You have to call X509_free(..) on the valid result.
-  static X509* SslLoadCertificateFile(const string& filename);
+  static X509* SslLoadCertificateFile(const std::string& filename);
   // Returns a new EVP_PKEY structure, or NULL on failure.
   // You have to call EVP_PKEY_free(..) on the valid result.
-  static EVP_PKEY* SslLoadPrivateKeyFile(const string& filename);
+  static EVP_PKEY* SslLoadPrivateKeyFile(const std::string& filename);
 
   // Clone X509. Never fail. Use X509_free(..).
   static X509* SslDuplicateX509(const X509& src);
@@ -810,13 +810,13 @@ class SslConnection : public NetConnection {
   static EVP_PKEY* SslDuplicateEVP_PKEY(const EVP_PKEY& src);
 
   // returns a description of all data buffered in "bio"
-  static string SslPrintableBio(BIO* bio);
+  static std::string SslPrintableBio(BIO* bio);
 
   // Returns a new SSL_CTX structure, or NULL on failure.
   // It also loads SSL certificate and key if non-empty strings.
   // You have to call SslDeleteContext(..) on the valid result.
-  static SSL_CTX* SslCreateContext(const string& certificate_filename = "",
-                                   const string& key_filename = "");
+  static SSL_CTX* SslCreateContext(const std::string& certificate_filename = "",
+                                   const std::string& key_filename = "");
   // Free SSL context. This is the reverse of SslCreateContext(..).
   static void SslDeleteContext(SSL_CTX* ssl_ctx);
 

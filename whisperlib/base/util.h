@@ -42,12 +42,10 @@
 #include <sstream>
 #include "whisperlib/base/types.h"
 
-using std::string;
-
 namespace whisper {
 namespace util {
 
-extern const string kEmptyString;
+extern const std::string kEmptyString;
 
 // Utility class to represent an integer interval. Can read from string
 // (e.g. "2-7"), can generate random numbers in the interval.
@@ -61,7 +59,7 @@ class Interval {
   int32 max() const { return max_; }
 
   // Serialize load from string. e.g. "3-17"
-  bool Read(const string& s);
+  bool Read(const std::string& s);
 
   // Generate a random number in the interval: [min_, max_)
   // seed: used in random number generator
@@ -69,7 +67,7 @@ class Interval {
   int32 Rand(unsigned int* seed = NULL) const;
 
   // Generate a random string, with a random length in interval: [min_, max_)
-  string RandomString(unsigned int* seed = NULL) const;
+  std::string RandomString(unsigned int* seed = NULL) const;
 
  private:
   // use 32 bit bounds because ::rand() works on "int" values.
@@ -80,15 +78,17 @@ class Interval {
 ///////////////////////////////////////////////////////////////////////
 
 #if 0
-// A synchronized counter & report tool. Useful on counting class instances, mainly for debug.
+// A synchronized counter & report tool. Useful on counting class instances,
+// mainly for debug.
 struct InstanceCounter {
-    const string name_;
+    const std::string name_;
     const int64 kPrintIntervalMs;
     std::atomic_int count_;
     int64 print_ts_;
 
-    InstanceCounter(const string& name, int64 print_interval_ms)
-        : name_(name), kPrintIntervalMs(print_interval_ms), count_(0), print_ts_(0), lock_() {}
+    InstanceCounter(const std::string& name, int64 print_interval_ms)
+        : name_(name), kPrintIntervalMs(print_interval_ms),
+          count_(0), print_ts_(0), lock_() {}
 
     // increment the number of instances
     void Inc();
@@ -101,7 +101,8 @@ struct InstanceCounter {
 
 //////////////////////////////////////////////////////////////////////////
 
-// scoped_ptr for std containers. Works for any iterable container(list,vector,set).
+// scoped_ptr for std containers. Works for any iterable
+// container(list,vector,set).
 //
 // e.g. list<A*>* x = new list<A*>;
 //      x->push_back(new A());
@@ -119,7 +120,8 @@ public:
     ScopedContainer(T* t) : t_(t), del_t_(true) {}
     ScopedContainer(T& t) : t_(&t), del_t_(false) {}
     ~ScopedContainer() {
-        for ( typename T::const_iterator it = t_->begin(); it != t_->end(); ++it ) {
+        for ( typename T::const_iterator it = t_->begin();
+              it != t_->end(); ++it ) {
             delete *it;
         }
         t_->clear();
@@ -164,16 +166,18 @@ private:
 //   }
 #define LOG_PROGRESS(severity, progress_printer, msg) \
     if ((progress_printer).Step()) \
-        LOG(severity) << msg << " - Progress: " << (progress_printer).Progress() << "%"
+        LOG(severity) << msg << " - Progress: " \
+                      << (progress_printer).Progress() << "%"
 class ProgressPrinter {
 public:
     ProgressPrinter(size_t size, int progress_print_count = 30)
         : size_(size), print_size_(size / progress_print_count),
           index_(0), next_limit_(print_size_) {}
-    // returns: true  -> you should print the progress now, sufficient steps accumulated
+    // returns: true  -> you should print the progress now,
+    // sufficient steps accumulated
     //          false ->
     bool Step() {
-        int index = ++index_;
+        size_t index = ++index_;
         if (index >= next_limit_) {
             next_limit_ = index + print_size_;
             return true;
@@ -181,7 +185,7 @@ public:
         return false;
     }
     // returns the progress, as an integer in interval [0..100]
-    uint32 Progress() const {
+    size_t Progress() const {
         return index_ * 100 / size_;
     }
     double ProgressF() const {
@@ -191,7 +195,8 @@ private:
     const size_t size_;       // total iteration size
     const size_t print_size_; // print every this steps
     std::atomic_size_t index_;            // current step index
-    size_t next_limit_;       // when the index_ reaches this limit => progress should be printed
+    size_t next_limit_;       // when the index_ reaches this limit
+                              // => progress should be printed
 };
 
 // Statistics on a set of values
@@ -209,7 +214,8 @@ public:
         total_ += value;
         count_++;
     }
-    string ToString(double modifier, const string& unit, bool show_total) const {
+    std::string ToString(double modifier, const std::string& unit,
+                         bool show_total) const {
         std::ostringstream oss;
         const T avg = count_ > 0 ? (total_ / count_) : 0;
         oss << std::setprecision(avg * modifier < 1 ? 3 :
@@ -233,9 +239,11 @@ private:
     uint32 count_;
 };
 
-// Returns the current process size in memory: virtual memory + resident set size, in bytes.
+// Returns the current process size in memory: virtual memory + resident
+// set size, in bytes.
 // Implementation reads "/proc/self/stat" and parses useful data.
-// WARNING: due to the implementation, the performance is quite poor for massive calls
+// WARNING: due to the implementation, the performance is quite poor
+// for massive calls
 // Returns success.
 bool ProcessMemUsage(int64* out_vsz, int64* out_rss);
 // Returns the current process virtual memory size in bytes.
@@ -246,7 +254,8 @@ int64 ProcessMemUsageVSZ();
 // It lowers the calls frequency by caching the obtained values for some time.
 class ProcessMemUsageCache {
 public:
-    ProcessMemUsageCache(uint32 cache_ms) : cache_ms_(cache_ms), vsz_(0), rss_(0), ts_(0) {}
+    ProcessMemUsageCache(uint32 cache_ms)
+        : cache_ms_(cache_ms), vsz_(0), rss_(0), ts_(0) {}
 
     int64 vsz() { Update(); return vsz_; }
     int64 rss() { Update(); return rss_; }

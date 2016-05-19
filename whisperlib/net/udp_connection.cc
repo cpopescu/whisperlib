@@ -219,7 +219,7 @@ void UdpConnection::ForceClose() {
   InternalClose(0, true);
 }
 
-string UdpConnection::PrefixInfo() const {
+std::string UdpConnection::PrefixInfo() const {
   return strutil::StringPrintf("[%s (fd: %d)] ",
       local_addr_.ToString().c_str(),
       fd_);

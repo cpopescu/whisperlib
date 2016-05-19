@@ -45,9 +45,9 @@ namespace {
 
 const string ComposeFileName(const string& log_dir,
                              const string& file_base,
-                             int32 block_size,
-                             int32 file_num) {
-  return strutil::StringPrintf("%s/%s_%010d_%010d",
+                             size_t block_size,
+                             int32_t file_num) {
+  return strutil::StringPrintf("%s/%s_%010zd_%010d",
       log_dir.c_str(), file_base.c_str(), block_size, file_num);
 }
 }
@@ -59,8 +59,8 @@ namespace io {
 
 LogWriter::LogWriter(const string& log_dir,
                      const string& file_base,
-                     int32 block_size,
-                     int32 blocks_per_file,
+                     size_t block_size,
+                     size_t blocks_per_file,
                      bool temporary_incomplete_file,
                      bool deflate)
   : log_dir_(log_dir),
@@ -100,7 +100,7 @@ bool LogWriter::Initialize() {
     return false;
   }
   char tmp[64] = {0,};
-  lock_file.Read(tmp, sizeof(tmp)-1);
+  lock_file.ReadBuffer(tmp, sizeof(tmp) - 1);
   pid_t pid = ::atoi(tmp);
   if ( pid != 0 ) {
     if ( io::Exists(strutil::StringPrintf("/proc/%d/cmdline", pid)) ) {
@@ -112,7 +112,7 @@ bool LogWriter::Initialize() {
   // write current process pid
   lock_file.SetPosition(0, io::File::FILE_SET);
   string crt_pid = strutil::StringPrintf("%d", getpid());
-  lock_file.Write(crt_pid.c_str(), crt_pid.size());
+  lock_file.WriteBuffer(crt_pid.c_str(), crt_pid.size());
   lock_file.Truncate();
   lock_file.Close();
   DLOG_INFO << "Created lock file: [" << lock_filename << "]";
@@ -154,7 +154,7 @@ bool LogWriter::WriteRecord(io::MemoryStream* in) {
   return true;
 }
 
-bool LogWriter::WriteRecord(const char* buffer, int32 size) {
+bool LogWriter::WriteRecord(const char* buffer, size_t size) {
   if ( !file_.is_open() && !OpenNextLog() ) {
     return false;
   }
@@ -198,14 +198,14 @@ bool LogWriter::TruncateAt(const LogPos& pos)  {
 
   vector<string> files;
   GetLogFiles(&files, log_dir_, file_base_, block_size_);
-  int32 start_delete = pos.block_num_ == 0 ? pos.file_num_ : pos.file_num_ + 1;
+  int32_t start_delete = pos.block_num_ == 0 ? pos.file_num_ : pos.file_num_ + 1;
 
   sort(files.begin(), files.end());
   size_t num_deleted = 0;
-  for ( int32 i = 0; i < files.size(); ++i ) {
+  for ( size_t i = 0; i < files.size(); ++i ) {
     CHECK_GT(files[i].size(), 10);
     errno = 0;  // essential as strtol would not set a 0 errno
-    const int32 file_num = strtol(files[i].c_str() + files[i].size() - 10, NULL, 10);
+    const long int file_num = strtol(files[i].c_str() + files[i].size() - 10, NULL, 10);
     if ( errno || file_num < 0 ) {
       LOG_ERROR << "FileNum: " << file_num <<  " for [" << files[i] << "]";
       continue;
@@ -227,7 +227,7 @@ bool LogWriter::TruncateAt(const LogPos& pos)  {
           LOG_ERROR << "Error opening file : [" << filename << "]";
           success = false;
       } else {
-          const int64 truncate_len = pos.block_num_ * block_size_;
+          const int64_t truncate_len = pos.block_num_ * block_size_;
           LOG_INFO << "Truncating file " << filename << " w/ size: " << last_file.Size()
                    << " to " << truncate_len;
           last_file.Truncate(truncate_len);
@@ -271,7 +271,7 @@ bool LogWriter::WriteBuffer(bool force_flush) {
 
   while ( !buf_.IsEmpty() ) {
     // check that the file is correct
-    int64 pos = file_.Position();
+    uint64_t pos = file_.Position();
     if ( pos % block_size_ != 0 ||
          pos > block_size_ * blocks_per_file_ ) {
       LOG_ERROR << "Bad file size: " << pos
@@ -279,10 +279,10 @@ bool LogWriter::WriteBuffer(bool force_flush) {
                 << ", blocks_per_file_: " << blocks_per_file_;
       return false;
     }
-    CHECK(pos < block_size_ * blocks_per_file_) << "File already full";
+    DCHECK(size_t(pos) < block_size_ * blocks_per_file_) << "File already full";
 
     // check that the buf_ is correct
-    CHECK(buf_.Size() % block_size_ == 0)
+    DCHECK(buf_.Size() % block_size_ == 0)
       << endl << " - buf_.Size(): " << buf_.Size()
       << endl << " - block_size_: " << block_size_;
 
@@ -292,15 +292,15 @@ bool LogWriter::WriteBuffer(bool force_flush) {
 
     // write to file
     buf_.MarkerSet();
-    const int to_write = min(block_size_ * blocks_per_file_ - (int32)pos,
-                             buf_.Size());
-    const int cb = file_.Write(&buf_, to_write);
+    const size_t to_write = std::min(
+        block_size_ * blocks_per_file_ - size_t(pos), buf_.Size());
+    const ssize_t cb = file_.Write(&buf_, to_write);
     if ( cb < 0 ) {
       LOG_ERROR << "Write failed, restoring data.";
       buf_.MarkerRestore();
       return false;
     }
-    if ( cb != to_write ) {
+    if ( size_t(cb) != to_write ) {
       // restore buffer
       buf_.MarkerRestore();
       // cut off the written data
@@ -392,8 +392,8 @@ void LogWriter::CloseLog() {
 
 LogReader::LogReader(const string& log_dir,
                      const string& file_base,
-                     int32 block_size,
-                     int32 blocks_per_file)
+                     size_t block_size,
+                     size_t blocks_per_file)
   : log_dir_(log_dir),
     file_base_(file_base),
     re_(strutil::StringPrintf(
@@ -460,7 +460,7 @@ bool LogReader::GetNextRecord(io::MemoryStream* out) {
   }
 
   while ( true ) {
-    int num_skipped = 0;
+    size_t num_skipped = 0;
     RecordReader::ReadResult res = reader_.ReadRecord(&buf_, out, &num_skipped, 0);
     if ( res == RecordReader::READ_NO_DATA ) {
       // go to next block
@@ -514,7 +514,7 @@ void LogReader::Rewind() {
   // it's not necessary to OpenFile() here. The next GetNextRecord() will do it.
 }
 
-string LogReader::ComposeFileName(int32 file_num) const {
+string LogReader::ComposeFileName(int32_t file_num) const {
   CHECK_GE(file_num, 0);
   return ::ComposeFileName(log_dir_, file_base_, block_size_, file_num);
 }
@@ -530,7 +530,7 @@ void LogReader::CloseInternal(bool on_error) {
   buf_.Clear();
 }
 
-bool LogReader::OpenFile(int32 file_num) {
+bool LogReader::OpenFile(int32_t file_num) {
   if (file_num_ == file_num && file_.is_open()) {
     return true;
   }
@@ -562,7 +562,7 @@ bool LogReader::AdvanceToPosInFile(const LogPos& pos) {
   buf_.Clear();
 
   // seek to current block, we read from this position
-  int64 seek_pos = pos.block_num_ * block_size_;
+  int64_t seek_pos = pos.block_num_ * block_size_;
   if ( file_.SetPosition(seek_pos, io::File::FILE_SET) == -1 ) {
     LOG_ERROR << "Cannot seek to " << seek_pos;
     return false;
@@ -584,7 +584,7 @@ bool LogReader::AdvanceToPosInFile(const LogPos& pos) {
   record_num_ = 0;
 
   while ( record_num_ < pos.record_num_ ) {
-    int num_skipped = 0;
+    size_t num_skipped = 0;
     RecordReader::ReadResult res = reader_.ReadRecord(&buf_, NULL, &num_skipped, pos.record_num_);
     if ( res != RecordReader::READ_OK ) {
       LOG_ERROR << "Cannot seek to record: " << pos.record_num_
@@ -604,9 +604,9 @@ bool LogReader::ReadBlock() {
     return false;
   }
   CHECK(buf_.IsEmpty());
-  const int64 file_pos = file_.Position();
-  const int32 cb = file_.Read(&buf_, block_size_);
-  if ( cb < block_size_ ) {
+  const uint64_t file_pos = file_.Position();
+  const ssize_t cb = file_.Read(&buf_, block_size_);
+  if ( cb < 0 || size_t(cb) < block_size_ ) {
     // restore file pointer & clear partial read from buf_
     file_.SetPosition(file_pos, io::File::FILE_SET);
     buf_.Clear();
@@ -625,11 +625,11 @@ bool LogReader::ReadBlock() {
 
 void GetLogFiles(vector<string>* files,
                  const string& log_dir, const string& file_base,
-                 int32 block_size) {
+                 size_t block_size) {
   files->clear();
   if (io::IsDir(log_dir)) {
       re::RE re(strutil::StringPrintf(
-                    "^%s_%010d"
+                    "^%s_%010zd"
                     "_[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$",
                     file_base.c_str(), block_size));
       DirList(log_dir, LIST_FILES, &re, files);
@@ -637,13 +637,13 @@ void GetLogFiles(vector<string>* files,
 }
 
 size_t CountLogFiles(const string& log_dir, const string& file_base,
-                     int32 block_size) {
+                     size_t block_size) {
   vector<string> files;
   GetLogFiles(&files, log_dir, file_base, block_size);
   return files.size();
 }
 size_t CleanLog(const string& log_dir, const string& file_base,
-                LogPos first_pos, int32 block_size) {
+                LogPos first_pos, size_t block_size) {
   vector<string> files;
   GetLogFiles(&files, log_dir, file_base, block_size);
   if ( files.empty() ) {
@@ -652,10 +652,10 @@ size_t CleanLog(const string& log_dir, const string& file_base,
   sort(files.begin(), files.end());
 
   size_t num_deleted = 0;
-  for ( int32 i = 0; i < files.size(); ++i ) {
+  for ( size_t i = 0; i < files.size(); ++i ) {
     CHECK_GT(files[i].size(), 10);
     errno = 0;  // essential as strtol would not set a 0 errno
-    const int32 file_num = strtol(files[i].c_str() + files[i].size() - 10,
+    const long int file_num = strtol(files[i].c_str() + files[i].size() - 10,
                                   NULL, 10);
     if ( errno || file_num < 0 ) {
       LOG_ERROR << "FileNum: " << file_num <<  " for [" << files[i] << "]";
@@ -677,8 +677,8 @@ size_t CleanLog(const string& log_dir, const string& file_base,
 
 bool DetectLogSettings(const string& log_dir,
                        string* out_file_base,
-                       int32* out_block_size,
-                       int32* out_blocks_per_file) {
+                       size_t* out_block_size,
+                       size_t* out_blocks_per_file) {
   // NOTE: returned filenames are relative to dir !!
   vector<string> files;
   re::RE re("_[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]"
@@ -702,17 +702,20 @@ bool DetectLogSettings(const string& log_dir,
 
   // detect block_size
   string str_block_size = filename.substr(filename.size() - 21, 10).c_str();
-  *out_block_size = ::atoi(str_block_size.c_str());
+  *out_block_size = ::strtoul(str_block_size.c_str(), nullptr, 10);
   if ( *out_block_size == 0 ) {
     LOG_ERROR << "Failed to detect block size, from file: [" << filename << "]";
     return false;
   }
 
   // detect blocks_per_file
-  int64 filesize = io::GetFileSize(strutil::JoinPaths(log_dir, filename));
-  CHECK(filesize > 0) << "Failed to get file size"
-                         ", for file: [" << filename << "]"
-                         ", err: " << GetLastSystemErrorDescription();
+  int64_t filesize = io::GetFileSize(strutil::JoinPaths(log_dir, filename));
+  if (filesize <= 0) {
+      LOG_ERROR << "Failed to get file size"
+          ", for file: [" << filename << "]"
+          ", err: " << GetLastSystemErrorDescription();
+      return false;
+  }
 
   if ( filesize % (*out_block_size) != 0 ) {
     LOG_ERROR << "Erroneous file size, file: [" << filename
@@ -728,15 +731,17 @@ bool DetectLogSettings(const string& log_dir,
   return true;
 }
 
-bool LogExists(const string& dir, const string& file_base, int32 block_size, int32 file_num) {
+bool LogExists(const string& dir, const string& file_base,
+               size_t block_size, int32_t file_num) {
     return io::Exists(ComposeFileName(dir, file_base, block_size, file_num));
 }
-int64 LogFileTime(const string& dir, const string& file_base, int32 block_size, int32 file_num) {
+int64_t LogFileTime(const string& dir, const string& file_base,
+                    size_t block_size, int32_t file_num) {
     return io::GetFileMtime(ComposeFileName(dir, file_base, block_size, file_num));
 }
 
-int64 CountLogRecords(LogReader* reader) {
-    int64 count = 0;
+uint64_t CountLogRecords(LogReader* reader) {
+    uint64_t count = 0;
     while (reader->GetNextRecord(NULL)) { count++; }
     reader->Rewind();
     return count;

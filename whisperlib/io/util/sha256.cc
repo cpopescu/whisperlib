@@ -606,7 +606,7 @@ int HmacSha256PrepareKey(const sha2_byte* key,
   if ( key_len > WL_SHA256_DIGEST_LENGTH ) {
     WL_SHA256_Data(key, key_len, key_to_use);
   } else {
-    for ( int i = 0; i < key_len; ++i ) {
+    for ( size_t i = 0; i < key_len; ++i ) {
       key_to_use[i] = key[i];
     }
     key_to_use_len = key_len;
@@ -631,7 +631,7 @@ void HmacSha256WithPreparedKey(const sha2_byte* key_to_use,
                                sha2_byte* result) {
   sha2_byte opad[WL_SHA256_BLOCK_LENGTH];
   sha2_byte ipad[WL_SHA256_BLOCK_LENGTH];
-  int i;
+  size_t i;
   for ( i = 0; i < WL_SHA256_BLOCK_LENGTH; ++i ) {
     opad[i] = 0x5c;
     ipad[i] = 0x36;

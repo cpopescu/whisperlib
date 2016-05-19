@@ -175,6 +175,10 @@ public:
     if ( items_.size() >= max_size_ ) {
       DelByAlgorithmLocked();
       if ( items_.size() >= max_size_ ) {
+        // Cannot add item, cache is still full. Delete the value.
+        if (destructor_) {
+            (*destructor_)(value);
+        }
         return;
       }
     }

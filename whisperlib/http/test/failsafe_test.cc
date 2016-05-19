@@ -70,7 +70,7 @@ void RequestDone(whisper::net::Selector* selector,
   LOG_INFO << " Response received from server (so far): "
            << "\nHeader:\n"
            << req->request()->server_header()->ToString();
-  string content = req->request()->server_data()->ToString();
+  std::string content = req->request()->server_data()->ToString();
   // LOG_INFO << "Body:\n" << content;
 
   LOG_INFO << "========= Done requests: " << glb_num_request;
@@ -109,9 +109,9 @@ void CancelRequest(whisper::net::Selector* selector,
 
 int main(int argc, char* argv[]) {
   whisper::common::Init(argc, argv);
-  vector<whisper::net::HostPort> servers;
-  vector<string> server_names;
-  vector<string> server_paths;
+  std::vector<whisper::net::HostPort> servers;
+  std::vector<std::string> server_names;
+  std::vector<std::string> server_paths;
   if ( FLAGS_servers.empty() ) {
     LOG_FATAL << " No --servers specified";
   }
@@ -121,8 +121,8 @@ int main(int argc, char* argv[]) {
   strutil::SplitString(FLAGS_servers, ",", &server_names);
   strutil::SplitString(FLAGS_paths, ",", &server_paths);
 
-  for ( int i = 0; i < server_names.size(); ++i  ) {
-    vector<string> comps;
+  for ( size_t i = 0; i < server_names.size(); ++i  ) {
+    std::vector<std::string> comps;
     strutil::SplitString(server_names[i], ":", &comps);
     int port = 80;
     if ( comps.size() > 1 ) {
@@ -150,8 +150,8 @@ int main(int argc, char* argv[]) {
       4,
       400000, 5000,
       FLAGS_force_host_header);
-  vector<whisper::http::ClientRequest*> reqs;
-  for ( int i = 0; i < server_paths.size(); ++i ) {
+  std::vector<whisper::http::ClientRequest*> reqs;
+  for ( size_t i = 0; i < server_paths.size(); ++i ) {
     LOG_INFO << "Scheduling request for: " << server_paths[i];
     whisper::http::ClientRequest* req = new whisper::http::ClientRequest(
         whisper::http::METHOD_GET, server_paths[i]);
@@ -165,7 +165,7 @@ int main(int argc, char* argv[]) {
     glb_num_request++;
   }
   if (FLAGS_cancel_every > 0) {
-    for ( int i = 0; i < server_paths.size(); ++i ) {
+    for ( size_t i = 0; i < server_paths.size(); ++i ) {
       if ((i % FLAGS_cancel_every) == 0) {
         whisper::Closure* cb = whisper::NewCallback(
             &CancelRequest, &selector, fsc, reqs[i]);

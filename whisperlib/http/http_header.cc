@@ -82,7 +82,8 @@ const char* Header::ParseErrorName(ParseError err) {
 }
 
 
-string Header::NormalizeFieldName(const char* field_name, int32 len) {
+string Header::NormalizeFieldName(const char* field_name, size_t len) {
+  if (!len) return std::string();
   const char* last = field_name + len - 1;
   while ( last >= field_name && IsLwfChar(*last) ) {
     --last;
@@ -134,8 +135,8 @@ void Header::PrepareRequestLine(const char* uri,
   http_version_ = version;
 }
 
-bool Header::AddField(const char* field_name, int32 field_name_len,
-                      const char* field_content, int32 field_content_len,
+bool Header::AddField(const char* field_name, size_t field_name_len,
+                      const char* field_content, size_t field_content_len,
                       bool replace, bool as_is) {
   if ( !IsValidFieldName(field_name, field_name_len) ||
        !IsValidFieldContent(field_content, field_content_len) ) {
@@ -157,14 +158,14 @@ bool Header::AddField(const char* field_name, int32 field_name_len,
 }
 
 // Removes the field alltogether from the field map
-bool Header::ClearField(const char* field_name, int32 len, bool as_is) {
+bool Header::ClearField(const char* field_name, size_t len, bool as_is) {
   string normalized_name(as_is ?
       NormalizeFieldName(field_name, len) :
       string(field_name, len));
   return fields_.erase(normalized_name) > 0;
 }
 
-bool Header::IsValidFieldName(const char* field_name, int32 len) {
+bool Header::IsValidFieldName(const char* field_name, size_t len) {
   const char* p = field_name;
   bool valid = false;  // ensures we do have something else beside
                        // spaces
@@ -180,7 +181,7 @@ bool Header::IsValidFieldName(const char* field_name, int32 len) {
   return valid && p > field_name;
 }
 
-bool Header::IsValidFieldContent(const char* field_content, int32 len) {
+bool Header::IsValidFieldContent(const char* field_content, size_t len) {
   const char* p = field_content;
   while ( len-- > 0 ) {
     if ( IsCtlChar(*p) && !IsLwfChar(*p) )
@@ -190,8 +191,8 @@ bool Header::IsValidFieldContent(const char* field_content, int32 len) {
   return true;   // empty content fine..
 }
 
-int32 Header::CopyHeaderFields(const Header& src, bool replace) {
-  int32 num = 0;
+size_t Header::CopyHeaderFields(const Header& src, bool replace) {
+  size_t num = 0;
   for ( FieldMap::const_iterator it = src.fields().begin();
         it != src.fields().end(); ++it ) {
     if ( AddField(it->first, it->second, replace) ) {
@@ -201,8 +202,8 @@ int32 Header::CopyHeaderFields(const Header& src, bool replace) {
   return num;
 }
 
-int32 Header::CopyHeaders(const Header& src, bool replace) {
-  const int32 num = CopyHeaderFields(src, replace);
+size_t Header::CopyHeaders(const Header& src, bool replace) {
+  const size_t num = CopyHeaderFields(src, replace);
   http_version_ = src.http_version_;
   method_ = src.method_;
   status_code_ = src.status_code_;
@@ -214,7 +215,7 @@ int32 Header::CopyHeaders(const Header& src, bool replace) {
 }
 
 const char* Header::FindField(const string& field_name,
-                              int32* len) const {
+                              size_t* len) const {
   const FieldMap::const_iterator it = fields_.find(field_name);
   if ( it == fields_.end() ) {
     return NULL;
@@ -436,7 +437,7 @@ bool Header::ReadHeaderFields(io::MemoryStream* io) {
       return true;
     }
     // Is a continuation header ?
-    int32 lwf_end = 0;
+    size_t lwf_end = 0;
     while ( IsLwfChar(line[lwf_end]) )
       ++lwf_end;
     if ( lwf_end > 0 ) {
@@ -494,7 +495,7 @@ static const char* kHttpDateFormatsGetOsX[] = {
 
 
 time_t Header::GetDateField(const char* field_name) {
-  int32 len;
+  size_t len;
   const char* s = FindField(field_name, &len);
   if ( !s ) {
     return time_t(0);
@@ -502,7 +503,7 @@ time_t Header::GetDateField(const char* field_name) {
   if ( *(s+len) != '\0' )
     return time_t(0);
 #ifdef MACOSX
-  for ( int32 i = 0; i < NUMBEROF(kHttpDateFormats); ++i ) {
+  for ( size_t i = 0; i < NUMBEROF(kHttpDateFormats); ++i ) {
       struct tm t;
       if ( strptime(s, kHttpDateFormatsGetOsX[i], &t) != NULL ) {
           time_t orig_time = mktime(&t);
@@ -513,7 +514,7 @@ time_t Header::GetDateField(const char* field_name) {
       }
   }
 #else
-  for ( int32 i = 0; i < NUMBEROF(kHttpDateFormats); ++i ) {
+  for ( size_t i = 0; i < NUMBEROF(kHttpDateFormats); ++i ) {
     struct tm t;
     if ( strptime(s, kHttpDateFormats[i], &t) != NULL ) {
       return mktime(&t);
@@ -536,7 +537,7 @@ bool Header::SetDateField(const string& field_name, time_t t) {
 }
 
 bool Header::GetAuthorizationField(string* user, string* passwd) {
-  int32 len;
+  size_t len;
   const char* s = FindField(kHeaderAuthorization, &len);
   if ( !s || len == 0 ) {
     return false;
@@ -545,8 +546,8 @@ bool Header::GetAuthorizationField(string* user, string* passwd) {
   len -= p - s;
   char* const decoded_field = new char[len];
   base64::Decoder decoder;
-  int32 decoded_len = decoder.Decode(p, len,
-                                     reinterpret_cast<uint8*>(decoded_field));
+  size_t decoded_len = decoder.Decode(p, len,
+                                      reinterpret_cast<uint8*>(decoded_field));
   if ( decoded_len == 0 ) {
     delete [] decoded_field;
     return false;
@@ -572,12 +573,12 @@ bool Header::SetAuthorizationField(const string& user,
                                    const string& passwd) {
   if ( user.find(':') != string::npos ) return false;
   const string to_encode(user + ":" + passwd);
-  const int32 buflen = 2 * to_encode.size() + 4;
+  const size_t buflen = 2 * to_encode.size() + 4;
   char* encoded_header = new char[buflen];
   base64::Encoder encoder;
-  const int32 len = encoder.Encode(to_encode.c_str(), to_encode.size(),
-                                   encoded_header, buflen);
-  const int32 len2 = encoder.EncodeEnd(encoded_header + len);
+  const size_t len = encoder.Encode(to_encode.c_str(), to_encode.size(),
+                                    encoded_header, buflen);
+  const size_t len2 = encoder.EncodeEnd(encoded_header + len);
   *(encoded_header + len + len2) = '\0';
   bool ret = AddField(kHeaderAuthorization, sizeof(kHeaderAuthorization) - 1,
                       string("Basic ") + encoded_header,
@@ -640,7 +641,7 @@ float Header::GetHeaderAcceptance(const string& field,
                                   const string& value,
                                   const string& local_wildcard_value,
                                   const string& global_wildcard_value) const {
-  int32 len;
+  size_t len;
   const char* s = FindField(field, &len);
   if ( !s ) {
     return 0.0f;
@@ -658,9 +659,9 @@ float Header::GetHeaderAcceptance(const string& field,
     vector<string> specs;
     strutil::SplitString(components[i], ";", &specs);
     float crt_quality = 1.0f;
-    for ( int i = 1; i < specs.size(); i++ ) {
-      if ( strutil::StrPrefix(specs[i].c_str(), "q=") ) {
-        crt_quality = strtof(specs[i].c_str() + 2, NULL);
+    for ( size_t j = 1; j < specs.size(); j++ ) {
+      if ( strutil::StrPrefix(specs[j].c_str(), "q=") ) {
+        crt_quality = strtof(specs[j].c_str() + 2, NULL);
       }
     }
     if ( strutil::StrCaseEqual(specs[0], value) ) {
@@ -696,7 +697,7 @@ bool Header::IsDeflateAcceptableEncoding() const {
 }
 
 bool Header::IsZippableContentType() const {
-  int len;
+  size_t len;
   const char* s = FindField(kHeaderContentType, &len);
   if ( !s ) {
     return false;

@@ -98,7 +98,7 @@ class BufferManager {
       VALID_DATA,
     };
     Buffer(BufferManager* manager,
-           const string data_key, char* data,
+           const std::string data_key, char* data,
            const int data_capacity, const size_t data_alignment)
         : mutex_(),
           state_(NEW),
@@ -115,7 +115,7 @@ class BufferManager {
     ~Buffer() {
     }
 
-    const string& data_key() const {
+    const std::string& data_key() const {
       return data_key_;
     }
     size_t data_size() const {
@@ -155,7 +155,7 @@ class BufferManager {
 
     // Only manager touches the next members:
 
-    string data_key_;   // what data is / should be placed in the buffer.
+    std::string data_key_;   // what data is / should be placed in the buffer.
     int use_count_;     // how many asked for this buffer to use.
     int64 reuse_count_;   // how many times we reused this buffer
     int64 last_release_time_;   // last time when the buffer was released
@@ -163,20 +163,23 @@ class BufferManager {
     friend class BufferManager;
   };
 
-  Buffer* GetBuffer(const string& data_key);
+  Buffer* GetBuffer(const std::string& data_key);
   size_t alignment() const {
     return freelist_->alignment();
   }
   size_t size() const {
     return freelist_->size() * freelist_->alignment();
   }
-  string GetHtmlStats() const;
+  std::string GetHtmlStats() const;
 
  private:
   // Utility functions for GetBuffer - should be called w/ mutex_ held
-  BufferManager::Buffer* TryReuseFreeBufferLocked(const string& data_key);
-  BufferManager::Buffer* CreateNewBufferLocked(const string& data_key);
-  BufferManager::Buffer* ReDesignateOldestBufferLocked(const string& data_key);
+  BufferManager::Buffer*
+  TryReuseFreeBufferLocked(const std::string& data_key);
+  BufferManager::Buffer*
+  CreateNewBufferLocked(const std::string& data_key);
+  BufferManager::Buffer*
+  ReDesignateOldestBufferLocked(const std::string& data_key);
 
 
   void DoneBuffer(Buffer* buffer);
@@ -184,7 +187,7 @@ class BufferManager {
   // Allocates buffers for us
   util::MemAlignedFreeArrayList* const freelist_;
 
-  typedef std::map<string, Buffer*> BufferMap;
+  typedef std::map<std::string, Buffer*> BufferMap;
   mutable synch::Mutex mutex_;
   // Buffers that were get
   BufferMap active_buffers_;

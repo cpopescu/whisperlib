@@ -57,11 +57,11 @@ std::string StringPrintf(const char* format, ...) STRING_UTIL_PRINTF (1, 2);
 
 // Store result into a supplied string and return it
 const std::string& SStringPrintf(std::string* dst,
-                                 const char* format, ...) STRING_UTIL_PRINTF (2, 3);;
+                                 const char* format, ...) STRING_UTIL_PRINTF (2, 3);
 
 // Append result to a supplied string
 void StringAppendF(std::string* dst,
-                   const char* format, ...) STRING_UTIL_PRINTF (2, 3);;
+                   const char* format, ...) STRING_UTIL_PRINTF (2, 3);
 
 // Lower-level routine that takes a va_list and appends to a specified
 // string.  All other routines are just convenience wrappers around it.

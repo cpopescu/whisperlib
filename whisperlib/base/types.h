@@ -1,3 +1,33 @@
+// Copyright (c) 2009, Whispersoft s.r.l.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above
+// copyright notice, this list of conditions and the following disclaimer
+// in the documentation and/or other materials provided with the
+// distribution.
+// * Neither the name of Whispersoft s.r.l nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+
 #ifndef __WHISPERLIB_BASE_TYPES_H
 #define __WHISPERLIB_BASE_TYPES_H
 #pragma once
@@ -23,6 +53,10 @@
 #include <endian.h>
 #elif defined(HAVE_MACHINE_ENDIAN_H)
 #include <machine/endian.h>
+#endif
+
+#ifndef PATH_SEPARATOR
+#define PATH_SEPARATOR '/'
 #endif
 
 namespace whisper {
@@ -219,7 +253,7 @@ typedef unsigned short     uint16;
 // obsolete/protypes.h in the Gecko SDK.
 #ifndef _UINT32
 #define _UINT32
-#typedef unsigned int       uint32;
+typedef unsigned int       uint32;
 #endif
 
 // See the comment above about NSPR and 64-bit.
@@ -380,13 +414,18 @@ inline To implicit_cast(From const &f) {
 // the expression is false, most compilers will issue a warning/error
 // containing the name of the variable.
 
+#undef COMPILE_ASSERT
+
+#if __cplusplus > 199711L
+#define COMPILE_ASSERT(expr, msg)            \
+    static_assert(expr, #msg)
+#else
 template <bool>
 struct CompileAssert {
 };
-
-#undef COMPILE_ASSERT
-#define COMPILE_ASSERT(expr, msg) \
-  typedef CompileAssert<(bool(expr))> msg[bool(expr) ? 1 : -1]
+#define COMPILE_ASSERT(expr, msg)                               \
+    typedef CompileAssert<(bool(expr))> msg[bool(expr) ? 1 : -1]
+#endif
 
 // Implementation details of COMPILE_ASSERT:
 //
@@ -504,7 +543,8 @@ inline Dest bit_cast(const Source& source) {
 #ifndef __has_feature
 #define __has_feature(x) 0  // Compatibility with non-clang compilers.
 #endif
-#if __has_feature(cxx_static_assert)
+
+#if __has_feature(cxx_static_assert) ||  __cplusplus > 199711L
   static_assert(sizeof(Dest) == sizeof(Source), "sizeof(Source) and Dest differs");
 #else
   typedef char VerifySizesAreEqual [sizeof(Dest) == sizeof(Source) ? 1 : -1];

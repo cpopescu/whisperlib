@@ -60,24 +60,24 @@ ServerParams::ServerParams()
 }
 
 ServerParams::ServerParams(
-    const string& root_url,
+    const std::string& root_url,
     bool dlog_level,
     bool strict_request_headers,
     bool allow_all_methods,
-    int32 max_header_size,
-    int32 max_body_size,
-    int32 max_chunk_size,
+    size_t max_header_size,
+    size_t max_body_size,
+    size_t max_chunk_size,
     int64 max_num_chunks,
     http::Header::ParseError worst_accepted_header_error,
-    int32 max_concurrent_connections,
-    int32 max_concurrent_requests,
-    int32 max_concurrent_requests_per_connection,
+    size_t max_concurrent_connections,
+    size_t max_concurrent_requests,
+    size_t max_concurrent_requests_per_connection,
     int32 request_read_timeout_ms,
     int32 keep_alive_timeout_sec,
     int32 reply_write_timeout_ms,
-    int32 max_reply_buffer_size,
+    size_t max_reply_buffer_size,
     FlowControlPolicy reply_full_buffer_policy,
-    const string& default_content_type,
+    const std::string& default_content_type,
     bool ignore_different_http_hosts)
     : root_url_(root_url),
       dlog_level_(dlog_level),
@@ -246,7 +246,7 @@ Server::Server(const char* name,
 }
 
 Server::~Server() {
-  for ( uint32 i = 0; i < acceptors_.size(); i++ ) {
+  for ( size_t i = 0; i < acceptors_.size(); i++ ) {
     delete acceptors_[i];
   }
   acceptors_.clear();
@@ -271,26 +271,26 @@ void Server::AddAcceptor(net::PROTOCOL net_protocol,
                                           this));
 }
 void Server::StartServing() {
-  for ( uint32 i = 0; i < acceptors_.size(); i++ ) {
+  for ( size_t i = 0; i < acceptors_.size(); i++ ) {
     ServerAcceptor& acceptor = *acceptors_[i];
     CHECK(acceptor.Listen());
     LOG_INFO << "HTTP Turned on listening on: " << acceptor.local_addr();
   }
 }
 void Server::StopServing() {
-  for ( uint32 i = 0; i < acceptors_.size(); i++ ) {
+  for ( size_t i = 0; i < acceptors_.size(); i++ ) {
     ServerAcceptor& acceptor = *acceptors_[i];
     acceptor.Close();
   }
 }
 
-void Server::RegisterProcessor(const string& path,
+void Server::RegisterProcessor(const std::string& path,
                                ServerCallback* callback,
                                bool is_public,
                                bool auto_del_callback) {
   CHECK_NOT_NULL(callback);
   CHECK(callback->is_permanent());
-  const string reg_path(strutil::NormalizeUrlPath(path));
+  const std::string reg_path(strutil::NormalizeUrlPath(path));
   synch::MutexLocker l(&mutex_);
   const ProcessorMap::iterator it = processors_.find(reg_path);
   if ( it != processors_.end() ) {
@@ -306,8 +306,8 @@ void Server::RegisterProcessor(const string& path,
   }
 }
 
-void Server::UnregisterProcessor(const string& path) {
-  const string reg_path(strutil::NormalizeUrlPath(path));
+void Server::UnregisterProcessor(const std::string& path) {
+  const std::string reg_path(strutil::NormalizeUrlPath(path));
   const ProcessorMap::iterator it = processors_.find(reg_path);
   if ( it == processors_.end() ) {
     LOG_INFO << "No HTTP processor found to be deleted for path: " << reg_path;
@@ -318,9 +318,9 @@ void Server::UnregisterProcessor(const string& path) {
   allowed_ips_.erase(reg_path);
 }
 
-void Server::RegisterAllowedIpAddresses(const string& path,
+void Server::RegisterAllowedIpAddresses(const std::string& path,
                                         const net::IpV4Filter* ips) {
-  const string reg_path(strutil::NormalizeUrlPath(path));
+  const std::string reg_path(strutil::NormalizeUrlPath(path));
   synch::MutexLocker l(&mutex_);
   const AllowedIpsMap::iterator it_ips = allowed_ips_.find(reg_path);
   if ( it_ips != allowed_ips_.end() ) {
@@ -330,9 +330,9 @@ void Server::RegisterAllowedIpAddresses(const string& path,
   }
 }
 
-void Server::RegisterClientStreaming(const string& path,
+void Server::RegisterClientStreaming(const std::string& path,
                                      bool is_client_streaming) {
-  const string reg_path(strutil::NormalizeUrlPath(path));
+  const std::string reg_path(strutil::NormalizeUrlPath(path));
   synch::MutexLocker l(&mutex_);
   is_streaming_client_map_[reg_path] = is_client_streaming;
 }
@@ -379,7 +379,7 @@ void Server::ErrorRequestProcessor(ServerRequest* req) {
 // some utilitities:
 namespace {
 static bool VerifyHost(http::Header* client_header, URL* url) {
-  string host;
+  std::string host;
   if ( client_header->FindField(kHeaderHost, &host) ) {
     if ( url->has_host() &&
          !strutil::StrCaseEqual(host, url->host()) ) {
@@ -395,7 +395,7 @@ void Server::GetSpecificProtocolParams(http::ServerRequest* req) {
   req->request()->InitializeUrlFromClientRequest(protocol_params_.root_url_);
   URL* const url = req->request()->url();
   if ( url != NULL ) {
-    string url_path(url->UrlUnescape(url->path().c_str(),
+    std::string url_path(url->UrlUnescape(url->path().c_str(),
                                      url->path().size()));
     req->is_client_streaming_ = io::FindPathBased(&is_streaming_client_map_,
                                                   url_path);
@@ -446,9 +446,9 @@ void Server::ProcessRequest(http::ServerRequest* req) {
   }
 
   // Accepted request - looks OK !
-  string url_path(url->UrlUnescape(url->path().c_str(),
+  std::string url_path(url->UrlUnescape(url->path().c_str(),
                                    url->path().size()));
-  string url_path2(url_path);
+  std::string url_path2(url_path);
 
   // Identify processor based on path and set req->server_callback_
   {
@@ -567,12 +567,12 @@ void ServerProtocol::NotifyConnectionDeletion() {
 void ServerProtocol::CloseAllActiveRequests() {
   CHECK(net_selector()->IsInSelectThread());
   CHECK(connection_ == NULL);
-  vector<http::ServerRequest*> reqs;
+  std::vector<http::ServerRequest*> reqs;
   for ( RequestSet::const_iterator it = active_requests_.begin();
         it != active_requests_.end(); ++it ) {
     reqs.push_back(*it);
   }
-  for ( int i = 0; i < reqs.size(); ++i ) {
+  for ( size_t i = 0; i < reqs.size(); ++i ) {
     reqs[i]->SignalClosed();
   }
   if ( !active_requests_.empty() ) {
@@ -606,8 +606,8 @@ ServerProtocol::ProcessMoreDataResult ServerProtocol::ProcessMoreData() {
     CHECK(!parser_.InFinalState());
   }
   int read_state = 0;
-  int32 in_size = connection_->inbuf()->Size();
-  int32 client_data_size = crt_recv_->request()->client_data()->Size();
+  size_t in_size = connection_->inbuf()->Size();
+  size_t client_data_size = crt_recv_->request()->client_data()->Size();
   do {
     read_state = parser_.ParseClientRequest(connection_->inbuf(),
                                             crt_recv_->request());
@@ -1056,7 +1056,7 @@ bool ServerRequest::AuthenticateRequest(const net::UserAuthenticator* authentica
   if ( authenticator == NULL ) {
     return true;
   }
-  string user, passwd;
+  std::string user, passwd;
   if ( !request()->client_header()->GetAuthorizationField(
            &user, &passwd) ||
        (authenticator->Authenticate(user, passwd) !=
@@ -1073,7 +1073,7 @@ void ServerRequest::AuthenticateRequest(
     answer_callback->Run(net::UserAuthenticator::Authenticated);
     return;
   }
-  string user, passwd;
+  std::string user, passwd;
   if ( !request()->client_header()->GetAuthorizationField(&user, &passwd) ) {
     answer_callback->Run(net::UserAuthenticator::MissingCredentials);
     return;

@@ -115,7 +115,7 @@ int64 VerifyRecord(whisper::io::MemoryStream* rec) {
 }
 
 void WriterThread() {
-  string info = "writer";
+  std::string info = "writer";
   whisper::io::LogWriter* writer = new whisper::io::LogWriter(
       FLAGS_test_dir,
       FLAGS_test_filebase,
@@ -146,7 +146,7 @@ void WriterThread() {
 }
 
 void ReaderThread() {
-  string info = "reader";
+  std::string info = "reader";
   whisper::io::LogReader* reader = new whisper::io::LogReader(
       FLAGS_test_dir.c_str(),
       FLAGS_test_filebase.c_str(),

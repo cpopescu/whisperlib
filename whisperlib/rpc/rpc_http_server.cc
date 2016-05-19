@@ -218,7 +218,7 @@ void HttpServer::ProcessRequest(http::ServerRequest* req) {
   //
   string service_full_path;
   string method_name;
-  int last_slash_index = sub_path.rfind('/');
+  size_t last_slash_index = sub_path.rfind('/');
   if ( last_slash_index == std::string::npos ) {
     service_full_path = sub_path;
   } else {
@@ -341,7 +341,7 @@ net::HostPort HttpServer::GetRemoteAddress(http::ServerRequest* req) {
   if (FLAGS_rpc_remote_address_header.empty()) {
     return req->remote_address();
   }
-  int32 len;
+  size_t len;
   const char* field = req->request()->client_header()->FindField(
     FLAGS_rpc_remote_address_header, &len);
   if (field == NULL) {
@@ -433,7 +433,7 @@ void HttpServer::StartProcessing(http::ServerRequest* req,
 
 ////////////////////////////////////////////////////////////////////
 
-static const int32 kRpcMinBufferSpace = 32000;
+static const size_t kRpcMinBufferSpace = 32000;
 
 // Rpc callback for streams point to this -> called by the implementation whenever
 // it wants to stream some data / report an error.
@@ -478,7 +478,7 @@ void HttpServer::RpcStreamHeartbeat(RpcData* data) {
   }
   data->req_->net_selector()->RegisterAlarm(
     data->streaming_heartbeat_callback_, data->streaming_heartbeat_ms_);
-  int32 size = data->req_->free_output_bytes();
+  size_t size = data->req_->free_output_bytes();
   if (size > sizeof(int32) && data->streaming_message_->IsEmpty()) {
     size -= io::BaseNumStreamer<io::MemoryStream, io::MemoryStream>::WriteInt32(
       data->req_->request()->server_data(), 0, common::BIGENDIAN);
@@ -504,8 +504,8 @@ void HttpServer::RpcStreamSomeData(RpcData* data) {
   }
 
   // Try to pull some data to be sent
-  int32 size = data->req_->free_output_bytes();   // less than this on wire
-  const int32 start_size = size;
+  size_t size = data->req_->free_output_bytes();   // less than this on wire
+  const size_t start_size = size;
   bool popped = false;
   do {
     popped = RpcStreamPopMessageDataLocked(data);
@@ -524,7 +524,7 @@ void HttpServer::RpcStreamSomeData(RpcData* data) {
       }
       // Write some data if size allows.
       if (size > 0) {
-        const int32 cb = min(size, data->streaming_message_->Size());
+        const size_t cb = std::min(size, data->streaming_message_->Size());
         data->req_->request()->server_data()->AppendStream(
           data->streaming_message_, cb);
         size -=cb;
@@ -854,7 +854,7 @@ HttpServer::RpcData::RpcData(http::ServerRequest* req,
   }
   stats_->set_request_type_name(request->GetDescriptor()->full_name());
   stats_->set_request_size(request->ByteSize());
-  if (stats_->request_size() < limit_print) {
+  if (size_t(stats_->request_size()) < limit_print) {
     stats_->set_request_txt(request->ShortDebugString());
   }
   stats_->set_response_type_name(response->GetDescriptor()->full_name());
@@ -872,7 +872,7 @@ pb::RequestStats* HttpServer::RpcData::GrabStats(size_t limit_print) {
 
   if (controller_->Failed()) {
     stats_->set_error_txt(controller_->ErrorText());
-  } else if (stats_->response_size() < limit_print) {
+  } else if (size_t(stats_->response_size()) < limit_print) {
     stats_->set_response_txt(response_->ShortDebugString());
   }
   pb::RequestStats* stats = stats_; stats_ = NULL;

@@ -55,8 +55,8 @@
 namespace whisper {
 namespace io {
 
-typedef int32 BlockId;
-typedef int32 BlockSize;
+typedef int BlockId;
+typedef int BlockSize;
 
 enum TokenReadError {
   TOKEN_OK = 0,
@@ -70,7 +70,7 @@ class DataBlock;
 
 #ifdef __USE_VECTOR_FOR_BLOCK_DQUEUE__
 
-const int32 kResizeThreshold = 25;
+const int kResizeThreshold = 25;
 class BlockDqueue : public std::vector<DataBlock*> {
  public:
   BlockDqueue()
@@ -110,11 +110,11 @@ class BlockDqueue : public std::vector<DataBlock*> {
   BlockDqueue::iterator begin() {
     return std::vector<DataBlock*>::begin() + begin_id_;
   }
-  int32 size() const {
+  size_t size() const {
     return std::vector<DataBlock*>::size() - begin_id_;
   }
   bool empty() const {
-    return begin_id_ == std::vector<DataBlock*>::size();
+    return size_t(begin_id_) == std::vector<DataBlock*>::size();
   }
   void clear() {
     std::vector<DataBlock*>::clear();
@@ -129,10 +129,10 @@ class BlockDqueue : public std::vector<DataBlock*> {
   }
 
   void correct_buffer() {
-    const int32 elem_size = size();
-    if ( begin_id_ > kResizeThreshold && begin_id_ > elem_size ) {
+    const size_t elem_size = size();
+    if ( begin_id_ > 0 && begin_id_ > kResizeThreshold && size_t(begin_id_) > elem_size ) {
       std::vector<DataBlock*>::iterator it = std::vector<DataBlock*>::begin();
-      for ( int32 i = 0; i < elem_size; ++i ) {
+      for ( size_t i = 0; i < elem_size; ++i ) {
         *it = *(it + begin_id_);
         ++it;
       }

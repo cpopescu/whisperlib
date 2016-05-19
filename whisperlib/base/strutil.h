@@ -55,11 +55,11 @@
 #include <string>
 #include <vector>
 
-#include "whisperlib/base/log.h"
 #include "whisperlib/base/types.h"
 #include "whisperlib/base/hash.h"
 #include WHISPER_HASH_MAP_HEADER
 #include WHISPER_HASH_SET_HEADER
+#include "whisperlib/base/log.h"
 #include "whisperlib/base/strutil_format.h"
 #include <stddef.h>
 #include <wchar.h>
@@ -200,7 +200,7 @@ std::set<std::string> SplitStringToSet(const std::string& s, const std::string& 
 
 /** Splits the string on any separator char in separator, optionally skipping the resulting
  * empty string from output */
-void SplitStringOnAny(const char* text, int size, const char* separators,
+void SplitStringOnAny(const char* text, size_t size, const char* separators,
                       std::vector<std::string>* output, bool skip_empty);
 
 /** Splits the string on any separator char in separator, optionally skipping the resulting
@@ -342,7 +342,7 @@ std::string PrintableDataBufferInline(const std::string& s);
 std::string PrintableEscapedDataBuffer(const void* buffer, size_t size);
 
 /** Convert byte string to its hex representation */
-std::string ToHex(const unsigned char* cp, int len);
+std::string ToHex(const unsigned char* cp, size_t len);
 /** Convert byte string to its hex representation */
 std::string ToHex(const std::string& str);
 
@@ -366,17 +366,17 @@ std::string StrHumanBytes(size_t bytes);
  *      ...
  *      the maximum is 12.
  * For 0 or v > 12 returns 'nth' */
-std::string StrOrdinal(int v);
+std::string StrOrdinal(size_t v);
 
 /** StrOrdinalNth:  returns the compact ordinal word starting with the number
     1 -> "1st"
     2 -> "2nd"
     23 -> "23rd"
 */
-std::string StrOrdinalNth(int x);
+std::string StrOrdinalNth(size_t x);
 
 template<typename A, typename B>
-int PercentageI(A a, B b) { return b == 0 ? 100 : (a * 100LL / b); }
+size_t PercentageI(A a, B b) { return b == 0 ? 100 : (a * 100LL / b); }
 template<typename A, typename B>
 double PercentageF(A a, B b) { return b == 0 ? 100 : (a * 100.0 / b); }
 
@@ -427,13 +427,17 @@ template <typename A, typename B> std::string ToString(const std::pair<A, B>& p)
 template <typename K, typename V> std::string ToString(const std::map<K, V>& m);
 template <typename K, typename V> std::string ToString(const hash_map<K, V>& m);
 template <typename T> std::string ToString(const std::set<T>& v,
-        uint32 limit = kMaxUInt32, bool multi_line = false);
+                                           size_t limit = std::string::npos,
+                                           bool multi_line = false);
 template <typename T> std::string ToString(const hash_set<T>& v,
-        uint32 limit = kMaxUInt32, bool multi_line = false);
+                                           size_t limit = std::string::npos,
+                                           bool multi_line = false);
 template <typename T> std::string ToString(const std::vector<T>& v,
-        uint32 limit = kMaxUInt32, bool multi_line = false);
+                                           size_t limit = std::string::npos,
+                                           bool multi_line = false);
 template <typename T> std::string ToString(const std::list<T>& v,
-        uint32 limit = kMaxUInt32, bool multi_line = false);
+                                           size_t limit = std::string::npos,
+                                           bool multi_line = false);
 template <typename K, typename V>  std::string ToStringP(const std::map<K, V*>& m);
 template <typename K, typename V>  std::string ToStringP(const hash_map<K, V*>& m);
 template <typename T> std::string ToStringP(const std::set<T*>& v);
@@ -442,7 +446,7 @@ template <typename T> std::string ToStringP(const std::vector<T*>& vec);
 template <typename T> std::string ToStringP(const std::list<T*>& vec);
 
 template <typename CT> std::string ToStringKeys(const CT& m,
-        uint32 limit = kMaxUInt32);
+                                                size_t limit = std::string::npos);
 
 /** Returns the '|' string representation of an integer that is an or of
  * a set of flags, using a custom naming function.
@@ -879,7 +883,8 @@ std::string ToString(const std::pair<A,B>& p) {
 #define DEFINE_CONTAINER_TO_STRING(fname, accessor)                     \
 template <typename Cont>                                                \
 std::string fname(const Cont& m, const char* name,                      \
-                  size_t limit = kMaxUInt32, bool multi_line = false) { \
+                  size_t limit = std::string::npos,                     \
+                  bool multi_line = false) {                            \
     std::ostringstream oss;                                             \
     const size_t sz = m.size();                                         \
     oss << name << " #" << sz << "{";                                   \
@@ -897,9 +902,9 @@ std::string fname(const Cont& m, const char* name,                      \
 }
 
 DEFINE_CONTAINER_TO_STRING(ContainerToString, *it)
-DEFINE_CONTAINER_TO_STRING(ContainerPPairToString, *(it->second));
-DEFINE_CONTAINER_TO_STRING(ContainerKeysToString, (it->first));
-DEFINE_CONTAINER_TO_STRING(ContainerPToString, *(*it));
+DEFINE_CONTAINER_TO_STRING(ContainerPPairToString, *(it->second))
+DEFINE_CONTAINER_TO_STRING(ContainerKeysToString, (it->first))
+DEFINE_CONTAINER_TO_STRING(ContainerPToString, *(*it))
 #undef DEFINE_CONTAINER_TO_STRING
 
 template <typename K, typename V> std::string ToString(const std::map<K, V>& m) {
@@ -911,16 +916,16 @@ template <typename K, typename V> std::string ToString(const std::multimap<K, V>
 template <typename K, typename V> std::string ToString(const hash_map<K, V>& m) {
   return ContainerToString(m, "hash_map");
 }
-template <typename T> std::string ToString(const std::set<T>& v, uint32 limit, bool multi_line) {
+template <typename T> std::string ToString(const std::set<T>& v, size_t limit, bool multi_line) {
   return ContainerToString(v, "set", limit, multi_line);
 }
-template <typename T> std::string ToString(const hash_set<T>& v, uint32 limit, bool multi_line) {
+template <typename T> std::string ToString(const hash_set<T>& v, size_t limit, bool multi_line) {
   return ContainerToString(v, "hash_set", limit, multi_line);
 }
-template <typename T> std::string ToString(const std::vector<T>& v, uint32 limit, bool multi_line) {
+template <typename T> std::string ToString(const std::vector<T>& v, size_t limit, bool multi_line) {
   return ContainerToString(v, "vector", limit, multi_line);
 }
-template <typename T> std::string ToString(const std::list<T>& v, uint32 limit, bool multi_line) {
+template <typename T> std::string ToString(const std::list<T>& v, size_t limit, bool multi_line) {
   return ContainerToString(v, "list", limit, multi_line);
 }
 template <typename K, typename V> std::string ToStringP(const std::map<K, V*>& m) {
@@ -941,7 +946,7 @@ template <typename T> std::string ToStringP(const std::vector<T*>& v) {
 template <typename T> std::string ToStringP(const std::list<T*>& v) {
   return ContainerPToString(v, "list");
 }
-template <typename CT> std::string ToStringKeys(const CT& m, uint32 limit) {
+template <typename CT> std::string ToStringKeys(const CT& m, size_t limit) {
   return ContainerKeysToString(m, "map-keys", limit);
 }
 
@@ -975,7 +980,7 @@ std::string StrBitFlagsName(T all_flags, T value, const char* (*get_flag_name)(F
     std::ostringstream oss;
     oss << "{";
     bool first = true;
-    for (uint32 i = 0; i < sizeof(value)*8; i++) {
+    for (size_t i = 0; i < sizeof(value)*8; i++) {
         const T flag = (T(1) << i);
         if (value & flag) {
             if (!first) oss << ", ";

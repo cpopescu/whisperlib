@@ -51,8 +51,6 @@
 #include "whisperlib/net/connection.h"
 #include "whisperlib/net/dns_resolver.h"
 
-using namespace std;
-
 DEFINE_bool(net_connection_debug, false, "Enable debug messages in NetConnection");
 namespace whisper {
 namespace net {
@@ -294,7 +292,7 @@ bool TcpAcceptor::Listen(const HostPort& local_addr) {
 void TcpAcceptor::Close() {
   InternalClose(0);
 }
-string TcpAcceptor::PrefixInfo() const {
+std::string TcpAcceptor::PrefixInfo() const {
   std::ostringstream oss;
   oss << StateName() << " : [" << local_address() << " (fd: " << fd_ << ")] ";
   return oss.str();
@@ -701,7 +699,7 @@ const HostPort& TcpConnection::remote_address() const {
   return remote_address_;
 }
 
-string TcpConnection::PrefixInfo() const {
+std::string TcpConnection::PrefixInfo() const {
   std::ostringstream oss;
   int64 now_ts = selector_ != NULL ? selector_->now() : timer::TicksMsec();
   oss << StateName() << " : ["
@@ -747,7 +745,7 @@ bool TcpConnection::HandleReadEvent(const SelectorEventData& event) {
         state() == FLUSHING) << "Illegal state: " << StateName();
 
   // Read from network into inbuf_
-  int32 cb = Selectable::Read(inbuf(), tcp_params_.read_limit_);
+  const ssize_t cb = Selectable::Read(inbuf(), tcp_params_.read_limit_);
   if ( cb < 0 ) {
     const int err = ExtractSocketErrno();
     ECONNLOG << "Closing connection because Read failed: "
@@ -1205,7 +1203,7 @@ bool SslAcceptor::Listen(const net::HostPort& local_addr) {
 void SslAcceptor::Close() {
   tcp_acceptor_.Close();
 }
-string SslAcceptor::PrefixInfo() const {
+std::string SslAcceptor::PrefixInfo() const {
   return tcp_acceptor_.PrefixInfo() + " [SSL]: ";
 }
 
@@ -1333,7 +1331,7 @@ const HostPort& SslConnection::remote_address() const {
   return tcp_connection_ == NULL ? empty_address :
                                    tcp_connection_->remote_address();
 }
-string SslConnection::PrefixInfo() const {
+std::string SslConnection::PrefixInfo() const {
   CHECK_NOT_NULL(tcp_connection_);
   return tcp_connection_->PrefixInfo() +
          "[SSL: " + StateName() + "]: ";
@@ -1376,11 +1374,11 @@ bool SslConnection::TcpConnectionReadHandler() {
   DCONNLOG << "SslConnection::TcpConnectionReadHandler";
   // Read from TCP --> write to SSL
   const char* buf = NULL;
-  int32 size = 0;
+  size_t size = 0;
   while ( tcp_connection_->inbuf()->ReadNext(&buf, &size) ) {
     if (!size ) continue;
-    int32 write_size = BIO_write(p_bio_read_, buf, size);
-    if ( write_size < size ) {
+    int write_size = BIO_write(p_bio_read_, buf, size);
+    if ( write_size < int(size) ) {
       // we use memory BIO, no reason for BIO_write to fail
       ECONNLOG << "BIO_write failed, closing connection";
       ForceClose();
@@ -1424,10 +1422,10 @@ bool SslConnection::TcpConnectionReadHandler() {
     // it would return WANT_READ and we'll get read_blocked.
     // WCONNLOG << "Going to SSL_read from bio_data: " << SslPrintableBio(p_bio_read_);
     char* buffer;
-    int32 scratch;
+    size_t scratch;
     inbuf()->GetScratchSpace(&buffer, &scratch);
-    if (scratch > pending) scratch = pending;
-    const int32 cb = SSL_read(p_ssl_, buffer, scratch);
+    if (scratch > size_t(pending)) scratch = pending;
+    const int cb = SSL_read(p_ssl_, buffer, scratch);
 
     //WCONNLOG << "SSL read: " << read << " bytes"
     //            " => " << SslErrorName(SSL_get_error(p_ssl_, read));
@@ -1511,7 +1509,7 @@ bool SslConnection::TcpConnectionWriteHandler() {
     while ( !outbuf()->IsEmpty() ) {
       outbuf()->MarkerSet();
       char buf[1024];
-      int32 read = outbuf()->Read(buf, sizeof(buf));
+      size_t read = outbuf()->Read(buf, sizeof(buf));
       WCONNLOG << "APP read: " << read << " bytes";
       CHECK_GT(read, 0); // SSL_write() behavior is undefined on 0 bytes
                          // besides, we've already checked !outbuf()->IsEmpty()
@@ -1556,7 +1554,7 @@ bool SslConnection::TcpConnectionWriteHandler() {
   // Read from SSL --> write to TCP
   while ( BIO_pending(p_bio_write_) > 0 ) {
     char buf[1024];
-    int32 read = BIO_read(p_bio_write_, buf, sizeof(buf));
+    int read = BIO_read(p_bio_write_, buf, sizeof(buf));
     ssl_out_count_ += (read < 0 ? 0 : read);
     //WCONNLOG << "BIO read: " << read << " bytes, BIO total:"
     //            " in " << ssl_in_count_ << " / out " << ssl_out_count_;
@@ -1566,8 +1564,8 @@ bool SslConnection::TcpConnectionWriteHandler() {
       ForceClose();
       return false;
     }
-    int32 write = tcp_connection_->outbuf()->Write(buf, read);
-    CHECK(write == read) << "Memory stream should be unlimited";
+    const size_t write = tcp_connection_->outbuf()->Write(buf, size_t(read));
+    CHECK_EQ(write, size_t(read)) << "Memory stream should be unlimited";
     DCONNLOG << "TCP <<<< " << read << " bytes <<<< SSL";
   }
 
@@ -1625,7 +1623,7 @@ const char* SslConnection::SslWantName(int want) {
 }
 //static
 std::string SslConnection::SslLastError() {
-  vector<string> errors;
+  std::vector<std::string> errors;
   errors.push_back("Error stack:");
   while ( true ) {
     int line;
@@ -1653,7 +1651,7 @@ const void SslConnection::SslLibraryInit() {
   // actions_to_seed_PRNG();
 }
 //static
-X509* SslConnection::SslLoadCertificateFile(const string& filename) {
+X509* SslConnection::SslLoadCertificateFile(const std::string& filename) {
   // Load certificate file.
   FILE * f = ::fopen(filename.c_str(), "r");
   if ( f == NULL ) {
@@ -1673,7 +1671,7 @@ X509* SslConnection::SslLoadCertificateFile(const string& filename) {
   return certificate;
 }
 //static
-EVP_PKEY* SslConnection::SslLoadPrivateKeyFile(const string& filename) {
+EVP_PKEY* SslConnection::SslLoadPrivateKeyFile(const std::string& filename) {
   // Load private key file.
   FILE * f = ::fopen(filename.c_str(),"r");
   if ( f == NULL ) {
@@ -1726,14 +1724,14 @@ EVP_PKEY* SslConnection::SslDuplicateEVP_PKEY(const EVP_PKEY& src) {
   */
 }
 //static
-string SslConnection::SslPrintableBio(BIO* bio) {
+std::string SslConnection::SslPrintableBio(BIO* bio) {
   char * bio_data = NULL;
   long bio_data_size = BIO_get_mem_data(bio, &bio_data);
   return strutil::PrintableDataBufferHexa(bio_data, bio_data_size);
 }
 //static
-SSL_CTX* SslConnection::SslCreateContext(const string& certificate_filename,
-                                         const string& key_filename) {
+SSL_CTX* SslConnection::SslCreateContext(const std::string& certificate_filename,
+                                         const std::string& key_filename) {
   SslLibraryInit();
   X509* ssl_certificate = NULL;
   if ( certificate_filename != "" ) {
@@ -1970,7 +1968,7 @@ void SslConnection::SslShutdown() {
   // Read from SSL --> write to TCP (the last SSL close signal)
   while ( BIO_pending(p_bio_write_) > 0 ) {
     char buf[1024];
-    int32 read = BIO_read(p_bio_write_, buf, sizeof(buf));
+    int read = BIO_read(p_bio_write_, buf, sizeof(buf));
     ssl_out_count_ += (read < 0 ? 0 : read);
     //WCONNLOG << "BIO read: " << read << " bytes, BIO total:"
     //            " in " << ssl_in_count_ << " / out " << ssl_out_count_;
@@ -1980,8 +1978,8 @@ void SslConnection::SslShutdown() {
       ForceClose();
       return;
     }
-    int32 write = tcp_connection_->outbuf()->Write(buf, read);
-    CHECK(write == read) << "Memory stream should be unlimited";
+    const size_t write = tcp_connection_->outbuf()->Write(buf, size_t(read));
+    CHECK_EQ(write, size_t(read)) << "Memory stream should be unlimited";
     DCONNLOG << "TCP <<<< " << read << " bytes <<<< SSL";
   }
 }

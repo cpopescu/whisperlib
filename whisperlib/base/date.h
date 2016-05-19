@@ -37,8 +37,6 @@
 #include <string>
 #include "whisperlib/base/types.h"
 
-using std::string;
-
 namespace whisper {
 namespace timer {
 
@@ -182,16 +180,16 @@ class Date {
   // sets the current broken down representation to UTC or Local Time.
   void SetUTC(bool use_utc);
 
-  // Builds a date from a short string
-  bool SetFromShortString(const string& s, bool is_utc);
+  // Builds a date from a short std::string
+  bool SetFromShortString(const std::string& s, bool is_utc);
   //
   // Operators
   //
   Date& operator=(const Date&);
   bool operator==(const Date&) const;
 
-  string ToShortString() const;
-  string ToString() const;
+  std::string ToShortString() const;
+  std::string ToString() const;
 };
 
 std::ostream& operator<<(std::ostream& os, const Date& date);

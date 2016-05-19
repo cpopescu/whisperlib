@@ -40,8 +40,6 @@
 #include "whisperlib/base/types.h"
 #include "whisperlib/http/http_consts.h"
 
-using std::string;
-
 // This class can be used to parse and compose HTTP message headers
 // From protocol:
 //   http://tools.ietf.org/html/rfc2616
@@ -80,7 +78,7 @@ class Header {
   explicit Header(bool is_strict = true);
   ~Header();
 
-  typedef std::map<string, string> FieldMap;
+  typedef std::map<std::string, std::string> FieldMap;
   // Errors that can appear during parsing. They are more severe as
   // the number increases.
   // In general we can continue parsing in all states, however
@@ -132,16 +130,16 @@ class Header {
   HttpVersion http_version() const { return http_version_; }
   HttpMethod method() const { return method_; }
   const char* method_name() const { return GetHttpMethodName(method()); }
-  const string& uri() const { return uri_; }
+  const std::string& uri() const { return uri_; }
   HttpReturnCode status_code() const { return status_code_; }
-  const string reason() const { return reason_; }
+  const std::string reason() const { return reason_; }
   FirstLineType first_line_type() const { return first_line_type_; }
 
   void set_http_version(HttpVersion ver) { http_version_ = ver; }
   void set_method(HttpMethod method) { method_ = method; }
-  void set_uri(const string& uri) { uri_ = uri; }
+  void set_uri(const std::string& uri) { uri_ = uri; }
   void set_status_code(HttpReturnCode code) { status_code_ = code; }
-  void set_reason(const string& reason) { reason_ = reason; }
+  void set_reason(const std::string& reason) { reason_ = reason; }
   void set_first_line_type(FirstLineType flt) { first_line_type_ = flt; }
 
   // Prepares a normal status line to be returned, given an error code
@@ -169,17 +167,17 @@ class Header {
   // "field-name: field-value" pair, without changing the semantics of the
   // message, by appending each subsequent field-value to the first, each
   // separated by a comma.
-  bool AddField(const char* field_name, int32 field_name_len,
-                const char* field_content, int32 field_name_content,
+  bool AddField(const char* field_name, size_t field_name_len,
+                const char* field_content, size_t field_content_size,
                 bool replace, bool as_is = false);
-  bool AddField(const char* field_name, int32 field_name_len,
-                const string& field_content,
+  bool AddField(const char* field_name, size_t field_name_len,
+                const std::string& field_content,
                 bool replace, bool as_is = false) {
     return AddField(field_name, field_name_len,
                     field_content.data(), field_content.size(),
                     replace, as_is);
   }
-  bool AddField(const string& field_name, const string& field_content,
+  bool AddField(const std::string& field_name, const std::string& field_content,
                 bool replace, bool as_is = false) {
     return AddField(field_name.data(), field_name.size(),
                     field_content.data(), field_content.size(),
@@ -188,13 +186,13 @@ class Header {
 
   // Sets some verbatim specified headers (we basically append this at the
   // very end of encription).
-  void SetVerbatim(const string& verbatim) {
+  void SetVerbatim(const std::string& verbatim) {
     verbatim_ = verbatim;
   }
 
   // Removes the field alltogether from the field map
-  bool ClearField(const char* field_name, int32 len, bool as_is = false);
-  bool ClearField(const string& field_name /*, bool as_is = false*/) {
+  bool ClearField(const char* field_name, size_t len, bool as_is = false);
+  bool ClearField(const std::string& field_name /*, bool as_is = false*/) {
     return ClearField(field_name.c_str(), field_name.size());
   }
 
@@ -203,8 +201,8 @@ class Header {
   // the output.
   // Normalization example:
   //  content-lengTH -> Content-Length
-  static string NormalizeFieldName(const char* field_name, int32 len);
-  static string NormalizeFieldName(const string& field_name) {
+  static std::string NormalizeFieldName(const char* field_name, size_t len);
+  static std::string NormalizeFieldName(const std::string& field_name) {
     return NormalizeFieldName(field_name.data(), field_name.size());
   }
 
@@ -213,8 +211,8 @@ class Header {
   //    returns a pointer to the internal buffer, which may go away
   //    at the very next non-const call !).
   // string* one returns false and makes a copy.
-  const char* FindField(const string& field_name, int32* len) const;
-  bool FindField(const string& field_name, string* field_content) const {
+  const char* FindField(const std::string& field_name, size_t* len) const;
+  bool FindField(const std::string& field_name, std::string* field_content) const {
     const FieldMap::const_iterator it = fields_.find(field_name);
     if ( it == fields_.end() ) {
       return false;
@@ -224,7 +222,7 @@ class Header {
   }
   // A more natural field getting - here returns "" if not found by
   // default
-  string FindField(const string& field_name) const {
+  std::string FindField(const std::string& field_name) const {
     const FieldMap::const_iterator it = fields_.find(field_name);
     if ( it == fields_.end() ) {
       return "";
@@ -234,7 +232,7 @@ class Header {
 
 
   // Just confirms the field existence
-  bool HasField(const string& field_name) const {
+  bool HasField(const std::string& field_name) const {
     const FieldMap::const_iterator it = fields_.find(field_name);
     return it != fields_.end();
   }
@@ -243,9 +241,9 @@ class Header {
   // performing for each field as instructed by the replace flag.
   // We skip over the headers over which AddField would skip.
   // Returns the number of copied fields.
-  int CopyHeaders(const Header& src, bool replace);
+  size_t CopyHeaders(const Header& src, bool replace);
   // Same as above but copies only the fields
-  int32 CopyHeaderFields(const Header& src, bool replace);
+  size_t CopyHeaderFields(const Header& src, bool replace);
 
   // Puts the object in a fresh-new state (call always befor starting
   // parsing a header)
@@ -286,19 +284,19 @@ class Header {
   void AppendToStream(io::MemoryStream* io) const;
 
   // Produces a string w. the header data - not that fast
-  string ToString() const;
+  std::string ToString() const;
 
   // Returns the first line as a string by composing it from components,
   // according to first_line_type_ (on invalid type returns an empty CRLF
-  string ComposeFirstLine() const;
+  std::string ComposeFirstLine() const;
 
   // Checker for a field name or a field content..
-  static bool IsValidFieldName(const char* name, int len);
-  static bool IsValidFieldContent(const char* content, int len);
-  static bool IsValidFieldName(const string& name) {
+  static bool IsValidFieldName(const char* name, size_t len);
+  static bool IsValidFieldContent(const char* content, size_t len);
+  static bool IsValidFieldName(const std::string& name) {
     return IsValidFieldName(name.data(), name.size());
   }
-  static bool IsValidFieldContent(const string& content) {
+  static bool IsValidFieldContent(const std::string& content) {
     return IsValidFieldContent(content.data(), content.size());
   }
 
@@ -318,18 +316,18 @@ class Header {
   time_t GetDateField(const char* field_name);
 
   // Adds a properly formatted date in the corresponding field
-  bool SetDateField(const string& field_name, time_t t);
+  bool SetDateField(const std::string& field_name, time_t t);
 
   // Checks ig the header includes a Authorization: header, and if it does,
   // decodes the user and password and sets them in the specific parameters.
   // Returns: true if the header includs the Authorization header
-  bool GetAuthorizationField(string* user, string* passwd);
+  bool GetAuthorizationField(std::string* user, std::string* passwd);
 
   // Sets the Authorization header and sets the corresponding header
   // according to the specified parametes.
   // Returns false if an error occured (like the user contains :
   // and other stuff)
-  bool SetAuthorizationField(const string& user, const string& passwd);
+  bool SetAuthorizationField(const std::string& user, const std::string& passwd);
 
   // Returns true if the headers specifies a chunked transfer coding
   bool IsChunkedTransfer() const;
@@ -360,10 +358,10 @@ class Header {
   // GetHeaderAcceptance(kHeaderAccept, "audio/mp3", "audio/*", "*/*");
   // GetHeaderAcceptance(kHeaderAcceptEncoding, "gzip", "", "*");
   //
-  float GetHeaderAcceptance(const string& field,
-                            const string& value,
-                            const string& local_wildcard_value,
-                            const string& global_wildcard_value) const;
+  float GetHeaderAcceptance(const std::string& field,
+                            const std::string& value,
+                            const std::string& local_wildcard_value,
+                            const std::string& global_wildcard_value) const;
 
  private:
   void set_parse_error(ParseError error) {
@@ -382,7 +380,7 @@ class Header {
   bool ReadFirstLine(io::MemoryStream* io, FirstLineType expected_first_line);
   // Extracts a http status code (and saves it to status_code_) from the
   // given name. On error sets the parsing error
-  void ParseStatusCode(const string& status_code_str);
+  void ParseStatusCode(const std::string& status_code_str);
   // Appends the current intermediate values as a field name.
   bool AddCrtParsingData();
 
@@ -390,22 +388,22 @@ class Header {
   // permissive
   const bool is_strict_;
   // Through how many bytes we advanced our parsing
-  int bytes_parsed_;
+  size_t bytes_parsed_;
   // The worst parse error encountered so far
   ParseError parse_error_;
   // The error encountered in the last call to Parse* functions
   ParseError last_parse_error_;
 
   // Intermadiate values for
-  string crt_parsing_field_name_;
-  string crt_parsing_field_content_;
+  std::string crt_parsing_field_name_;
+  std::string crt_parsing_field_content_;
 
   // Things that can appear in the first line..
   HttpVersion http_version_;
   HttpMethod method_;
   HttpReturnCode status_code_;
-  string uri_;
-  string reason_;
+  std::string uri_;
+  std::string reason_;
 
   // Status from parsing the first line
   FirstLineType first_line_type_;
@@ -414,7 +412,7 @@ class Header {
   FieldMap fields_;
 
   // A verbatim text that we can add at the end of headers
-  string verbatim_;
+  std::string verbatim_;
 
   DISALLOW_EVIL_CONSTRUCTORS(Header);
 };

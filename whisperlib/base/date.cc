@@ -187,7 +187,8 @@ bool Date::Set(int year, int month, int day,
     return false;
   }
 
-  struct tm t = {0, };
+  struct tm t;
+  memset(&t, 0, sizeof(t));
   t.tm_year = year - 1900;
   t.tm_mon = month;
   t.tm_mday = day;
@@ -287,7 +288,7 @@ bool Date::SetFromShortString(const string& s, bool is_utc) {
     return false;
   }
   int num_dash = 0;
-  for ( int i = 0; i < s.size(); ++i ) {
+  for ( size_t i = 0; i < s.size(); ++i ) {
     const char c = s[i];
     if ( c < '0' || c > '9' ) {
       if ( c == '-' ) {

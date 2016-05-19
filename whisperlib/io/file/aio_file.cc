@@ -53,11 +53,11 @@ DEFINE_int32(max_concurrent_aio_ops,
 using namespace whisper;
 namespace {
 
-static const int32 kMaxConcurrentRequests = 65536;
+static const size_t kMaxConcurrentRequests = 65536;
 
 // The guy which perfoms the actual reads - run this in a thread -
 void MainAioProcessThread(
-  int32 block_type,
+  size_t block_type,
   int lio_opcode,
   io::AioManager::ReqQueue* reqs,
   io::AioManager::ReqQueue* resps) {
@@ -69,14 +69,14 @@ void MainAioProcessThread(
            << " Block Type: " << block_type << " - opcode: " << lio_opcode;
 
   io::AioManager::Request* crt = NULL;
-  int32 crt_ndx = 0;
+  size_t crt_ndx = 0;
 #ifdef __AIO_DEEP_LOG__
   int64 total_time = 0;
   int64 total_ops = 0;
   int64 total_bytes = 0;
 #endif
   do {
-    while ( crt_ndx < FLAGS_max_concurrent_aio_ops ) {
+    while ( crt_ndx < size_t(FLAGS_max_concurrent_aio_ops) ) {
       if ( (crt = reqs->Get(0)) != NULL ) {
         crt_reqs[crt_ndx] = crt;
         struct aiocb* p = aio_freelist.New();
@@ -87,7 +87,7 @@ void MainAioProcessThread(
       }
     }
     if ( crt_ndx > 0 ) {
-      LOG_INFO_IF(crt_ndx >= FLAGS_max_concurrent_aio_ops)
+      LOG_INFO_IF(crt_ndx >= size_t(FLAGS_max_concurrent_aio_ops))
         << " AIO operations Maxed out !!";
 #ifdef __AIO_DEEP_LOG__
       const int64 now = timer::TicksMsec();
@@ -100,14 +100,14 @@ void MainAioProcessThread(
       if ( err && errno != EIO ) {
         LOG_ERROR << " ERROR in lio_listio: "
                   << GetSystemErrorDescription(errno);
-        for ( int32 i = 0; i < crt_ndx; ++i ) {
+        for ( size_t i = 0; i < crt_ndx; ++i ) {
           crt_reqs[i]->errno_ = errno;
           crt_reqs[i]->result_ = -1;
           resps->Put(crt_reqs[i]);
           aio_freelist.Dispose(ops[i]);
         }
       } else {
-        for ( int32 i = 0; i < crt_ndx; ++i ) {
+        for ( size_t i = 0; i < crt_ndx; ++i ) {
           struct aiocb* p = ops[i];
           crt_reqs[i]->errno_ = aio_error(p);
           if ( crt_reqs[i]->errno_ < 0 ) {
@@ -174,10 +174,10 @@ AioManager::AioManager(const char* name, net::Selector* selector)
   CHECK(response_thread_.SetJoinable());
   CHECK(response_thread_.SetStackSize(PTHREAD_STACK_MIN + (1 << 20)));
   CHECK(response_thread_.Start());
-  for ( int32 i = 0; i < NUM_OPS; ++i ) {
+  for ( size_t i = 0; i < NUM_OPS; ++i ) {
     const int lio_opcode = i < kNumBlockTypes ? LIO_READ : LIO_WRITE;
-    for ( int32 j = 0; j < kNumBlockTypes; ++j ) {
-      const int32 ndx = i * kNumBlockTypes + j;
+    for ( size_t j = 0; j < kNumBlockTypes; ++j ) {
+      const size_t ndx = i * kNumBlockTypes + j;
       request_queues_[ndx] = new ReqQueue(kMaxConcurrentRequests);
       Closure* const c = NewCallback(&MainAioProcessThread,
                                      j,
@@ -228,11 +228,11 @@ void AioManager::ProcessResponses() {
 }
 
 void AioManager::Read(Request* req) {
-  const int32 ndx = OP_READ * kNumBlockTypes + SizePool(req->size_);
+  const size_t ndx = OP_READ * kNumBlockTypes + SizePool(req->size_);
   request_queues_[ndx]->Put(req);
 }
 void AioManager::Write(Request* req) {
-  const int32 ndx = OP_WRITE * kNumBlockTypes + SizePool(req->size_);
+  const size_t ndx = OP_WRITE * kNumBlockTypes + SizePool(req->size_);
   request_queues_[ndx]->Put(req);
 }
 }  // namespace io

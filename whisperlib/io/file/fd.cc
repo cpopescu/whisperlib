@@ -88,10 +88,10 @@ void FileDescriptor::Close() {
   close_on_exit_ = false;
 }
 
-int32 FileDescriptor::Read(void* buf, int32 len) {
+ssize_t FileDescriptor::Read(void* buf, size_t len) {
   DCHECK(is_open());
 
-  int32 cb = ::read(fd_, buf, len);
+  ssize_t cb = ::read(fd_, buf, len);
   if ( cb < 0 ) {
     if ( GetLastSystemError() == EAGAIN ) {
       cb = 0;
@@ -100,7 +100,7 @@ int32 FileDescriptor::Read(void* buf, int32 len) {
       return -1;
     }
   }
-  if ( cb < len && !is_live_ ) {
+  if ( size_t(cb) < len && !is_live_ ) {
     DLOG_INFO <<  "Reached EOF for fd: " << fd_;
     is_eof_ = true;
   }
@@ -108,24 +108,24 @@ int32 FileDescriptor::Read(void* buf, int32 len) {
   return cb;
 }
 
-int32 FileDescriptor::Write(const void* buf, int32 len) {
+ssize_t FileDescriptor::Write(const void* buf, size_t len) {
   DCHECK(is_open());
-  const int32 cb = ::write(fd_, buf, len);
+  const ssize_t cb = ::write(fd_, buf, len);
   if ( cb < 0 ) {
     LOG_ERROR << "::write failed: " << GetLastSystemErrorDescription();
-    return cb;
   }
   return cb;
 }
 
-int32 FileDescriptor::Skip(int32 len) {
+int64_t FileDescriptor::Skip(int64_t len) {
   DCHECK(is_open());
+  CHECK_GE(len, 0);
 
   uint8 tmp_buf[256] = { 0, };
-  int32 total_read = 0;
-  int32 crt_read = 0;
+  int64_t total_read = 0;
+  ssize_t crt_read = 0;
   while ( total_read < len ) {
-    const int32 to_read = min(static_cast<int32>(sizeof(tmp_buf)), len);
+    const size_t to_read = std::min(sizeof(tmp_buf), size_t(len));
     if ( (crt_read = Read(tmp_buf, to_read) <= 0 ) ) {
       break;
     }
