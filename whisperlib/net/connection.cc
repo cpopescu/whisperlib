@@ -815,7 +815,7 @@ bool TcpConnection::HandleWriteEvent(const SelectorEventData& event) {
         state() == FLUSHING) << "Illegal state: " << StateName();
 
   // write data from outbuf_ to network
-  const int32 cb = Selectable::Write(outbuf(), tcp_params_.write_limit_);
+  const ssize_t cb = Selectable::Write(outbuf(), tcp_params_.write_limit_);
   if ( cb < 0 ) {
     const int err = ExtractSocketErrno();
     ECONNLOG << "Closing connection because Write failed: "

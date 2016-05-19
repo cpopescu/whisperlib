@@ -80,7 +80,7 @@ void MemoryStream::AppendBlock(DataBlock* block) {
 //////////////////////////////////////////////////////////////////////
 
 #if defined(HAVE_SYS_UIO_H)
-size_t MemoryStream::ReadForWritev(struct iovec** iov,
+size_t MemoryStream::ReadForWritev(struct ::iovec** iov,
                                    int* iovcnt,
                                    size_t max_size) {
   CHECK(scratch_pointer_.IsNull())
@@ -98,7 +98,8 @@ size_t MemoryStream::ReadForWritev(struct iovec** iov,
     if ( size > 0 ) {
       DCHECK_GE(size_, size);
       size_ -= size;
-      max_size -= size;
+      if (size > max_size) max_size = 0;
+      else max_size -= size;
       v.push_back(::iovec());
       v.back().iov_base = const_cast<void*>(
         reinterpret_cast<const void*>(buffer));

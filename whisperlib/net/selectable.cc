@@ -34,9 +34,16 @@
 
 #include <unistd.h>
 #include <fcntl.h>
+
 #if defined(HAVE_SYS_UIO_H)
 #include <sys/uio.h>
+#elif defined(__has_include)
+ #if __has_include(<sys/uio.h>)
+  #include <sys/uio.h>
+  #define HAVE_SYS_UIO_H
+ #endif
 #endif
+
 #include <sys/socket.h>
 #include "whisperlib/base/core_errno.h"
 #include "whisperlib/base/gflags.h"
@@ -63,7 +70,7 @@ namespace net {
 
 ssize_t Selectable::Write(const char* buf, size_t size) {
   const ssize_t cb = ::write(GetFd(), buf, size);
-  if ( cb <= 0 ) {
+  if ( cb < 0 ) {
     if ( errno == EAGAIN || errno == EWOULDBLOCK ) {
       // Not really an error for non-blocking sockets
       return 0;
@@ -85,7 +92,7 @@ ssize_t Selectable::Write(const char* buf, size_t size) {
 
 //////////////////////////////////////////////////////////////////////
 
-#ifdef  __USE_WRITEV__
+#ifdef __USE_WRITEV__
 
 ssize_t Selectable::Write(io::MemoryStream* ms, ssize_t size) {
   size_t scratch = 0;
@@ -99,9 +106,10 @@ ssize_t Selectable::Write(io::MemoryStream* ms, ssize_t size) {
     ms->MarkerSet();
     struct ::iovec* iov = NULL;
     int iovcnt = 0;
-    scratch = ms->ReadForWritev(&iov, &iovcnt,
-                                (size < 0) ? FLAGS_default_read_for_writev_size :
-                                std::min(size - cb, ssize_t(FLAGS_default_read_for_writev_size)));
+    const ssize_t buf_size = (size < 0)
+        ? FLAGS_default_read_for_writev_size
+        : std::min(size - cb, ssize_t(FLAGS_default_read_for_writev_size));
+    scratch = ms->ReadForWritev(&iov, &iovcnt, buf_size);
     if ( iovcnt > 0 ) {
       const ssize_t crt_cb = ::writev(fd, iov, iovcnt);
       const int err = errno;
@@ -158,7 +166,7 @@ ssize_t Selectable::Write(io::MemoryStream* ms, ssize_t len) {
     if ( size ) {
       const ssize_t sent = Write(buf, size);
       const int err = errno;
-      if ( sent <= 0 ) {
+      if ( sent < 0 ) {
         // Some error - nothing sent - restore the marker and bail out.
         // (Error treated in underlying Write)
         ms->MarkerRestore();
