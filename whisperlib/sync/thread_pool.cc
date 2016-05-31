@@ -118,7 +118,7 @@ LockFreeThreadPool::LockFreeThreadPool(
   size_t num_producers, size_t num_threads, size_t backlog_size, size_t sleep_usec,
   bool low_priority, Closure* completion_callback, bool auto_start)
   : ThreadPoolBase(num_threads, low_priority, completion_callback),
-    num_producers_(num_producers), num_consumers_(num_threads), sleep_usec_(sleep_usec),
+    num_producers_(num_producers),
     jobs_(backlog_size, num_producers + 1, num_threads + 1, sleep_usec) {
   if (auto_start) {
     Start();
@@ -170,7 +170,7 @@ LockFreeMultiQueueThreadPool::LockFreeMultiQueueThreadPool(
   size_t backlog_size, size_t sleep_usec,
   bool low_priority, Closure* completion_callback, bool auto_start)
   : ThreadPoolBase(num_threads, low_priority, completion_callback),
-    num_producers_(num_producers), num_consumers_(num_threads), sleep_usec_(sleep_usec),
+    num_producers_(num_producers),    
     jobs_(num_threads) {
   for (size_t i = 0; i < num_threads; ++i) {
     jobs_[i] = new synch::LockFreeProducerConsumerQueue< Callback1<size_t> >(

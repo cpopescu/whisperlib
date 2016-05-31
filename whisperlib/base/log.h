@@ -84,6 +84,22 @@ static NullBuffer null_buffer;
 static std::ostream null_stream(&null_buffer);
 }  // namespace whisper_base
 
+#if defined(USE_GLOG_LOGGING) && defined(HAVE_GLOG)  // && defined(_LOGGING_H_)
+#include <glog/logging.h>
+#define LOG_INFO LOG(INFO)
+#define LOG_WARN LOG(WARNING)
+#define LOG_WARNING LOG(WARNING)
+#define LOG_ERROR LOG(ERROR)
+#define LOG_FATAL LOG(FATAL)
+#define LG LOG_INFO
+#ifdef DEBUG
+#define LOG_DEBUG LOG_INFO
+#else
+#define LOG_DEBUG if (false) whisper_base::null_stream
+#endif
+
+#else  // not USE_GLOG_LOGGING _______________________________________________
+
 // These may be defined in other packages we include - make sure
 // we take our definitions.
 #undef LOG
@@ -110,26 +126,11 @@ static std::ostream null_stream(&null_buffer);
 #undef DCHECK_NOTNULL
 #undef VLOG
 
-#if defined(USE_GLOG_LOGGING) && defined(HAVE_GLOG)  // && defined(_LOGGING_H_)
-#include <glog/logging.h>
-#define LOG_INFO LOG(INFO)
-#define LOG_WARN LOG(WARNING)
-#define LOG_WARNING LOG(WARNING)
-#define LOG_ERROR LOG(ERROR)
-#define LOG_FATAL LOG(FATAL)
-#define LG LOG_INFO
-#ifdef DEBUG
-#define LOG_DEBUG LOG_INFO
-#else
-#define LOG_DEBUG if (false) whisper_base::null_stream
-#endif
-
-#else  // not USE_GLOG_LOGGING _______________________________________________
-
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sstream>              // ostringstream
+#include <string.h>
 
 #ifndef GLOG_NAMESPACE
 #define GLOG_NAMESPACE google
