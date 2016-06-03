@@ -159,10 +159,6 @@ protected:
 private:
   /** Number of producers for our jobs, we are an extra one */
   const size_t num_producers_;
-  /** Number of consumers for our jobs, we are an extra one */
-  const size_t num_consumers_;
-  /** Sleep interval for underlying lock free producer consumer queue */
-  const size_t sleep_usec_;
 
   synch::LockFreeProducerConsumerQueue< Callback1<size_t> > jobs_;
 
@@ -200,10 +196,6 @@ protected:
 private:
   /** Number of producers for our jobs, we are an extra one */
   const size_t num_producers_;
-  /** Number of consumers for our jobs, we are an extra one */
-  const size_t num_consumers_;
-  /** Sleep interval for underlying lock free producer consumer queue */
-  const size_t sleep_usec_;
 
   std::vector< synch::LockFreeProducerConsumerQueue< Callback1<size_t> >*> jobs_;
 

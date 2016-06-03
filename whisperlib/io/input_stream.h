@@ -33,6 +33,7 @@
 #define __WHISPERLIB_IO_INPUT_STREAM_H__
 
 #include <string>
+#include <string.h>
 
 #include "whisperlib/base/types.h"
 #include "whisperlib/base/log.h"

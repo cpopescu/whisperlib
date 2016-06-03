@@ -54,6 +54,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <string.h>
 
 #include "whisperlib/base/types.h"
 #include "whisperlib/base/hash.h"
