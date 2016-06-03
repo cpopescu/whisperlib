@@ -55,9 +55,9 @@ class ProducerConsumerQueue {
     CHECK_SYS_FUN(pthread_cond_init(&cond_empty_, NULL), 0);
   }
   ~ProducerConsumerQueue() {
-    DCHECK_SYS_FUN(pthread_mutex_destroy(&mutex_), 0);
-    DCHECK_SYS_FUN(pthread_cond_destroy(&cond_full_), 0);
-    DCHECK_SYS_FUN(pthread_cond_destroy(&cond_empty_), 0);
+    pthread_mutex_destroy(&mutex_);
+    pthread_cond_destroy(&cond_full_);
+    pthread_cond_destroy(&cond_empty_);
   }
   pthread_mutex_t mutex() {
         return mutex_;

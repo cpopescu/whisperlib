@@ -48,7 +48,18 @@
 #include "whisperlib/base/timer.h"
 #include <iomanip>
 
-#if !defined(USE_GLOG_LOGGING) || !defined(_LOGGING_H_)
+namespace {
+struct NullBuffer : std::streambuf {
+    int overflow(int c) { return c; }
+};
+static NullBuffer glb_null_buffer;
+static std::ostream glb_null_stream(&glb_null_buffer);
+}
+namespace whisper_base {
+std::ostream& null_stream() { return glb_null_stream; }
+}
+
+#if !defined(USE_GLOG_LOGGING) || !defined(HAVE_GLOG)
 
 // We just define some flags in here
 DEFINE_bool(logtostderr, false,
@@ -87,9 +98,8 @@ std::ostream& LogPrefix::DateLogger::HumanDate(std::ostream& str) const {
                 << std::setw(2) << now.tm_sec   << "."
                 << std::setw(6) << usec
                 << std::setfill(' '); //  << std::setw(5);
-#endif
 }
 }  // namespace ext_base
-
+#endif
 
 #endif

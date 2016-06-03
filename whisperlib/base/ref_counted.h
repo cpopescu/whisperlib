@@ -38,6 +38,7 @@
 #include <string>
 #include "whisperlib/base/log.h"
 #include "whisperlib/base/callback.h"
+#include "whisperlib/base/types.h"
 
 // Reference counted through encapsulation.
 // The "ref_counted" contains the object C
