@@ -36,7 +36,7 @@
 
 void LogUrl(const char* surl) {
   URL url(surl);
-  vector< pair<string, string> > qp;
+  std::vector< std::pair<std::string, std::string> > qp;
   int num = url.GetQueryParameters(&qp, true);
   LOG_INFO << "\n==================================================="
            << "\nSTRING: " << surl
@@ -58,7 +58,7 @@ void LogUrl(const char* surl) {
 }
 
 int main(int argc, char* argv[]) {
-  common::Init(argc, argv);
+  whisper::common::Init(argc, argv);
   LogUrl("http://www.google.com/");
   LogUrl("http://www.google.com/gigi/marga?xyz=abc%5c&zuzu=aba+mucu");
   LogUrl("http://www.google.com/gigi/marga?x yz=ab[c%5c&zuzu=aba mucu");

@@ -61,16 +61,16 @@ DEFINE_string(base_dir,
 //
 using namespace whisper;
 
-string GenerateDirListing(const string& url_path) {
-  const string dirpath(FLAGS_base_dir + url_path);
-  vector<string> paths;
+std::string GenerateDirListing(const std::string& url_path) {
+  const std::string dirpath(FLAGS_base_dir + url_path);
+  std::vector<std::string> paths;
   if ( !io::DirList(dirpath, io::LIST_FILES | io::LIST_DIRS, NULL, &paths) ) {
     return "Error";
   }
-  string s = strutil::StringPrintf("<h1>Directory: %s</h1>", url_path.c_str());
+  std::string s = strutil::StringPrintf("<h1>Directory: %s</h1>", url_path.c_str());
   for ( int i = 0; i < paths.size(); i++ ) {
-    const string& crt_path = paths[i];
-    string crt_url = strutil::JoinPaths(url_path, crt_path);
+    const std::string& crt_path = paths[i];
+    std::string crt_url = strutil::JoinPaths(url_path, crt_path);
     if ( io::IsDir(crt_path) ) {
       s += strutil::StringPrintf("<p>[DIR] <a href=\"%s/\">%s/</a></p>",
                                  crt_url.c_str(),
@@ -87,9 +87,9 @@ string GenerateDirListing(const string& url_path) {
 bool LooksTextFile(io::File* f) {
   bool is_text = true;
   // This is not very smart, but whatever, is just a test.
-  const int32 text_to_check = std::min(static_cast<int32>(f->Size()), 1024);
+  const ssize_t text_to_check = std::min(static_cast<int32>(f->Size()), 1024);
   uint8* buf = new uint8[text_to_check];
-  if ( f->Read(buf, text_to_check) != text_to_check ) {
+  if ( f->ReadBuffer(buf, text_to_check) != text_to_check ) {
     f->SetPosition(0);
     return false;
   }
@@ -104,16 +104,16 @@ bool LooksTextFile(io::File* f) {
   return is_text;
 }
 
-string ContentTypeFromFilename(const string& path, bool is_text) {
-  string extension;
+std::string ContentTypeFromFilename(const std::string& path, bool is_text) {
+  std::string extension;
   const int pos_dot = path.rfind(".");
   const int pos_slash = path.rfind("/");
-  if ( pos_dot != string::npos &&
+  if ( pos_dot != std::string::npos &&
        pos_dot > pos_slash ) {
     extension = path.substr(pos_dot + 1);
   }
   strutil::StrToLower(extension);
-  string content_type = "application/octet-stream";
+  std::string content_type = "application/octet-stream";
   if ( extension == "html" || extension == "htm" ) {
     content_type = "text/html";
   } else if ( extension == "jpg" ||
@@ -137,8 +137,8 @@ string ContentTypeFromFilename(const string& path, bool is_text) {
 // One shot answer
 void ReadFileToRequest(io::FileInputStream* fis,
                          http::ServerRequest* req,
-                         const string& content_type) {
-  string s;
+                         const std::string& content_type) {
+  std::string s;
   const int64 size = fis->Readable();
   CHECK_EQ(size, fis->ReadString(&s, size));
   req->request()->server_header()->AddField(
@@ -162,7 +162,7 @@ void StreamingClosed(StreamData* sd) {
 }
 
 void ContinueStreaming(StreamData* sd) {
-  int32 size, read_size;
+  ssize_t size, read_size;
   char* buf;
 
   size = read_size = sd->req->free_output_bytes();
@@ -172,7 +172,7 @@ void ContinueStreaming(StreamData* sd) {
     buf = NULL;
     if ( size > 0 ) {
       buf = new char[size];
-      read_size = sd->fis->Read(buf, size);
+      read_size = sd->fis->ReadBuffer(buf, size);
       if ( read_size <= 0 ) {
         delete [] buf;
         // TODO(cpopescu): Report an error !
@@ -205,10 +205,10 @@ void StreamFileToRequest(StreamData* sd) {
 
 void ProcessPath(http::ServerRequest* req) {
   URL* const url = req->request()->url();
-  const string url_path(url->UrlUnescape(url->path().c_str(),
+  const std::string url_path(url->UrlUnescape(url->path().c_str(),
                                          url->path().size()));
   CHECK(url != NULL);
-  const string path(FLAGS_base_dir + url_path);
+  const std::string path(FLAGS_base_dir + url_path);
   if ( io::IsDir(path.c_str()) ) {
     LOG_INFO << " Directory request : " << url_path
              << " [" << path << "]";
@@ -227,7 +227,7 @@ void ProcessPath(http::ServerRequest* req) {
       req->ReplyWithStatus(http::NOT_FOUND);
       return;
     }
-    const string content_type(
+    const std::string content_type(
       ContentTypeFromFilename(path, LooksTextFile(infile)));
     io::FileInputStream* fis = new io::FileInputStream(infile);
     const int64 size = fis->Readable();
@@ -260,7 +260,7 @@ int main(int argc, char* argv[]) {
   params.dlog_level_ = true;
   net::Selector selector;
 
-  vector<net::SelectorThread*> client_threads;
+  std::vector<net::SelectorThread*> client_threads;
   for ( int i = 0; i < 10; ++i ) {
     client_threads.push_back(new net::SelectorThread());
     client_threads.back()->Start();
