@@ -47,7 +47,9 @@
 #ifndef _WHISPERLIB_BASE_LOG_H
 #define _WHISPERLIB_BASE_LOG_H
 
-#if defined(USE_GLOG_LOGGING) && defined(HAVE_GLOG)
+#include "whisperlib/base/types.h"
+
+#if defined(HAVE_GLOG)
 #include <glog/logging.h>
 #endif
 
@@ -78,7 +80,7 @@ std::ostream& null_stream();
 
 // These may be defined in other packages we include - make sure
 // we take our definitions.
-#if defined(USE_GLOG_LOGGING) && defined(HAVE_GLOG)  // && defined(_LOGGING_H_)
+#if defined(HAVE_GLOG)
 
 #define LOG_INFO LOG(INFO)
 #define LOG_WARN LOG(WARNING)
@@ -100,7 +102,7 @@ std::ostream& null_stream();
 
 #define CHECK_NOT_NULL(p) CHECK_NOTNULL((p))
 
-#else  // not USE_GLOG_LOGGING _______________________________________________
+#else  // not HAVE_GLOG _______________________________________________
 
 #include "whisperlib/base/log_whisper.h"
 #ifndef NDEBUG
@@ -112,7 +114,8 @@ std::ostream& null_stream();
 #define CHECK_NOT_NULL(p) whisper_base::CheckNotNull( \
         __FILE__, __LINE__, "'" #p "' is NULL", (p))
 
-#endif  // USE_GLOG_LOGGING
+#endif  // HAVE_GLOG
+
 
 ////////////////////////////////////////////////////////////////////////////////
 

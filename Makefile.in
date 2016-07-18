@@ -169,7 +169,9 @@ am__whisperlib_libwhisperlib_a_SOURCES_DIST =  \
 	whisperlib/rpc/RpcStats.pb.cc \
 	whisperlib/rpc/rpc_http_client.cc \
 	whisperlib/rpc/rpc_http_server.cc \
-	whisperlib/rpc/rpc_controller.cc whisperlib/base/log.cc \
+	whisperlib/rpc/rpc_controller.cc \
+	whisperlib/raft/RaftProto.pb.cc whisperlib/raft/raft_server.cc \
+	whisperlib/raft/raft_client.cc whisperlib/base/log.cc \
 	whisperlib/base/app.cc whisperlib/base/date.cc \
 	whisperlib/base/core_errno.cc whisperlib/base/re.cc \
 	whisperlib/base/signal_handlers.cc \
@@ -225,9 +227,12 @@ am__objects_2 = whisperlib/rpc/RpcStats.pb.$(OBJEXT) \
 	whisperlib/rpc/rpc_http_client.$(OBJEXT) \
 	whisperlib/rpc/rpc_http_server.$(OBJEXT) \
 	whisperlib/rpc/rpc_controller.$(OBJEXT)
-@HAVE_GLOG_FALSE@am__objects_3 = whisperlib/base/log.$(OBJEXT)
+am__objects_3 = whisperlib/raft/RaftProto.pb.$(OBJEXT) \
+	whisperlib/raft/raft_server.$(OBJEXT) \
+	whisperlib/raft/raft_client.$(OBJEXT)
+@HAVE_GLOG_FALSE@am__objects_4 = whisperlib/base/log.$(OBJEXT)
 am_whisperlib_libwhisperlib_a_OBJECTS = $(am__objects_1) \
-	$(am__objects_2) $(am__objects_3) \
+	$(am__objects_2) $(am__objects_3) $(am__objects_4) \
 	whisperlib/base/app.$(OBJEXT) whisperlib/base/date.$(OBJEXT) \
 	whisperlib/base/core_errno.$(OBJEXT) \
 	whisperlib/base/re.$(OBJEXT) \
@@ -562,9 +567,11 @@ am__nobase_include_HEADERS_DIST = whisperlib/base/core_config.h \
 	whisperlib/url/google-url/url_parse.h \
 	whisperlib/url/google-url/url_parse_internal.h \
 	whisperlib/url/google-url/url_util.h \
-	whisperlib/rpc/rpc_consts.h whisperlib/rpc/rpc_controller.h \
+	whisperlib/rpc/RpcStats.pb.h whisperlib/rpc/rpc_consts.h \
+	whisperlib/rpc/rpc_controller.h \
 	whisperlib/rpc/rpc_http_client.h \
-	whisperlib/rpc/rpc_http_server.h
+	whisperlib/rpc/rpc_http_server.h whisperlib/raft/raft_server.h \
+	whisperlib/raft/raft_client.h
 HEADERS = $(nobase_include_HEADERS)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
@@ -950,6 +957,7 @@ rpc_protobuf_sources = \
   whisperlib/rpc/rpc_controller.cc
 
 rpc_protobuf_headers = \
+  whisperlib/rpc/RpcStats.pb.h \
   whisperlib/rpc/rpc_consts.h \
   whisperlib/rpc/rpc_controller.h \
   whisperlib/rpc/rpc_http_client.h \
@@ -958,9 +966,19 @@ rpc_protobuf_headers = \
 @HAVE_GLOG_FALSE@whisperlib_log_sources = \
 @HAVE_GLOG_FALSE@  whisperlib/base/log.cc
 
+raft_sources = \
+  whisperlib/raft/RaftProto.pb.cc \
+  whisperlib/raft/raft_server.cc \
+  whisperlib/raft/raft_client.cc
+
+raft_headers = \
+  whisperlib/raft/raft_server.h \
+  whisperlib/raft/raft_client.h
+
 whisperlib_libwhisperlib_a_SOURCES = \
   $(EXTRA_whisperlib_libwhisperlib_a_SOURCES) \
   $(rpc_protobuf_sources) \
+  $(raft_sources) \
   $(whisperlib_log_sources) \
   whisperlib/base/app.cc \
   whisperlib/base/date.cc \
@@ -1100,7 +1118,8 @@ nobase_include_HEADERS = \
   whisperlib/sync/thread_pool.h \
   whisperlib/url/url.h \
   $(extra_whisperlib_libwhisperlib_a_headers) \
-  $(rpc_protobuf_headers)
+  $(rpc_protobuf_headers) \
+  $(raft_headers)
 
 glog_check_programs = \
   whisperlib/io/logio/test/logio_test \
@@ -1295,6 +1314,21 @@ whisperlib/rpc/rpc_http_server.$(OBJEXT):  \
 whisperlib/rpc/rpc_controller.$(OBJEXT):  \
 	whisperlib/rpc/$(am__dirstamp) \
 	whisperlib/rpc/$(DEPDIR)/$(am__dirstamp)
+whisperlib/raft/$(am__dirstamp):
+	@$(MKDIR_P) whisperlib/raft
+	@: > whisperlib/raft/$(am__dirstamp)
+whisperlib/raft/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) whisperlib/raft/$(DEPDIR)
+	@: > whisperlib/raft/$(DEPDIR)/$(am__dirstamp)
+whisperlib/raft/RaftProto.pb.$(OBJEXT):  \
+	whisperlib/raft/$(am__dirstamp) \
+	whisperlib/raft/$(DEPDIR)/$(am__dirstamp)
+whisperlib/raft/raft_server.$(OBJEXT):  \
+	whisperlib/raft/$(am__dirstamp) \
+	whisperlib/raft/$(DEPDIR)/$(am__dirstamp)
+whisperlib/raft/raft_client.$(OBJEXT):  \
+	whisperlib/raft/$(am__dirstamp) \
+	whisperlib/raft/$(DEPDIR)/$(am__dirstamp)
 whisperlib/base/$(am__dirstamp):
 	@$(MKDIR_P) whisperlib/base
 	@: > whisperlib/base/$(am__dirstamp)
@@ -1666,6 +1700,7 @@ mostlyclean-compile:
 	-rm -f whisperlib/io/zlib/*.$(OBJEXT)
 	-rm -f whisperlib/net/*.$(OBJEXT)
 	-rm -f whisperlib/net/test/*.$(OBJEXT)
+	-rm -f whisperlib/raft/*.$(OBJEXT)
 	-rm -f whisperlib/rpc/*.$(OBJEXT)
 	-rm -f whisperlib/rpc/codec/*.$(OBJEXT)
 	-rm -f whisperlib/sync/*.$(OBJEXT)
@@ -1737,6 +1772,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/net/test/$(DEPDIR)/selectable_filereader_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/net/test/$(DEPDIR)/selector_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/net/test/$(DEPDIR)/udp_connection_test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@whisperlib/raft/$(DEPDIR)/RaftProto.pb.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@whisperlib/raft/$(DEPDIR)/raft_client.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@whisperlib/raft/$(DEPDIR)/raft_server.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/rpc/$(DEPDIR)/RpcStats.pb.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/rpc/$(DEPDIR)/rpc_controller.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@whisperlib/rpc/$(DEPDIR)/rpc_http_client.Po@am__quote@
@@ -2353,6 +2391,8 @@ distclean-generic:
 	-rm -f whisperlib/net/$(am__dirstamp)
 	-rm -f whisperlib/net/test/$(DEPDIR)/$(am__dirstamp)
 	-rm -f whisperlib/net/test/$(am__dirstamp)
+	-rm -f whisperlib/raft/$(DEPDIR)/$(am__dirstamp)
+	-rm -f whisperlib/raft/$(am__dirstamp)
 	-rm -f whisperlib/rpc/$(DEPDIR)/$(am__dirstamp)
 	-rm -f whisperlib/rpc/$(am__dirstamp)
 	-rm -f whisperlib/rpc/codec/$(DEPDIR)/$(am__dirstamp)
@@ -2376,7 +2416,7 @@ clean-am: clean-checkPROGRAMS clean-generic clean-libLIBRARIES \
 
 distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
-	-rm -rf whisperlib/base/$(DEPDIR) whisperlib/base/test/$(DEPDIR) whisperlib/http/$(DEPDIR) whisperlib/http/test/$(DEPDIR) whisperlib/io/$(DEPDIR) whisperlib/io/buffer/$(DEPDIR) whisperlib/io/buffer/test/$(DEPDIR) whisperlib/io/file/$(DEPDIR) whisperlib/io/logio/$(DEPDIR) whisperlib/io/logio/test/$(DEPDIR) whisperlib/io/util/$(DEPDIR) whisperlib/io/zlib/$(DEPDIR) whisperlib/net/$(DEPDIR) whisperlib/net/test/$(DEPDIR) whisperlib/rpc/$(DEPDIR) whisperlib/rpc/codec/$(DEPDIR) whisperlib/sync/$(DEPDIR) whisperlib/url/$(DEPDIR) whisperlib/url/google-url/$(DEPDIR) whisperlib/url/test/$(DEPDIR)
+	-rm -rf whisperlib/base/$(DEPDIR) whisperlib/base/test/$(DEPDIR) whisperlib/http/$(DEPDIR) whisperlib/http/test/$(DEPDIR) whisperlib/io/$(DEPDIR) whisperlib/io/buffer/$(DEPDIR) whisperlib/io/buffer/test/$(DEPDIR) whisperlib/io/file/$(DEPDIR) whisperlib/io/logio/$(DEPDIR) whisperlib/io/logio/test/$(DEPDIR) whisperlib/io/util/$(DEPDIR) whisperlib/io/zlib/$(DEPDIR) whisperlib/net/$(DEPDIR) whisperlib/net/test/$(DEPDIR) whisperlib/raft/$(DEPDIR) whisperlib/rpc/$(DEPDIR) whisperlib/rpc/codec/$(DEPDIR) whisperlib/sync/$(DEPDIR) whisperlib/url/$(DEPDIR) whisperlib/url/google-url/$(DEPDIR) whisperlib/url/test/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-tags
@@ -2424,7 +2464,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
-	-rm -rf whisperlib/base/$(DEPDIR) whisperlib/base/test/$(DEPDIR) whisperlib/http/$(DEPDIR) whisperlib/http/test/$(DEPDIR) whisperlib/io/$(DEPDIR) whisperlib/io/buffer/$(DEPDIR) whisperlib/io/buffer/test/$(DEPDIR) whisperlib/io/file/$(DEPDIR) whisperlib/io/logio/$(DEPDIR) whisperlib/io/logio/test/$(DEPDIR) whisperlib/io/util/$(DEPDIR) whisperlib/io/zlib/$(DEPDIR) whisperlib/net/$(DEPDIR) whisperlib/net/test/$(DEPDIR) whisperlib/rpc/$(DEPDIR) whisperlib/rpc/codec/$(DEPDIR) whisperlib/sync/$(DEPDIR) whisperlib/url/$(DEPDIR) whisperlib/url/google-url/$(DEPDIR) whisperlib/url/test/$(DEPDIR)
+	-rm -rf whisperlib/base/$(DEPDIR) whisperlib/base/test/$(DEPDIR) whisperlib/http/$(DEPDIR) whisperlib/http/test/$(DEPDIR) whisperlib/io/$(DEPDIR) whisperlib/io/buffer/$(DEPDIR) whisperlib/io/buffer/test/$(DEPDIR) whisperlib/io/file/$(DEPDIR) whisperlib/io/logio/$(DEPDIR) whisperlib/io/logio/test/$(DEPDIR) whisperlib/io/util/$(DEPDIR) whisperlib/io/zlib/$(DEPDIR) whisperlib/net/$(DEPDIR) whisperlib/net/test/$(DEPDIR) whisperlib/raft/$(DEPDIR) whisperlib/rpc/$(DEPDIR) whisperlib/rpc/codec/$(DEPDIR) whisperlib/sync/$(DEPDIR) whisperlib/url/$(DEPDIR) whisperlib/url/google-url/$(DEPDIR) whisperlib/url/test/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -2479,6 +2519,9 @@ whisperlib/rpc/test/rpc_test_proto.pb.cc: whisperlib/rpc/test/rpc_test_proto.pro
 	protoc $< --cpp_out=.
 
 whisperlib/rpc/RpcStats.pb.cc: whisperlib/rpc/RpcStats.proto
+	protoc $< --cpp_out=.
+
+whisperlib/raft/RaftProto.pb.cc: whisperlib/raft/RaftProto.proto
 	protoc $< --cpp_out=.
 
 clean-local:

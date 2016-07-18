@@ -56,6 +56,7 @@ rpc_protobuf_sources = \
   whisperlib/rpc/rpc_controller.cc
 
 rpc_protobuf_headers = \
+  whisperlib/rpc/RpcStats.pb.h \
   whisperlib/rpc/rpc_consts.h \
   whisperlib/rpc/rpc_controller.h \
   whisperlib/rpc/rpc_http_client.h \
@@ -66,10 +67,20 @@ whisperlib_log_sources = \
   whisperlib/base/log.cc
 endif
 
+raft_sources = \
+  whisperlib/raft/RaftProto.pb.cc \
+  whisperlib/raft/raft_server.cc \
+  whisperlib/raft/raft_client.cc
+
+raft_headers = \
+  whisperlib/raft/raft_server.h \
+  whisperlib/raft/raft_client.h
+
 
 whisperlib_libwhisperlib_a_SOURCES = \
   $(EXTRA_whisperlib_libwhisperlib_a_SOURCES) \
   $(rpc_protobuf_sources) \
+  $(raft_sources) \
   $(whisperlib_log_sources) \
   whisperlib/base/app.cc \
   whisperlib/base/date.cc \
@@ -209,7 +220,8 @@ nobase_include_HEADERS = \
   whisperlib/sync/thread_pool.h \
   whisperlib/url/url.h \
   $(extra_whisperlib_libwhisperlib_a_headers) \
-  $(rpc_protobuf_headers)
+  $(rpc_protobuf_headers) \
+  $(raft_headers)
 
 glog_check_programs = \
   whisperlib/io/logio/test/logio_test \
@@ -231,6 +243,9 @@ whisperlib/rpc/test/rpc_test_proto.pb.cc: whisperlib/rpc/test/rpc_test_proto.pro
 	protoc $< --cpp_out=.
 
 whisperlib/rpc/RpcStats.pb.cc: whisperlib/rpc/RpcStats.proto
+	protoc $< --cpp_out=.
+
+whisperlib/raft/RaftProto.pb.cc: whisperlib/raft/RaftProto.proto
 	protoc $< --cpp_out=.
 
 TEST_EXTENSIONS = .sh

@@ -30,6 +30,7 @@ whisperlib/rpc/test/rpc_test_server
 whisperlib/url/test/url_test
 whisperlib/rpc/RpcStats.pb.*
 whisperlib/rpc/test/rpc_test_proto.pb.*
+whisperlib/raft/RaftProto.pb.*
 Makefile
 whisperlib/base/core_config.h
 whisperlib/base/stamp-h1

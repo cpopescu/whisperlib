@@ -1,0 +1,167 @@
+/**
+ * Copyright (c) 2014, Urban Engines inc.
+ * All rights reserved.
+ *
+ * Catalin Popescu
+ *
+ * This is a c++ implementation of raft algorithm using proto / rpc utilities and
+ * log foundation. Used for inspiration several implementation in the public domain,
+ * as:
+ * https://github.com/willemt/raft (BSD license).
+ * https://github.com/goraft/raft (Apache license)
+ *
+ * But we diverge quite significantly from those.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ * * Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ * * Redistributions in binary form must reproduce the above
+ * copyright notice, this list of conditions and the following disclaimer
+ * in the documentation and/or other materials provided with the
+ * distribution.
+ * * Neither the name of Urban Engines inc nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Author: Catalin Popescu
+ *
+ */
+
+package whisper.raft.pb;
+
+option cc_generic_services = true;
+option java_package = "com.whisperlib.raft";
+option java_outer_classname = "RaftProto";
+
+//////////////////////////////////////// General useful
+
+message LogPos {
+    optional int32 file_num = 1 [default = 0];
+    optional int32 block_num = 2 [default = 0];
+    optional int32 record_num = 3 [default = 0];
+    optional bool is_null = 4;
+}
+
+message RaftState {
+    required int64 current_term = 1;
+    optional int32 voted_for = 2;
+    optional LogPos last_log_pos = 3;
+    optional int64 last_log_term = 4;
+    optional LogPos commit_pos = 5;
+}
+
+message DataEntry {
+    /* The position in the index of this entry */
+    required LogPos pos = 1;
+    /* The log position of the previous entry */
+    required LogPos last_log_pos = 2;
+    /* The term index of the entry */
+    required int64 term = 3;
+    /* The term at the previous position */
+    required int64 last_log_term = 4;
+
+    /* entry data */
+    required bytes data = 5;
+}
+
+//////////////////////////////////////// Vote function
+
+message RequestVote {
+    /* candidate's term */
+    required int64 term = 1;
+
+    /* candidate requesting vote */
+    required int32 candidate_id = 2;
+
+    /* pos of candidate's last log entry */
+    required LogPos last_log_pos = 3;
+
+    /* term of candidate's last log entry */
+    required int64 last_log_term = 4;
+}
+
+message RequestVoteResponse {
+    /* currentTerm, for candidate to update itself */
+    required int64 term = 1;
+
+    /* true means candidate received vote */
+    optional bool vote_granted = 2;
+}
+
+////////////////////////////////////////  AppendEntries function
+
+message AppendEntries {
+    /** The current term of the leader */
+    required int64 term = 1;
+    /** The id of the leader */
+    required int32 leader_id = 2;
+
+    /** The log index before these ones */
+    required LogPos last_log_pos = 3;
+    /** The term of the entry in log before these ones */
+    required int64 last_log_term = 4;
+
+    /** The commit index on the master */
+    required LogPos leader_commit_pos = 5;
+
+    /** THe actual data (after prev_log_inx) */
+    repeated DataEntry entry = 6;
+}
+
+message AppendEntriesResponse {
+    /* currentTerm, for leader to update itself */
+    required int64 term = 1;
+
+    /* success true if follower contained entry matching
+     * prev_log_pos and prev_log_term */
+    optional bool success = 2;
+
+    optional LogPos current_pos = 3;
+    optional LogPos commit_pos = 4;
+}
+
+//////////////////////////////////////// Save function
+
+message Data {
+    /** The actual data */
+    required bytes data = 2;
+    /** Rpc will not return until data committed */
+    optional bool wait_to_commit = 3;
+}
+
+message DataResponse {
+    /** The entry's unique index - misses if not saved / timed out on commit etc. */
+    optional LogPos pos = 1;
+
+    /** The current term of server */
+    optional int64 term = 2;
+
+    /* Whether or not the entry was committed - true iff commit_pos */
+    optional bool was_committed = 3;
+
+    /** The name of the leader - to direct further request if needed */
+    optional string leader_name = 5;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+service Raft {
+    rpc Vote(RequestVote) returns (RequestVoteResponse);
+    rpc Append(AppendEntries) returns (AppendEntriesResponse);
+    rpc Save(Data) returns (DataResponse);
+}

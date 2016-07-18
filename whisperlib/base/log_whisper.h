@@ -35,7 +35,7 @@
 #ifndef _WHISPERLIB_BASE_LOG_WHISPER_H
 #define _WHISPERLIB_BASE_LOG_WHISPER_H
 
-#if defined(USE_GLOG_LOGGING) && defined(HAVE_GLOG)
+#if defined(HAVE_GLOG)
 #error "Don't include this file if using google log !"
 #endif
 

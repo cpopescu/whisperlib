@@ -37,13 +37,13 @@
 #define GFLAGS_NAMESPACE google
 #endif
 
-#if defined(USE_GFLAGS)
+#if defined(HAVE_GFLAGS)
 // We have real flags
 #include <gflags/gflags.h>
 
-#else  // ! USE_GFLAGS
+#else
 
-#if defined(USE_GLOG_LOGGING) && defined(HAVE_GLOG)
+#if defined(HAVE_GLOG)
 #error "If you enable glog, you cannot disable gflags."
 #endif
 
